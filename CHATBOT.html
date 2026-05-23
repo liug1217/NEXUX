@@ -257,16 +257,14 @@ function send() {
   const text = input.value.trim();
 
   rect5.style.display = "none";
-
   if (text === "") return;
 
   rect5.style.display = "flex";
   rect5.textContent = text;
 
   let reply = "";
-  const t = text.toLowerCase();
 
-  // AI回覆：哈囉 → 隨機回「哈囉 / 你好」
+  // 哈囉 / 問候
   if (text === "哈囉" || text === "你好" || text === "哈啰" || text === "嗨") {
     const base = ["哈囉", "你好"];
     const pick = base[Math.floor(Math.random() * base.length)];
@@ -289,6 +287,59 @@ function send() {
 
     reply = pick + wordTail + symbol;
 
+  // 在嗎 / 欸
+  } else if (text === "在嗎" || text === "欸") {
+    const base = ["在", "怎麼了", "我在", "說吧"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "在呀" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 幹嘛
+  } else if (text === "幹嘛" || text === "在幹嘛") {
+    const base = ["在發呆", "在等你", "在寫程式", "沒事"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if ((pick === "在發呆" || pick === "在等你" || pick === "在寫程式") && Math.random() < 0.9) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 謝謝
+  } else if (text === "謝謝") {
+    const base = ["不客氣", "小事", "OK的", "不用謝"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "不客氣" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 掰掰
+  } else if (text === "掰掰" || text === "拜拜") {
+    const base = ["掰掰", "等等見", "走了喔", "88"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "掰掰" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 天氣
   } else if (text === "今天天氣好好") {
     const base = ["是的", "對"];
     const pick = base[Math.floor(Math.random() * base.length)];
