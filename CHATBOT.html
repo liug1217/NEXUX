@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CHATBOT</title>
+  <title>城市編輯器</title>
   <style>
     body {
       margin: 0;
@@ -338,6 +338,37 @@ function send() {
     }
 
     reply = pick + wordTail;
+
+  // 現在幾點
+  } else if (
+    (text.includes("現在") && text.includes("幾點")) ||
+    text === "幾點"
+  ) {
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes().toString().padStart(2, "0");
+
+    const base = [
+      `現在 ${hour}:${minute} `,
+      `現在是 ${hour}:${minute} `,
+      `${hour}點${minute}分`,
+      `${hour}:${minute}`
+    ];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if ((pick === `現在 ${hour}:${minute}` || pick === `現在是 ${hour}:${minute}`) && Math.random() < 0.7) {
+      const tails = ["呀", "啊", "囉"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    let symbol = "";
+    if (Math.random() < 0.9) {
+      const symbols = ["～", "！", "🕒"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    reply = pick + wordTail + symbol;
 
   // 天氣
   } else if (text === "今天天氣好好") {
