@@ -69,6 +69,7 @@
     }
 
     /* Ellipse 3 (mic click) */
+        /* Ellipse 3 (mic click) */
     .ellipse3 {
       position: absolute;
       width: 36px;
@@ -247,58 +248,178 @@ function typeText(text, el) {
 function send() {
   if (moved) return;
 
-  const text = input.value.trim();
-
-  rect5.style.display = "none";
-  if (text === "") return;
-
-  // 1. 純前端只負責視覺與動畫：滑順將輸入框向下滾動
   rect.style.top = "1352px";
   btn.style.top = "1363px";
   add.style.top = "1369px";
   arrow.style.top = "1369px";
   mic.style.top = "1373px";
 
+  const text = input.value.trim();
+
+  rect5.style.display = "none";
+  if (text === "") return;
+
   rect5.style.display = "flex";
   rect5.textContent = text;
 
-  // 在等待雲端回應時，顯示思考提示
-  msg.textContent = "正在思考中...";
+  let reply = "";
 
-  // 2. 核心傳送：將資料拋向雲端的 Vercel Serverless Function 隱形大腦
-  fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ message: text })
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('雲端伺服器回應異常');
-    return response.json();
-  })
-  .then(data => {
-    // 3. 接收大腦處理完的對話（包含隨機對話與自研模型回答），播放打字機動畫
-    if (data.reply) {
-      typeText(data.reply, msg);
-    } else if (data.error) {
-      msg.textContent = "錯誤: " + data.error;
+  // 哈囉 / 問候
+  if (text === "哈囉" || text === "你好" || text === "哈啰" || text === "嗨") {
+    const base = ["哈囉", "你好"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "你好" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
-  })
-  .catch(error => {
-    // 異常攔截機制，確保網頁永不死機
-    msg.textContent = "系統提示：目前連線逾時，請確認雲端大腦狀態。";
-    console.error('Error:', error);
-  });
 
+    let symbol = "";
+    if ((pick === "哈囉" || pick === "你好" || pick === "嗨") && Math.random() < 0.7) {
+      const symbols = ["～", "！", "✨"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    if (symbol === "～" && Math.random() < 0.7) {
+      symbol += "👋";
+    }
+
+    reply = pick + wordTail + symbol;
+
+  // 在嗎 / 欸
+  } else if (text === "在嗎" || text === "欸") {
+    const base = ["在", "怎麼了", "我在", "說吧"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "在呀" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 幹嘛
+  } else if (text === "幹嘛" || text === "在幹嘛") {
+    const base = ["在發呆", "在等你", "在寫程式", "沒事"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if ((pick === "在發呆" || pick === "在等你" || pick === "在寫程式") && Math.random() < 0.9) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 謝謝
+  } else if (text === "謝謝") {
+    const base = ["不客氣", "小事", "OK的", "不用謝"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "不客氣" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 掰掰
+  } else if (text === "掰掰" || text === "拜拜") {
+    const base = ["掰掰", "等等見", "走了喔", "88"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "掰掰" && Math.random() < 0.7) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    reply = pick + wordTail;
+
+  // 天氣
+  } else if (text === "今天天氣好好") {
+    const base = ["是的", "對"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === "對" && Math.random() < 0.9) {
+      const tails = ["呀", "啊"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    let symbol = "";
+    if ((pick === "是的" || pick === "對") && Math.random() < 0.9) {
+      const symbols = ["～", "！", "✨"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    reply = pick + wordTail + symbol;
+
+  } else {
+    reply = "我收到你說：" + text;
+  }
+
+  typeText(reply, msg);
   input.value = "";
+  moved = true;
 }
 
-// 綁定按鈕與鍵盤事件
-btn.addEventListener("click", send);
-arrow.addEventListener("click", send);
+function showEllipse2() {
+  if (!ellipseShown) {
+    ellipse2.style.display = "block";
+    ellipseShown = true;
+  }
+}
+
+function showRect4() {
+  if (!rect4Shown) {
+    rect4.style.display = "block";
+    rect4Shown = true;
+  }
+}
+
+function toggleMicEllipse3() {
+  micShown = !micShown;
+  ellipse3.style.display = micShown ? "block" : "none";
+}
+
+btn.onclick = send;
+arrow.onclick = send;
+
+add.addEventListener("click", (e) => {
+  e.stopPropagation();
+  showEllipse2();
+  showRect4();
+});
+
+mic.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleMicEllipse3();
+});
+
+input.addEventListener("click", (e) => e.stopPropagation());
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") send();
+});
+
+const frame = document.getElementById("frame");
+frame.addEventListener("click", (e) => {
+  const isAdd = e.target.closest && e.target.closest("#add");
+  const isRect4 = e.target.closest && e.target.closest("#rect4");
+  const isEllipse2 = e.target.closest && e.target.closest("#ellipse2");
+  const isMic = e.target.closest && e.target.closest("#mic");
+
+  if (!isAdd && !isRect4 && !isEllipse2 && !isMic) {
+    ellipse2.style.display = "none";
+    rect4.style.display = "none";
+    ellipse3.style.display = "none";
+    ellipseShown = false;
+    rect4Shown = false;
+    micShown = false;
+  }
 });
 </script>
 
