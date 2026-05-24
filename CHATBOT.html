@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>城市編輯器</title>
+  <title>CHATBOT</title>
   <style>
     body {
       margin: 0;
@@ -178,11 +178,44 @@
       background: transparent;
       width: 200px;
     }
-  </style>
+  .sidebar {
+      box-sizing: border-box;
+      position: absolute;
+      width: 52px;
+      height: 1440px;
+      left: 0px;
+      top: 0px;
+      background: #FFFFFF;
+      border-right: 1px solid #F3F3F3;
+    }
+/* Rectangle 7 */
+    .rect7 {
+      position: absolute;
+      width: 330px;
+      height: 120px;
+      left: 923px;
+      top: 132px;
+      background: #000000;
+      border-radius: 15px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timeText {
+      color: #FFFFFF;
+      font-size: 60px;
+      font-weight: 400;
+    }
+</style>
 </head>
 <body>
 
 <div id="frame">
+  <div class="sidebar"></div>
+  <div class="rect7" id="rect7">
+    <div class="timeText" id="timeText">00:00:00</div>
+  </div>
 
   <div class="ellipse2" id="ellipse2"></div>
   <div class="ellipse3" id="ellipse3"></div>
@@ -322,6 +355,7 @@ function send() {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes().toString().padStart(2, "0");
+    const second = now.getSeconds().toString().padStart(2, "0");
 
     const base = [
       `現在${hour}:${minute}`,
@@ -342,6 +376,14 @@ function send() {
     if (Math.random() < 0.9) {
       const symbols = ["～", "！", "🕒"];
       symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    // 顯示時間 UI
+    const rect7 = document.getElementById("rect7");
+    const timeText = document.getElementById("timeText");
+    if (rect7 && timeText) {
+      rect7.style.display = "flex";
+      timeText.textContent = `${hour}:${minute}:${second}`;
     }
 
     replyParts.push(pick + wordTail + symbol);
@@ -464,5 +506,33 @@ frame.addEventListener("click", (e) => {
 });
 </script>
 
+<script>
+// ===== 即時時鐘（每秒更新） =====
+function startClock() {
+  const rect7 = document.getElementById("rect7");
+  const timeText = document.getElementById("timeText");
+
+  function update() {
+    const now = new Date();
+    const h = now.getHours().toString().padStart(2, "0");
+    const m = now.getMinutes().toString().padStart(2, "0");
+    const s = now.getSeconds().toString().padStart(2, "0");
+
+    if (timeText) {
+      timeText.textContent = `${h}:${m}:${s}`;
+    }
+
+    // 只要曾經顯示過就保持更新
+    if (rect7 && rect7.style.display === "flex") {
+      rect7.style.display = "flex";
+    }
+  }
+
+  setInterval(update, 1000);
+  update();
+}
+
+startClock();
+</script>
 </body>
 </html>
