@@ -246,7 +246,7 @@ function typeText(text, el) {
 }
 
 function send() {
-  if (moved) return;
+  
 
   rect.style.top = "1352px";
   btn.style.top = "1363px";
@@ -262,10 +262,11 @@ function send() {
   rect5.style.display = "flex";
   rect5.textContent = text;
 
-  let reply = "";
+  let replyParts = [];
 
-  // 哈囉 / 問候
-  if (text === "哈囉" || text === "你好" || text === "哈啰" || text === "嗨") {
+    // ===== 問候 =====
+  // 修正：允許多意圖輸入（例如「哈囉今天幾月幾日」也會觸發）
+  if (text.includes("哈囉") || text.includes("你好") || text.includes("哈啰") || text.includes("嗨")) {
     const base = ["哈囉", "你好"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
@@ -276,7 +277,7 @@ function send() {
     }
 
     let symbol = "";
-    if ((pick === "哈囉" || pick === "你好" || pick === "嗨") && Math.random() < 0.7) {
+    if (Math.random() < 0.7) {
       const symbols = ["～", "！", "✨"];
       symbol = symbols[Math.floor(Math.random() * symbols.length)];
     }
@@ -285,11 +286,12 @@ function send() {
       symbol += "👋";
     }
 
-    reply = pick + wordTail + symbol;
+    replyParts.push(pick + wordTail + symbol);
+  }
 
-  // 在嗎 / 欸
-  } else if (text === "在嗎" || text === "欸") {
-    const base = ["在", "怎麼了", "我在", "說吧"];
+  // ===== 在嗎 =====
+  if (text === "在嗎" || text === "欸") {
+    const base = ["在呀", "怎麼了", "我在", "說吧"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
@@ -298,10 +300,11 @@ function send() {
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
 
-    reply = pick + wordTail;
+    replyParts.push(pick + wordTail);
+  }
 
-  // 幹嘛
-  } else if (text === "幹嘛" || text === "在幹嘛") {
+  // ===== 幹嘛 =====
+  if (text === "幹嘛" || text === "在幹嘛") {
     const base = ["在發呆", "在等你", "在寫程式", "沒事"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
@@ -311,53 +314,26 @@ function send() {
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
 
-    reply = pick + wordTail;
+    replyParts.push(pick + wordTail);
+  }
 
-  // 謝謝
-  } else if (text === "謝謝") {
-    const base = ["不客氣", "小事", "OK的", "不用謝"];
-    const pick = base[Math.floor(Math.random() * base.length)];
-
-    let wordTail = "";
-    if (pick === "不客氣" && Math.random() < 0.7) {
-      const tails = ["呀", "啊"];
-      wordTail = tails[Math.floor(Math.random() * tails.length)];
-    }
-
-    reply = pick + wordTail;
-
-  // 掰掰
-  } else if (text === "掰掰" || text === "拜拜") {
-    const base = ["掰掰", "等等見", "走了喔", "88"];
-    const pick = base[Math.floor(Math.random() * base.length)];
-
-    let wordTail = "";
-    if (pick === "掰掰" && Math.random() < 0.7) {
-      const tails = ["呀", "啊"];
-      wordTail = tails[Math.floor(Math.random() * tails.length)];
-    }
-
-    reply = pick + wordTail;
-
-  // 現在幾點
-  } else if (
-    (text.includes("現在") && text.includes("幾點")) ||
-    text === "幾點"
-  ) {
+  // ===== 現在幾點 =====
+  if (((text.includes("現在") || text.includes("今天")) && text.includes("幾點")) || text === "幾點") {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes().toString().padStart(2, "0");
 
     const base = [
-      `現在 ${hour}:${minute} `,
-      `現在是 ${hour}:${minute} `,
+      `現在${hour}:${minute}`,
+      `現在是${hour}:${minute}`,
       `${hour}點${minute}分`,
       `${hour}:${minute}`
     ];
+
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
-    if ((pick === `現在 ${hour}:${minute}` || pick === `現在是 ${hour}:${minute}`) && Math.random() < 0.7) {
+    if ((pick === `現在${hour}:${minute}` || pick === `現在是${hour}:${minute}`) && Math.random() < 0.7) {
       const tails = ["呀", "啊", "囉"];
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
@@ -368,10 +344,40 @@ function send() {
       symbol = symbols[Math.floor(Math.random() * symbols.length)];
     }
 
-    reply = pick + wordTail + symbol;
+    replyParts.push(pick + wordTail + symbol);
+  }
 
-  // 天氣
-  } else if (text === "今天天氣好好") {
+  // ===== 今天日期 =====
+  if (text.includes("今天") && (text.includes("幾月") || text.includes("幾日") || text.includes("日期") || text.includes("幾號"))) {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const date = now.getDate();
+
+    const base = [
+      `今天${month}月${date}日`,
+      `今天是${month}月${date}日`,
+      `${month}月${date}日`
+    ];
+
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let wordTail = "";
+    if (pick === `今天${month}月${date}日` && Math.random() < 0.7) {
+      const tails = ["呀", "啊", "囉"];
+      wordTail = tails[Math.floor(Math.random() * tails.length)];
+    }
+
+    let symbol = "";
+    if (Math.random() < 0.9) {
+      const symbols = ["～", "！", "📅"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    replyParts.push(pick + wordTail + symbol);
+  }
+
+  // ===== 天氣 =====
+  if (text === "今天天氣好好") {
     const base = ["是的", "對"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
@@ -387,15 +393,19 @@ function send() {
       symbol = symbols[Math.floor(Math.random() * symbols.length)];
     }
 
-    reply = pick + wordTail + symbol;
-
-  } else {
-    reply = "我收到你說：" + text;
+    replyParts.push(pick + wordTail + symbol);
   }
+
+  // ===== fallback =====
+  if (replyParts.length === 0) {
+    replyParts.push("我收到你說：" + text);
+  }
+
+  const reply = replyParts.join("");
 
   typeText(reply, msg);
   input.value = "";
-  moved = true;
+  // moved = true;（已移除，避免只能執行一次）
 }
 
 function showEllipse2() {
