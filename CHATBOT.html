@@ -17,8 +17,8 @@
     }
 
     #frame {
-      width: 2560px;
-      height: 1440px;
+      width: 100%;
+      height: 100vh;
       background: #ffffff;
       position: relative;
       box-shadow: 0 20px 80px rgba(0,0,0,0.6);
@@ -28,9 +28,11 @@
     .rect1 {
       box-sizing: border-box;
       position: absolute;
-      width: 771px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 771px;
       height: 58px;
-      left: 921px;
       top: 601px;
       background: #FFFFFF;
       border: 1px solid #E9E9E9;
@@ -38,17 +40,19 @@
       border-radius: 29px;
       transition: top 0.35s ease;
       z-index: 1;
+
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 17px;
     }
 
     .ellipse2 {
       position: absolute;
-      width: 36px;
-      height: 36px;
-      left: 932px;
-      top: 612px;
+      inset: -10px;
       background: #F3F3F3;
       border-radius: 50%;
-      z-index: 9;
+      z-index: -1;
       display: none;
     }
 
@@ -58,7 +62,8 @@
       position: absolute;
       width: 234px;
       height: 321px;
-      left: 924px;
+      left: 50%;
+      transform: translateX(-50%);
       top: 647px;
       background: #FFFFFF;
       border: 1px solid #E9E9E9;
@@ -69,79 +74,70 @@
     }
 
     /* Ellipse 3 (mic click) */
-        /* Ellipse 3 (mic click) */
     .ellipse3 {
       position: absolute;
-      width: 36px;
-      height: 36px;
-      left: 1604px;
-      top: 612px;
+      inset: -10px;
       background: #F3F3F3;
       border-radius: 50%;
-      z-index: 19;
+      z-index: -1;
       display: none;
     }
 
     .ellipse1 {
-      position: absolute;
+      position: relative;
       width: 36px;
       height: 36px;
-      left: 1645px;
-      top: 612px;
+      flex: none;
       background: #000000;
       border-radius: 50%;
       cursor: pointer;
-      transition: top 0.35s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 20;
     }
 
     .add {
-      position: absolute;
-      width: auto;
-      min-width: 120px;
+      position: relative;
+      flex: 1;
+      min-width: 0;
       height: 24px;
-      left: 938px;
-      top: 618px;
       display: flex;
       align-items: center;
       gap: 10px;
-      transition: top 0.35s ease;
-      z-index: 10;
       cursor: pointer;
     }
 
     .mic {
-      position: absolute;
+      position: relative;
       width: 16px;
       height: 16px;
-      left: 1614px;
-      top: 622px;
+      flex: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: top 0.35s ease;
-      z-index: 20;
       cursor: pointer;
     }
 
     .arrow {
-      position: absolute;
+      position: relative;
       width: 24px;
       height: 24px;
-      left: 1651px;
-      top: 618px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: top 0.35s ease;
-      z-index: 20;
+    }
+
+    .arrow svg {
+      width: 100%;
+      height: 100%;
     }
 
     .rect5 {
       position: absolute;
       height: 44px;
-      left: 1631px;
+      right: 5%;
       top: 8px;
       background: #F4F4F4;
       border-radius: 22px;
@@ -158,14 +154,18 @@
 
     .msg {
       position: absolute;
-      left: 923px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 771px;
       top: 97px;
       font-family: Inter, sans-serif;
       font-weight: 400;
       font-size: 15px;
       line-height: 18px;
       color: #000;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-word;
       z-index: 100;
     }
 
@@ -176,13 +176,15 @@
       font-weight: 500;
       color: #000;
       background: transparent;
-      width: 200px;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
     }
   .sidebar {
       box-sizing: border-box;
       position: absolute;
       width: 52px;
-      height: 1440px;
+      height: 100%;
       left: 0px;
       top: 0px;
       background: #FFFFFF;
@@ -192,8 +194,10 @@
     .rect7 {
       position: absolute;
       width: 330px;
+      max-width: 80%;
       height: 120px;
-      left: 923px;
+      left: 50%;
+      transform: translateX(-50%);
       top: 132px;
       background: #000000;
       border-radius: 15px;
@@ -204,7 +208,7 @@
 
     .timeText {
       color: #FFFFFF;
-      font-size: 60px;
+      font-size: clamp(28px, 8vw, 60px);
       font-weight: 400;
     }
 </style>
@@ -223,29 +227,33 @@
   <div class="msg" id="msg"></div>
   <div class="rect5" id="rect5"></div>
 
-  <div class="rect1" id="rect"></div>
   <div class="rect4" id="rect4"></div>
-  <div class="ellipse1" id="btn"></div>
 
-  <div class="add" id="add">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/></svg>
-    <input type="text" placeholder="想問就問" />
-  </div>
+  <div class="rect1" id="rect">
+    <div class="add" id="add">
+      <div class="ellipse2" id="ellipse2"></div>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="black"/></svg>
+      <input type="text" placeholder="想問就問" />
+    </div>
 
-  <div class="mic" id="mic">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 10C9.10457 10 10 9.10457 10 8V3.33333C10 2.22876 9.10457 1.33333 8 1.33333C6.89543 1.33333 6 2.22876 6 3.33333V8C6 9.10457 6.89543 10 8 10Z" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M12.6667 8C12.6667 10.9455 10.9455 13.3333 8 13.3333C5.05448 13.3333 3.33333 10.9455 3.33333 8" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M8 13.3333V15.3333" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M5.33333 15.3333H10.6667" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
-    </svg>
-  </div>
+    <div class="mic" id="mic">
+      <div class="ellipse3" id="ellipse3"></div>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 10C9.10457 10 10 9.10457 10 8V3.33333C10 2.22876 9.10457 1.33333 8 1.33333C6.89543 1.33333 6 2.22876 6 3.33333V8C6 9.10457 6.89543 10 8 10Z" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M12.6667 8C12.6667 10.9455 10.9455 13.3333 8 13.3333C5.05448 13.3333 3.33333 10.9455 3.33333 8" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M8 13.3333V15.3333" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M5.33333 15.3333H10.6667" stroke="black" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
 
-  <div class="arrow" id="arrow">
-    <svg viewBox="0 0 24 24">
-      <path d="M12 18V6" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M7 11l5-5 5 5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-    </svg>
+    <div class="ellipse1" id="btn">
+      <div class="arrow" id="arrow">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 18V6" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M7 11l5-5 5 5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -281,11 +289,7 @@ function typeText(text, el) {
 function send() {
   
 
-  rect.style.top = "1352px";
-  btn.style.top = "1363px";
-  add.style.top = "1369px";
-  arrow.style.top = "1369px";
-  mic.style.top = "1373px";
+  rect.style.top = "calc(100vh - 88px)";
 
   const text = input.value.trim();
 
