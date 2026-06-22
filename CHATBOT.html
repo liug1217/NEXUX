@@ -132,39 +132,51 @@
       height: 100%;
     }
 
+    /* 使用者訊息(對話紀錄裡的條目樣式) */
     .rect5 {
-      position: absolute;
-      height: 44px;
-      right: 5%;
-      top: 8px;
+      align-self: flex-end;
+      max-width: 70%;
+      height: auto;
       background: #F4F4F4;
       border-radius: 22px;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 14px;
       color: #000;
-      padding: 0 15px;
+      padding: 10px 18px;
       box-sizing: border-box;
-      white-space: nowrap;
-      z-index: 50;
+      white-space: normal;
+      word-break: break-word;
     }
 
+    /* 對話紀錄容器(可往上滾動,堆疊顯示) */
     .msg {
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80%;
-      max-width: 771px;
+      left: 10px;
+      right: 10px;
       top: 97px;
+      bottom: 92px;
+      overflow-y: auto;
+
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+
       font-family: Inter, sans-serif;
       font-weight: 400;
       font-size: 15px;
       line-height: 18px;
       color: #000;
+      z-index: 0;
+    }
+
+    /* AI 回覆訊息(對話紀錄裡的條目樣式) */
+    .ai-msg-entry {
+      align-self: flex-start;
+      max-width: 90%;
       white-space: normal;
       word-break: break-word;
-      z-index: 100;
     }
 
     .add input {
@@ -223,7 +235,6 @@
   <div class="ellipse3" id="ellipse3"></div>
 
   <div class="msg" id="msg"></div>
-  <div class="rect5" id="rect5"></div>
 
   <div class="rect4" id="rect4"></div>
 
@@ -267,7 +278,6 @@ const rect4 = document.getElementById("rect4");
 const btn = document.getElementById("btn");
 const add = document.getElementById("add");
 const arrow = document.getElementById("arrow");
-const rect5 = document.getElementById("rect5");
 const input = document.querySelector("input");
 const msg = document.getElementById("msg");
 const ellipse2 = document.getElementById("ellipse2");
@@ -280,6 +290,7 @@ function typeText(text, el) {
   const timer = setInterval(() => {
     el.textContent += text[i];
     i++;
+    msg.scrollTop = msg.scrollHeight;
     if (i >= text.length) clearInterval(timer);
   }, 80);
 }
@@ -291,22 +302,25 @@ function send() {
 
   const text = input.value.trim();
 
-  rect5.style.display = "none";
   if (text === "") return;
 
-  rect5.style.display = "flex";
-  rect5.textContent = text;
+  // 新增一筆使用者訊息到對話紀錄裡(堆疊,不覆蓋舊的)
+  const userEntry = document.createElement("div");
+  userEntry.className = "rect5";
+  userEntry.textContent = text;
+  msg.appendChild(userEntry);
+  msg.scrollTop = msg.scrollHeight;
 
   let replyParts = [];
 
     // ===== 問候 =====
   // 修正：允許多意圖輸入（例如「哈囉今天幾月幾日」也會觸發）
-  if (text.includes("哈囉") || text.includes("你好") || text.includes("哈啰") || text.includes("嗨")) {
-    const base = ["哈囉", "你好"];
+  if (text.includes("哈囉") || text.includes("你好") || text.includes("哈啰") || text.includes("嗨") || text.includes("早安") || text.includes("午安") || text.includes("晚安") || text.includes("安安") || text.toLowerCase().includes("hi") || text.toLowerCase().includes("hello")) {
+    const base = ["哈囉", "你好", "嗨", "安安"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
-    if (pick === "你好" && Math.random() < 0.7) {
+    if ((pick === "你好" || pick === "安安") && Math.random() < 0.7) {
       const tails = ["呀", "啊"];
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
@@ -325,12 +339,12 @@ function send() {
   }
 
   // ===== 在嗎 =====
-  if (text === "在嗎" || text === "欸") {
-    const base = ["在呀", "怎麼了", "我在", "說吧"];
+  if (text === "在嗎" || text === "欸" || text === "有人嗎" || text === "在不在" || text === "在家嗎") {
+    const base = ["在呀", "怎麼了", "我在", "說吧", "在的", "嗯嗯我在"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
-    if (pick === "在呀" && Math.random() < 0.7) {
+    if ((pick === "在呀" || pick === "在的") && Math.random() < 0.7) {
       const tails = ["呀", "啊"];
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
@@ -339,12 +353,12 @@ function send() {
   }
 
   // ===== 幹嘛 =====
-  if (text === "幹嘛" || text === "在幹嘛") {
-    const base = ["在發呆", "在等你", "在寫程式", "沒事"];
+  if (text === "幹嘛" || text === "在幹嘛" || text === "你在幹嘛" || text === "在忙嗎" || text === "在做什麼") {
+    const base = ["在發呆", "在等你", "在寫程式", "沒事", "在放空", "在想晚餐吃什麼"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
-    if ((pick === "在發呆" || pick === "在等你" || pick === "在寫程式") && Math.random() < 0.9) {
+    if ((pick === "在發呆" || pick === "在等你" || pick === "在寫程式" || pick === "在放空") && Math.random() < 0.9) {
       const tails = ["呀", "啊"];
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
@@ -421,23 +435,134 @@ function send() {
   }
 
   // ===== 天氣 =====
-  if (text === "今天天氣好好") {
-    const base = ["是的", "對"];
+  if (text === "今天天氣好好" || text.includes("天氣如何") || text.includes("天氣怎樣") || text === "今天天氣") {
+    const base = ["是的", "對", "還不錯呢", "希望是"];
     const pick = base[Math.floor(Math.random() * base.length)];
 
     let wordTail = "";
-    if (pick === "對" && Math.random() < 0.9) {
+    if ((pick === "對" || pick === "希望是") && Math.random() < 0.9) {
       const tails = ["呀", "啊"];
       wordTail = tails[Math.floor(Math.random() * tails.length)];
     }
 
     let symbol = "";
-    if ((pick === "是的" || pick === "對") && Math.random() < 0.9) {
-      const symbols = ["～", "！", "✨"];
+    if (Math.random() < 0.9) {
+      const symbols = ["～", "！", "✨", "☀️"];
       symbol = symbols[Math.floor(Math.random() * symbols.length)];
     }
 
     replyParts.push(pick + wordTail + symbol);
+  }
+
+  // ===== 謝謝 =====
+  if (text.includes("謝謝") || text.includes("感謝") || text === "thx" || text.toLowerCase().includes("thank")) {
+    const base = ["不會啦", "不客氣", "小事一件", "應該的"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let symbol = "";
+    if (Math.random() < 0.8) {
+      const symbols = ["～", "！", "😊"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    replyParts.push(pick + symbol);
+  }
+
+  // ===== 再見 =====
+  if (text.includes("再見") || text.includes("掰掰") || text.includes("先這樣") || text === "晚安囉" || text.toLowerCase().includes("bye")) {
+    const base = ["掰掰", "再見囉", "下次聊", "先這樣囉"];
+    const pick = base[Math.floor(Math.random() * base.length)];
+
+    let symbol = "";
+    if (Math.random() < 0.8) {
+      const symbols = ["～", "！", "👋"];
+      symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    }
+
+    replyParts.push(pick + symbol);
+  }
+
+  // ===== 自我介紹 =====
+  if (text.includes("你是誰") || text.includes("你叫什麼") || text.includes("自我介紹") || text.includes("你叫啥")) {
+    const base = ["我是你的小幫手", "我是一個聊天機器人", "我沒有名字耶,你可以幫我取一個"];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 是不是機器人/AI =====
+  if (text.includes("你是機器人嗎") || text.includes("你是不是AI") || text.includes("你是不是ai") || text.includes("你是真人嗎") || text.includes("你是人嗎")) {
+    const base = ["對呀,我是聊天機器人", "是的,我是 AI 助手", "沒錯,我是程式寫的小幫手"];
+    let symbol = Math.random() < 0.7 ? ["😄", "🤖", "！"][Math.floor(Math.random() * 3)] : "";
+    replyParts.push(base[Math.floor(Math.random() * base.length)] + symbol);
+  }
+
+  // ===== 讚美 =====
+  if (text.includes("你好棒") || text.includes("你好聰明") || text.includes("好厲害") || text.includes("你真好") || text.includes("你很可愛")) {
+    const base = ["謝謝你誇獎", "哪裡哪裡", "你也很棒呀", "謝謝你這麼說"];
+    let symbol = Math.random() < 0.8 ? ["～", "！", "😊"][Math.floor(Math.random() * 3)] : "";
+    replyParts.push(base[Math.floor(Math.random() * base.length)] + symbol);
+  }
+
+  // ===== 開心 =====
+  if (text.includes("我好開心") || text.includes("我很開心") || text.includes("今天好開心") || text.includes("超開心")) {
+    const base = ["太好了,陪你一起開心", "聽到這個我也很開心", "開心的事要分享一下嗎"];
+    let symbol = Math.random() < 0.8 ? ["！", "🎉", "✨"][Math.floor(Math.random() * 3)] : "";
+    replyParts.push(base[Math.floor(Math.random() * base.length)] + symbol);
+  }
+
+  // ===== 難過/心情不好 =====
+  if (text.includes("我好難過") || text.includes("心情不好") || text.includes("我很難過") || text.includes("我不開心") || text.includes("好煩")) {
+    const base = ["怎麼了,發生什麼事了嗎", "辛苦了,我在這陪你", "難過的時候記得照顧自己"];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 吃飯了嗎 =====
+  if (text.includes("吃飯了嗎") || text.includes("吃了嗎") || text.includes("吃飽了嗎") || text === "吃飯沒") {
+    const base = ["我不需要吃飯耶,但你記得要吃喔", "你呢,吃了嗎", "別忘記吃飯呀"];
+    let symbol = Math.random() < 0.7 ? ["～", "🍚", "！"][Math.floor(Math.random() * 3)] : "";
+    replyParts.push(base[Math.floor(Math.random() * base.length)] + symbol);
+  }
+
+  // ===== 累了/想睡 =====
+  if (text.includes("好累") || text.includes("想睡覺") || text.includes("好睏") || text.includes("累死了")) {
+    const base = ["辛苦了,早點休息吧", "累的話就先休息一下", "記得不要太累喔"];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 無聊 =====
+  if (text.includes("好無聊") || text.includes("沒事做") || text.includes("無聊死了")) {
+    const base = ["要不要跟我聊聊天", "無聊的話可以問我問題呀", "我可以陪你聊天解悶"];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 笑話 =====
+  if (text.includes("講笑話") || text.includes("說個笑話") || text.includes("講個笑話")) {
+    const base = [
+      "為什麼電腦會感冒?因為它打開了太多 Windows",
+      "老師問:1+1等於多少?學生說:等於我愛你,因為1+1在一起",
+      "為什麼數學課本很難過?因為它有太多問題"
+    ];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 今天星期幾 =====
+  if (text.includes("星期幾") || text.includes("禮拜幾")) {
+    const days = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+    const today = days[new Date().getDay()];
+    const base = [`今天${today}`, `今天是${today}`, `${today}呀`];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 閒聊反應詞(嘿嘿/哈哈/喔喔/嗯嗯) =====
+  if (text === "嘿嘿" || text === "哈哈" || text === "喔喔" || text === "嗯嗯") {
+    const base = ["怎麼了嗎", "嗯?", "哈哈怎麼了", "什麼事呀"];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== 加油打氣 =====
+  if (text.includes("幫我加油") || text.includes("鼓勵我") || text.includes("打氣")) {
+    const base = ["加油加油,你可以的!", "相信自己,一定沒問題!", "你已經很努力了,加油!"];
+    let symbol = Math.random() < 0.8 ? ["💪", "✨", "！"][Math.floor(Math.random() * 3)] : "";
+    replyParts.push(base[Math.floor(Math.random() * base.length)] + symbol);
   }
 
   // ===== fallback =====
@@ -447,7 +572,12 @@ function send() {
 
   const reply = replyParts.join("");
 
-  typeText(reply, msg);
+  // 新增一筆 AI 回覆訊息到對話紀錄裡,用打字機動畫顯示
+  const aiEntry = document.createElement("div");
+  aiEntry.className = "ai-msg-entry";
+  msg.appendChild(aiEntry);
+  typeText(reply, aiEntry);
+
   input.value = "";
   // moved = true;（已移除，避免只能執行一次）
 }
