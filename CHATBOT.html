@@ -175,7 +175,7 @@
     .ai-msg-entry {
       align-self: flex-start;
       max-width: 90%;
-      white-space: normal;
+      white-space: pre-line;
       word-break: break-word;
     }
 
@@ -294,6 +294,107 @@ function typeText(text, el) {
     if (i >= text.length) clearInterval(timer);
   }, 80);
 }
+
+// ===== 瀏覽器內跑開源模型(Transformers.js + Qwen2.5-0.5B-Instruct)=====
+// 完全在使用者自己的裝置上運算,不需要任何外部 API,不限人數使用
+// 代價:模型比較小,回答品質有限,第一次使用需要下載模型(可能要等一下)
+let aiPipelinePromise = null;
+
+async function loadAiModel() {
+  if (aiPipelinePromise) return aiPipelinePromise;
+
+  aiPipelinePromise = (async function () {
+    const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
+    return await pipeline("text-generation", "Xenova/Qwen2.5-0.5B-Instruct");
+  })();
+
+  return aiPipelinePromise;
+}
+
+// ===== 持久化記憶(localStorage):每次都重新生成,但會結合之前存的舊資訊一起參考 =====
+const MEMORY_KEY = "chatbotMemory";
+const MEMORY_MAX_ENTRIES = 20;
+
+function loadMemory() {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveMemoryEntry(question, answer) {
+  const memory = loadMemory();
+  memory.push({ q: question, a: answer });
+
+  // 只保留最近 N 筆,避免資料無限長大、塞爆 prompt
+  while (memory.length > MEMORY_MAX_ENTRIES) {
+    memory.shift();
+  }
+
+  try {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+  } catch (e) {
+    // 儲存空間滿了就放棄儲存,不影響當前對話
+  }
+}
+
+function buildMemoryContext() {
+  const memory = loadMemory();
+  if (memory.length === 0) return "";
+
+  const lines = memory.map(function (entry) {
+    return "問:" + entry.q + " / 答:" + entry.a;
+  });
+
+  return "以下是之前累積的問答紀錄,可以參考但不一定要直接複述:\n" + lines.join("\n");
+}
+
+async function generateModelReplyAndShow(message, targetEl) {
+  try {
+    const generator = await loadAiModel();
+
+    const memoryContext = buildMemoryContext();
+    const systemContent =
+      "你是一個輕鬆活潑的聊天機器人,用簡短的繁體中文回覆(1-2句話以內),語氣親切自然。" +
+      (memoryContext ? "\n\n" + memoryContext : "");
+
+    const messages = [
+      { role: "system", content: systemContent },
+      { role: "user", content: message }
+    ];
+
+    const output = await generator(messages, {
+      max_new_tokens: 120,
+      temperature: 0.7,
+      do_sample: true
+    });
+
+    let reply = "";
+    if (Array.isArray(output) && output[0]) {
+      const generated = output[0].generated_text;
+      if (Array.isArray(generated)) {
+        const last = generated[generated.length - 1];
+        reply = (last && last.content) ? last.content : "";
+      } else if (typeof generated === "string") {
+        reply = generated;
+      }
+    }
+
+    reply = reply.trim() || "嗯...我好像沒有聽懂,可以換個方式問我嗎";
+
+    typeText(reply, targetEl);
+
+    // 把這次的問答存起來,下次生成時會一起當作參考資訊
+    saveMemoryEntry(message, reply);
+  } catch (e) {
+    typeText("模型載入失敗了,可能是網路問題,請稍後再試一次", targetEl);
+  }
+}
+
+// 頁面載入時就先在背景開始下載模型,減少使用者真正送出訊息時的等待感
+loadAiModel();
 
 function send() {
   
@@ -628,9 +729,28 @@ function send() {
     replyParts.push(base[Math.floor(Math.random() * base.length)]);
   }
 
-  // ===== fallback =====
+  // ===== 921大地震 =====
+  if (text.includes("921") || text.includes("九二一") || text.includes("集集大地震") || text.includes("車籠埔斷層")) {
+    const base = [
+      "921大地震發生在1999年9月21日凌晨,芮氏規模7.3,震央在南投集集,造成2415人罹難,是台灣戰後傷亡最慘重的天災",
+      "921地震是車籠埔斷層錯動造成的逆斷層型地震,地表破裂帶長達85到100公里,還讓大甲溪河床抬升形成一座新瀑布",
+      "921之後台灣新增了「震度七」這個分級,還大幅修改建築耐震規範,並把9月21日訂為國家防災日",
+      "921地震讓中寮超高壓變電所毀損,造成中北部大停電,也讓政府後來大力發展地震預警系統,現在手機收到的災防告警就是源自那次教訓"
+    ];
+    replyParts.push(base[Math.floor(Math.random() * base.length)]);
+  }
+
+  // ===== fallback:沒命中規則,改成查 Google 搜尋結果做摘要 =====
   if (replyParts.length === 0) {
-    replyParts.push("我收到你說：" + text);
+    const aiEntry = document.createElement("div");
+    aiEntry.className = "ai-msg-entry";
+    aiEntry.textContent = "🤖 思考中...(若是第一次使用需要先下載模型,請稍候)";
+    msg.appendChild(aiEntry);
+    msg.scrollTop = msg.scrollHeight;
+
+    generateModelReplyAndShow(text, aiEntry);
+    input.value = "";
+    return;
   }
 
   const reply = replyParts.join("");
