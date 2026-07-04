@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "server.py": {
+    "api/generate.py": {
       "maxDuration": 60
     }
   }
