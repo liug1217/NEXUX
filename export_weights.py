@@ -65,6 +65,10 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
     # 把每一個 tensor 轉成單純的巢狀 list,這樣才能存進 JSON
     weights = {name: tensor.tolist() for name, tensor in state_dict.items()}
 
+    is_sft = checkpoint.get("sft_applied", False)
+    if is_sft:
+        print("[export_weights] 偵測到這是經過 SFT 微調的模型,會標記為問答模式")
+
     export_data = {
         "config": {
             "vocab_size": vocab_size,
@@ -73,6 +77,7 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
             "n_layer": arch["n_layer"],
             "block_size": arch["block_size"],
         },
+        "sft_applied": is_sft,
         "weights": weights,
     }
 

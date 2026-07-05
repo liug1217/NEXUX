@@ -114,7 +114,10 @@ class GPTModel(nn.Module):
     def forward(self, idx, targets=None):
         """
         idx: (B, T) 輸入的 token id
-        targets: (B, T) 標籤(下一個字元),訓練時才會傳入
+        targets: (B, T) 標籤(下一個字元),訓練時才會傳入。
+                 targets 裡標成 -100 的位置,代表「不計入 loss」,
+                 這是 SFT(問答微調)訓練時,用來蓋住「問題」部分、
+                 只強迫模型學會生成「答案」部分的機制。
         回傳: logits, loss(若無 targets 則 loss 為 None)
         """
         B, T = idx.shape
@@ -131,8 +134,12 @@ class GPTModel(nn.Module):
 
         loss = None
         if targets is not None:
+            # ignore_index=-100:targets 裡標成 -100 的位置不計入 loss。
+            # 這其實是 PyTorch 的預設值,這裡明確寫出來,是為了讓
+            # SFT 訓練時的用途更清楚(dataset.py 的 SFTDataset 會
+            # 把「問題」部分的標籤設成 -100)。
             loss = F.cross_entropy(
-                logits.view(-1, logits.size(-1)), targets.view(-1)
+                logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-100
             )
         return logits, loss
 

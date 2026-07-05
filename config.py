@@ -41,6 +41,15 @@ class Config:
     resume: bool = False   # True 時會從 checkpoint_path 載入既有權重,接續訓練
     save_interval: int = 500   # 每多少步驟額外存一次 checkpoint(避免中斷後全部重來)
 
+    # ------- SFT(問答微調)設定 -------
+    # SFT 是在 train.py 純接龍訓練完成之後,額外進行的第二階段訓練,
+    # 目的是讓模型學會「看到問題,就該認真回答」這種行為模式,
+    # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
+    sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
+    sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
+    sft_max_iters: int = 300                # SFT 資料量通常較小,不需要跑太多步
+    sft_eval_interval: int = 50
+
     # ------- 推理 (inference) 參數 -------
     max_new_tokens: int = 300
     temperature: float = 0.8

@@ -68,7 +68,11 @@ def api_generate():
         return jsonify({"error": str(e)}), 400
 
     try:
-        idx = tokenizer.encode(prompt)
+        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
+        # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
+        wrapped_prompt = f"問:{prompt}\n答:" if model.is_sft else prompt
+
+        idx = tokenizer.encode(wrapped_prompt)
         if len(idx) == 0:
             return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
 
@@ -79,10 +83,10 @@ def api_generate():
             top_k=TOP_K,
         )
         full_text = tokenizer.decode(out_idx)
-        reply = full_text[len(prompt):] if full_text.startswith(prompt) else full_text
+        reply = full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text
 
         return jsonify({"reply": reply})
 
     except Exception as e:  # noqa: BLE001
         return jsonify({"error": f"生成時發生錯誤: {e}"}), 500
-
+    

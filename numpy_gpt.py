@@ -55,6 +55,7 @@ class NumpyGPT:
         self.n_layer = cfg["n_layer"]
         self.block_size = cfg["block_size"]
         self.head_size = self.n_embd // self.n_head
+        self.is_sft = data.get("sft_applied", False)
 
         # 把所有權重轉成 numpy array,方便後續矩陣運算
         self.w = {name: np.array(value, dtype=np.float64) for name, value in data["weights"].items()}

@@ -26,18 +26,19 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=None)
 
 # ---- 模型快取,避免每次請求都重新載入 checkpoint ----
-_cache = {"model": None, "tokenizer": None, "config": None}
+_cache = {"model": None, "tokenizer": None, "config": None, "is_sft": False}
 
 
 def get_model_and_tokenizer():
     if _cache["model"] is None:
         cfg = Config()
-        model, tokenizer = load_model(cfg)  # 找不到 checkpoint 時,這裡會拋出 FileNotFoundError
+        model, tokenizer, is_sft = load_model(cfg)  # 找不到 checkpoint 時,這裡會拋出 FileNotFoundError
         _cache["model"] = model
         _cache["tokenizer"] = tokenizer
         _cache["config"] = cfg
-        print("[server] 模型已載入並快取")
-    return _cache["config"], _cache["model"], _cache["tokenizer"]
+        _cache["is_sft"] = is_sft
+        print(f"[server] 模型已載入並快取(SFT問答模式: {is_sft})")
+    return _cache["config"], _cache["model"], _cache["tokenizer"], _cache["is_sft"]
 
 
 @app.route("/")
@@ -59,7 +60,7 @@ def api_generate():
         return jsonify({"error": "請輸入內容再送出。"}), 400
 
     try:
-        config, model, tokenizer = get_model_and_tokenizer()
+        config, model, tokenizer, is_sft = get_model_and_tokenizer()
     except FileNotFoundError:
         return jsonify({
             "error": "還沒有訓練好的模型。請先在終端機執行「python train.py」完成訓練,"
@@ -67,8 +68,12 @@ def api_generate():
         }), 400
 
     try:
+        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
+        # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
+        wrapped_prompt = f"問:{prompt}\n答:" if is_sft else prompt
+
         idx = torch.tensor(
-            [tokenizer.encode(prompt)], dtype=torch.long, device=config.device
+            [tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device
         )
         if idx.shape[1] == 0:
             return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
@@ -81,8 +86,8 @@ def api_generate():
         )
         full_text = tokenizer.decode(out_idx[0].tolist())
 
-        # 只取「新生成」的部分回覆給前端,不要把使用者輸入的 prompt 重複顯示一次
-        reply = full_text[len(prompt):] if full_text.startswith(prompt) else full_text
+        # 只取「新生成」的部分回覆給前端,不要把包裝用的文字也顯示給使用者
+        reply = full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text
 
         return jsonify({"reply": reply})
 
