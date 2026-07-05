@@ -1,0 +1,14 @@
+# Python 快取檔案,不需要上傳
+__pycache__/
+*.pyc
+
+# 注意:weights.json 和 tokenizer.json 不要加進這裡!
+# Vercel 上的伺服器是靠這兩個檔案載入模型(不需要 torch、不需要 checkpoint.pt),
+# 必須靠你在本機依序執行:
+#   1. python train.py            (訓練模型,產生 checkpoint.pt)
+#   2. python export_weights.py   (轉出 weights.json)
+# 然後把 weights.json 和 tokenizer.json 一起 commit 上傳,
+# 伺服器才有東西可以載入。
+#
+# checkpoint.pt 只有在本機要繼續訓練(resume)時才需要,
+# 不commit它也沒關係,可以自行選擇。
