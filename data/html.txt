@@ -1,0 +1,667 @@
+<!-- 範例:最基本的網頁結構 -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>我的第一個網頁</title>
+</head>
+<body>
+    <h1>歡迎光臨</h1>
+    <p>這是一段簡單的文字內容。</p>
+</body>
+</html>
+
+
+<!-- 範例:標題與段落 -->
+<h1>這是最大的標題</h1>
+<h2>這是第二層標題</h2>
+<h3>這是第三層標題</h3>
+<p>這是一段普通的文字段落,可以放任何說明內容。</p>
+
+
+<!-- 範例:超連結 -->
+<a href="https://www.example.com">點我前往範例網站</a>
+
+
+<!-- 範例:圖片 -->
+<img src="photo.jpg" alt="一張風景照片">
+
+
+<!-- 範例:清單,分成有序和無序兩種 -->
+<ul>
+    <li>蘋果</li>
+    <li>香蕉</li>
+    <li>橘子</li>
+</ul>
+
+<ol>
+    <li>第一步:準備材料</li>
+    <li>第二步:開始烹飪</li>
+    <li>第三步:裝盤上桌</li>
+</ol>
+
+
+<!-- 範例:表格 -->
+<table border="1">
+    <tr>
+        <th>姓名</th>
+        <th>分數</th>
+    </tr>
+    <tr>
+        <td>小明</td>
+        <td>90</td>
+    </tr>
+    <tr>
+        <td>小華</td>
+        <td>85</td>
+    </tr>
+</table>
+
+
+<!-- 範例:表單,讓使用者輸入資料 -->
+<form>
+    <label for="name">姓名:</label>
+    <input type="text" id="name" name="name">
+    <br>
+    <label for="email">電子郵件:</label>
+    <input type="email" id="email" name="email">
+    <br>
+    <button type="submit">送出</button>
+</form>
+
+
+<!-- 範例:用 div 和 class 做簡單版面配置 -->
+<div class="container">
+    <div class="header">
+        <h1>網站標題</h1>
+    </div>
+    <div class="content">
+        <p>這裡放主要的內容。</p>
+    </div>
+    <div class="footer">
+        <p>版權所有 © 2026</p>
+    </div>
+</div>
+
+
+<!-- 範例:內嵌 CSS 樣式,改變文字顏色和背景 -->
+<style>
+    body {
+        background-color: #f0f0f0;
+        font-family: sans-serif;
+    }
+    h1 {
+        color: #2c3e50;
+    }
+    p {
+        color: #555555;
+        line-height: 1.6;
+    }
+</style>
+
+
+<!-- 範例:按鈕與簡單的 JavaScript 互動 -->
+<button onclick="sayHello()">按我打招呼</button>
+
+<script>
+function sayHello() {
+    alert("你好,很高興認識你!");
+}
+</script>
+
+
+<!-- 範例:輸入框與即時顯示文字 -->
+<input type="text" id="userInput" placeholder="輸入一些文字">
+<p id="output">這裡會顯示你輸入的內容</p>
+
+<script>
+document.getElementById("userInput").addEventListener("input", function() {
+    document.getElementById("output").textContent = this.value;
+});
+</script>
+
+
+<!-- 範例:簡單的聊天輸入框介面,按下送出後顯示訊息 -->
+<div id="chatBox"></div>
+<input type="text" id="chatInput" placeholder="輸入訊息">
+<button onclick="sendMessage()">送出</button>
+
+<script>
+function sendMessage() {
+    const input = document.getElementById("chatInput");
+    const chatBox = document.getElementById("chatBox");
+    const message = document.createElement("p");
+    message.textContent = input.value;
+    chatBox.appendChild(message);
+    input.value = "";
+}
+</script>
+
+
+<!-- 範例:響應式版面,螢幕變小時自動調整排列方式 -->
+<style>
+.responsive-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+.card {
+    width: 33%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+@media (max-width: 600px) {
+    .card {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="responsive-container">
+    <div class="card">卡片一</div>
+    <div class="card">卡片二</div>
+    <div class="card">卡片三</div>
+</div>
+
+
+<!-- 範例:導覽列,常見的網站上方選單 -->
+<nav>
+    <ul style="list-style: none; display: flex; gap: 20px;">
+        <li><a href="#home">首頁</a></li>
+        <li><a href="#about">關於我們</a></li>
+        <li><a href="#contact">聯絡方式</a></li>
+    </ul>
+</nav>
+
+
+<!-- 範例:影片與音訊嵌入 -->
+<video controls width="400">
+    <source src="movie.mp4" type="video/mp4">
+    您的瀏覽器不支援影片播放。
+</video>
+
+<audio controls>
+    <source src="music.mp3" type="audio/mpeg">
+    您的瀏覽器不支援音訊播放。
+</audio>
+
+
+<!-- 範例:簡單的登入表單,包含帳號密碼欄位 -->
+<form>
+    <h2>會員登入</h2>
+    <label for="username">帳號:</label>
+    <input type="text" id="username" name="username" required>
+    <br>
+    <label for="password">密碼:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <button type="submit">登入</button>
+</form>
+
+
+<!-- 範例:下拉選單 -->
+<label for="city">選擇城市:</label>
+<select id="city" name="city">
+    <option value="taipei">台北</option>
+    <option value="taichung">台中</option>
+    <option value="kaohsiung">高雄</option>
+</select>
+
+
+<!-- 範例:單選按鈕和核取方塊 -->
+<p>性別:</p>
+<input type="radio" id="male" name="gender" value="male">
+<label for="male">男</label>
+<input type="radio" id="female" name="gender" value="female">
+<label for="female">女</label>
+
+<p>興趣(可複選):</p>
+<input type="checkbox" id="reading" name="hobby" value="reading">
+<label for="reading">閱讀</label>
+<input type="checkbox" id="sports" name="hobby" value="sports">
+<label for="sports">運動</label>
+
+
+<!-- 範例:卡片式排版,常見於商品或文章列表 -->
+<style>
+.card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.card h3 {
+    margin-top: 0;
+}
+</style>
+
+<div class="card">
+    <h3>文章標題一</h3>
+    <p>這是文章的簡短摘要內容。</p>
+</div>
+<div class="card">
+    <h3>文章標題二</h3>
+    <p>這是另一篇文章的簡短摘要。</p>
+</div>
+
+
+<!-- 範例:使用 JavaScript 抓取 API 資料並顯示在網頁上 -->
+<div id="result">載入中...</div>
+
+<script>
+fetch("https://api.example.com/data")
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("result").textContent = JSON.stringify(data);
+    })
+    .catch(error => {
+        document.getElementById("result").textContent = "載入失敗";
+    });
+</script>
+
+
+<!-- 範例:簡單的手風琴(accordion)展開收合效果 -->
+<style>
+.accordion-content {
+    display: none;
+    padding: 10px;
+}
+.accordion-content.active {
+    display: block;
+}
+</style>
+
+<button onclick="toggleAccordion()">點我展開/收合</button>
+<div id="accordionContent" class="accordion-content">
+    這裡是展開後才會顯示的內容。
+</div>
+
+<script>
+function toggleAccordion() {
+    const content = document.getElementById("accordionContent");
+    content.classList.toggle("active");
+}
+</script>
+
+
+<!-- 範例:計數器按鈕,點擊後數字增加 -->
+<p>目前計數: <span id="counter">0</span></p>
+<button onclick="increment()">加一</button>
+
+<script>
+let count = 0;
+function increment() {
+    count++;
+    document.getElementById("counter").textContent = count;
+}
+</script>
+
+
+<!-- 範例:簡單的深色/淺色模式切換 -->
+<style>
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+}
+</style>
+
+<button onclick="document.body.classList.toggle('dark-mode')">切換深色模式</button>
+
+
+<!-- 範例:進度條顯示 -->
+<style>
+.progress-bar {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 20px;
+    background-color: #4caf50;
+    width: 60%;
+}
+</style>
+
+<div class="progress-bar">
+    <div class="progress-fill"></div>
+</div>
+
+
+<!-- 範例:彈出視窗(modal)效果 -->
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+.modal.active {
+    display: flex;
+}
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+</style>
+
+<button onclick="document.getElementById('myModal').classList.add('active')">開啟視窗</button>
+
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <p>這是彈出視窗的內容。</p>
+        <button onclick="document.getElementById('myModal').classList.remove('active')">關閉</button>
+    </div>
+</div>
+
+
+<!-- 範例:簡單的標籤頁(tabs)切換 -->
+<style>
+.tab-content { display: none; padding: 10px; }
+.tab-content.active { display: block; }
+</style>
+
+<button onclick="showTab('tab1')">分頁一</button>
+<button onclick="showTab('tab2')">分頁二</button>
+
+<div id="tab1" class="tab-content active">這是分頁一的內容。</div>
+<div id="tab2" class="tab-content">這是分頁二的內容。</div>
+
+<script>
+function showTab(id) {
+    document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+</script>
+
+
+<!-- 範例:簡單的表單驗證,檢查欄位是否為空 -->
+<form onsubmit="return validateForm()">
+    <input type="text" id="username" placeholder="請輸入使用者名稱">
+    <button type="submit">送出</button>
+</form>
+
+<script>
+function validateForm() {
+    const value = document.getElementById("username").value.trim();
+    if (value === "") {
+        alert("使用者名稱不能空白");
+        return false;
+    }
+    return true;
+}
+</script>
+
+
+<!-- 範例:localStorage 儲存使用者偏好設定 -->
+<button onclick="saveName()">記住我的名字</button>
+<input type="text" id="nameInput" placeholder="輸入你的名字">
+
+<script>
+function saveName() {
+    const name = document.getElementById("nameInput").value;
+    localStorage.setItem("username", name);
+    alert("已儲存: " + name);
+}
+
+window.onload = function() {
+    const saved = localStorage.getItem("username");
+    if (saved) {
+        document.getElementById("nameInput").value = saved;
+    }
+};
+</script>
+
+
+<!-- 範例:簡單的圖片輪播 -->
+<style>
+.carousel img { display: none; width: 300px; }
+.carousel img.active { display: block; }
+</style>
+
+<div class="carousel">
+    <img src="1.jpg" class="active">
+    <img src="2.jpg">
+    <img src="3.jpg">
+</div>
+<button onclick="nextSlide()">下一張</button>
+
+<script>
+let currentSlide = 0;
+function nextSlide() {
+    const images = document.querySelectorAll(".carousel img");
+    images[currentSlide].classList.remove("active");
+    currentSlide = (currentSlide + 1) % images.length;
+    images[currentSlide].classList.add("active");
+}
+</script>
+
+
+<!-- 範例:固定在頂部的導覽列,滾動時不會消失 -->
+<style>
+.sticky-nav {
+    position: sticky;
+    top: 0;
+    background: white;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+
+<nav class="sticky-nav">
+    <a href="#section1">區塊一</a>
+    <a href="#section2">區塊二</a>
+</nav>
+
+
+<!-- 範例:使用 Grid 排版做出簡單的相片牆 -->
+<style>
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.gallery img {
+    width: 100%;
+    border-radius: 4px;
+}
+</style>
+
+<div class="gallery">
+    <img src="1.jpg">
+    <img src="2.jpg">
+    <img src="3.jpg">
+    <img src="4.jpg">
+    <img src="5.jpg">
+    <img src="6.jpg">
+</div>
+
+
+<!-- 範例:輸入字數即時統計 -->
+<textarea id="textInput" rows="4" cols="40" placeholder="輸入文字..."></textarea>
+<p>字數: <span id="charCount">0</span></p>
+
+<script>
+document.getElementById("textInput").addEventListener("input", function() {
+    document.getElementById("charCount").textContent = this.value.length;
+});
+</script>
+
+
+<!-- 範例:簡單的待辦事項清單 -->
+<input type="text" id="todoInput" placeholder="輸入待辦事項">
+<button onclick="addTodo()">新增</button>
+<ul id="todoList"></ul>
+
+<script>
+function addTodo() {
+    const input = document.getElementById("todoInput");
+    if (input.value.trim() === "") return;
+    const li = document.createElement("li");
+    li.textContent = input.value;
+    li.onclick = function() { li.remove(); };
+    document.getElementById("todoList").appendChild(li);
+    input.value = "";
+}
+</script>
+
+
+<!-- 範例:表格資料依欄位排序 -->
+<table id="dataTable" border="1">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">姓名</th>
+            <th onclick="sortTable(1)">分數</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>小明</td><td>85</td></tr>
+        <tr><td>小華</td><td>92</td></tr>
+        <tr><td>小美</td><td>78</td></tr>
+    </tbody>
+</table>
+
+<script>
+function sortTable(colIndex) {
+    const table = document.getElementById("dataTable");
+    const rows = Array.from(table.tBodies[0].rows);
+    rows.sort((a, b) => a.cells[colIndex].textContent.localeCompare(b.cells[colIndex].textContent));
+    rows.forEach(row => table.tBodies[0].appendChild(row));
+}
+</script>
+
+
+<!-- 範例:簡單的無障礙設計,加上 aria 標籤 -->
+<button aria-label="關閉視窗" onclick="closeDialog()">✕</button>
+<div role="alert" aria-live="polite" id="statusMessage"></div>
+
+<script>
+function closeDialog() {
+    document.getElementById("statusMessage").textContent = "視窗已關閉";
+}
+</script>
+
+
+<!-- 範例:簡單的星級評分元件 -->
+<style>
+.stars span {
+    cursor: pointer;
+    font-size: 24px;
+    color: #ccc;
+}
+.stars span.selected {
+    color: gold;
+}
+</style>
+
+<div class="stars">
+    <span onclick="rate(1)">★</span>
+    <span onclick="rate(2)">★</span>
+    <span onclick="rate(3)">★</span>
+    <span onclick="rate(4)">★</span>
+    <span onclick="rate(5)">★</span>
+</div>
+
+<script>
+function rate(value) {
+    const stars = document.querySelectorAll(".stars span");
+    stars.forEach((star, index) => {
+        star.classList.toggle("selected", index < value);
+    });
+}
+</script>
+
+
+<!-- 範例:簡單的通知提示訊息(toast) -->
+<style>
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    display: none;
+}
+</style>
+
+<button onclick="showToast()">顯示通知</button>
+<div id="toast" class="toast">操作成功!</div>
+
+<script>
+function showToast() {
+    const toast = document.getElementById("toast");
+    toast.style.display = "block";
+    setTimeout(() => { toast.style.display = "none"; }, 3000);
+}
+</script>
+
+
+<!-- 範例:簡單的手風琴式問答(FAQ) -->
+<style>
+.faq-item { border-bottom: 1px solid #ddd; padding: 10px 0; }
+.faq-answer { display: none; padding-top: 8px; color: #555; }
+.faq-answer.show { display: block; }
+</style>
+
+<div class="faq-item">
+    <div onclick="toggleFaq(this)" style="cursor:pointer; font-weight:bold;">
+        什麼是這個服務?
+    </div>
+    <div class="faq-answer">這是一個提供線上學習資源的平台。</div>
+</div>
+
+<script>
+function toggleFaq(element) {
+    const answer = element.nextElementSibling;
+    answer.classList.toggle("show");
+}
+</script>
+
+
+<!-- 範例:簡單的滾動到頂部按鈕 -->
+<style>
+#backToTop {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: none;
+    padding: 10px 14px;
+    border-radius: 50%;
+    border: none;
+    background: #333;
+    color: white;
+    cursor: pointer;
+}
+</style>
+
+<button id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+<script>
+window.onscroll = function() {
+    const btn = document.getElementById("backToTop");
+    btn.style.display = window.scrollY > 300 ? "block" : "none";
+};
+</script>
+
+
+<!-- 範例:簡單的密碼強度檢查 -->
+<input type="password" id="pwd" placeholder="輸入密碼" oninput="checkStrength()">
+<p id="strengthLabel">強度: 尚未輸入</p>
+
+<script>
+function checkStrength() {
+    const value = document.getElementById("pwd").value;
+    let strength = "弱";
+    if (value.length >= 8 && /[A-Z]/.test(value) && /[0-9]/.test(value)) {
+        strength = "強";
+    } else if (value.length >= 6) {
+        strength = "中";
+    }
+    document.getElementById("strengthLabel").textContent = "強度: " + strength;
+}
+</script>

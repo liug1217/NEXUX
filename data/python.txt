@@ -1,0 +1,705 @@
+# 範例:計算兩個數字的總和
+def add(a, b):
+    # 回傳 a 加 b 的結果
+    return a + b
+
+result = add(3, 5)
+print(result)  # 輸出 8
+
+
+# 範例:判斷一個數字是不是偶數
+def is_even(n):
+    # 用 n 除以 2 的餘數是否為 0 來判斷
+    return n % 2 == 0
+
+print(is_even(4))   # True
+print(is_even(7))   # False
+
+
+# 範例:計算一個列表裡所有數字的平均值
+def average(numbers):
+    # 先確認列表不是空的,避免除以零的錯誤
+    if len(numbers) == 0:
+        return 0
+    return sum(numbers) / len(numbers)
+
+scores = [85, 90, 78, 92, 88]
+print(average(scores))  # 輸出平均分數
+
+
+# 範例:用迴圈印出 1 到 10 的所有數字
+for i in range(1, 11):
+    print(i)
+
+
+# 範例:用迴圈找出列表中的最大值
+def find_max(numbers):
+    max_value = numbers[0]
+    for n in numbers:
+        if n > max_value:
+            max_value = n
+    return max_value
+
+print(find_max([3, 7, 2, 9, 4]))  # 輸出 9
+
+
+# 範例:讀取一個文字檔案並印出內容
+def read_file(path):
+    # 使用 with 語句可以確保檔案讀取完後自動關閉
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return content
+
+
+# 範例:簡單的字典操作,記錄學生的分數
+scores_dict = {"小明": 90, "小華": 85, "小美": 95}
+
+for name, score in scores_dict.items():
+    print(f"{name} 的分數是 {score}")
+
+
+# 範例:定義一個簡單的類別,代表一個學生
+class Student:
+    def __init__(self, name, score):
+        self.name = name
+        self.score = score
+
+    def is_passing(self, passing_score=60):
+        # 判斷這個學生是否及格
+        return self.score >= passing_score
+
+student1 = Student("小明", 75)
+print(student1.is_passing())  # True
+
+
+# 範例:使用 try/except 處理可能發生的錯誤
+def divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        # 當除數是 0 時,回傳一個提示訊息,而不是讓程式直接崩潰
+        return "除數不能是零"
+
+print(divide(10, 2))  # 輸出 5.0
+print(divide(10, 0))  # 輸出 除數不能是零
+
+
+# 範例:遞迴函式計算階乘
+def factorial(n):
+    # 遞迴的終止條件
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print(factorial(5))  # 輸出 120
+
+
+# 範例:使用列表推導式,篩選出所有偶數
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+even_numbers = [n for n in numbers if n % 2 == 0]
+print(even_numbers)  # 輸出 [2, 4, 6, 8, 10]
+
+
+# 範例:簡單的排序函式
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            # 如果前面的數字比後面大,就交換位置
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
+
+print(bubble_sort([5, 2, 8, 1, 9]))  # 輸出 [1, 2, 5, 8, 9]
+
+
+# 範例:計算兩個字串的相似程度,簡單比對相同字元數量
+def count_common_chars(s1, s2):
+    common = 0
+    for ch in s1:
+        if ch in s2:
+            common += 1
+    return common
+
+print(count_common_chars("hello", "world"))  # 計算相同字元數量
+
+
+# 範例:使用生成器,依序產生費氏數列
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+for num in fibonacci(10):
+    print(num)  # 依序印出前 10 個費氏數列數字
+
+
+# 範例:用字典統計一段文字中每個字元出現的次數
+def count_chars(text):
+    counts = {}
+    for ch in text:
+        if ch in counts:
+            counts[ch] += 1
+        else:
+            counts[ch] = 1
+    return counts
+
+result = count_chars("hello world")
+print(result)
+
+
+# 範例:合併兩個列表,並且去除重複的元素
+def merge_unique(list1, list2):
+    combined = list1 + list2
+    return list(set(combined))
+
+print(merge_unique([1, 2, 3], [2, 3, 4]))  # 輸出不重複的合併結果
+
+
+# 範例:反轉一個字串
+def reverse_string(s):
+    return s[::-1]
+
+print(reverse_string("Python"))  # 輸出 nohtyP
+
+
+# 範例:判斷一個字串是不是回文
+def is_palindrome(s):
+    cleaned = s.replace(" ", "").lower()
+    return cleaned == cleaned[::-1]
+
+print(is_palindrome("level"))       # True
+print(is_palindrome("hello"))       # False
+
+
+# 範例:計算兩個矩陣相加
+def add_matrices(m1, m2):
+    rows = len(m1)
+    cols = len(m1[0])
+    result = [[0] * cols for _ in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            result[i][j] = m1[i][j] + m2[i][j]
+    return result
+
+matrix_a = [[1, 2], [3, 4]]
+matrix_b = [[5, 6], [7, 8]]
+print(add_matrices(matrix_a, matrix_b))
+
+
+# 範例:簡單的佇列(queue)實作,先進先出
+class Queue:
+    def __init__(self):
+        self.items = []
+
+    def enqueue(self, item):
+        self.items.append(item)
+
+    def dequeue(self):
+        if not self.items:
+            return None
+        return self.items.pop(0)
+
+    def is_empty(self):
+        return len(self.items) == 0
+
+q = Queue()
+q.enqueue("first")
+q.enqueue("second")
+print(q.dequeue())  # 輸出 first
+
+
+# 範例:用遞迴計算費氏數列的第 n 項
+def fib(n):
+    if n <= 1:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(10))  # 輸出 55
+
+
+# 範例:讀取一個 CSV 格式的字串,轉換成列表
+def parse_csv_line(line):
+    return [field.strip() for field in line.split(",")]
+
+print(parse_csv_line("小明, 18, 台北"))  # 輸出 ['小明', '18', '台北']
+
+
+# 範例:使用裝飾器(decorator)計算函式執行時間
+import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} 執行時間: {end - start:.4f} 秒")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    total = 0
+    for i in range(1000000):
+        total += i
+    return total
+
+slow_function()
+
+
+# 範例:簡單的堆疊(stack)實作,後進先出
+class Stack:
+    def __init__(self):
+        self.items = []
+
+    def push(self, item):
+        self.items.append(item)
+
+    def pop(self):
+        if not self.items:
+            return None
+        return self.items.pop()
+
+    def peek(self):
+        if not self.items:
+            return None
+        return self.items[-1]
+
+s = Stack()
+s.push(1)
+s.push(2)
+print(s.pop())   # 輸出 2
+print(s.peek())  # 輸出 1
+
+
+# 範例:使用集合(set)找出兩個列表的交集與差集
+def compare_lists(list1, list2):
+    set1, set2 = set(list1), set(list2)
+    intersection = set1 & set2  # 交集:兩邊都有的元素
+    difference = set1 - set2    # 差集:只在 list1 出現的元素
+    return intersection, difference
+
+common, only_in_first = compare_lists([1, 2, 3, 4], [3, 4, 5, 6])
+print("交集:", common)
+print("差集:", only_in_first)
+
+
+# 範例:用 lambda 搭配 sorted,依照自訂條件排序
+students = [("小明", 85), ("小華", 92), ("小美", 78)]
+sorted_students = sorted(students, key=lambda s: s[1], reverse=True)
+print(sorted_students)  # 依照分數由高到低排序
+
+
+# 範例:使用 zip 同時走訪兩個列表
+names = ["小明", "小華", "小美"]
+scores = [85, 92, 78]
+for name, score in zip(names, scores):
+    print(f"{name}: {score}")
+
+
+# 範例:例外處理中使用 finally,確保資源一定會被釋放
+def read_config(path):
+    f = None
+    try:
+        f = open(path, "r", encoding="utf-8")
+        return f.read()
+    except FileNotFoundError:
+        return "找不到設定檔"
+    finally:
+        if f is not None:
+            f.close()
+            print("檔案已關閉")
+
+
+# 範例:使用 *args 和 **kwargs 讓函式接受不固定數量的參數
+def summarize(*args, **kwargs):
+    print("位置參數:", args)
+    print("關鍵字參數:", kwargs)
+
+summarize(1, 2, 3, name="小明", age=18)
+
+
+# 範例:簡單的二元搜尋演算法
+def binary_search(sorted_list, target):
+    left, right = 0, len(sorted_list) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if sorted_list[mid] == target:
+            return mid
+        elif sorted_list[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1  # 找不到時回傳 -1
+
+numbers = [1, 3, 5, 7, 9, 11]
+print(binary_search(numbers, 7))  # 輸出索引位置
+
+
+# 範例:使用 with 語句同時管理多個檔案
+def copy_file(source_path, dest_path):
+    with open(source_path, "r", encoding="utf-8") as src, \
+         open(dest_path, "w", encoding="utf-8") as dst:
+        content = src.read()
+        dst.write(content)
+
+
+# 範例:用字典模擬簡單的狀態機
+def traffic_light_next(current):
+    transitions = {
+        "red": "green",
+        "green": "yellow",
+        "yellow": "red",
+    }
+    return transitions[current]
+
+state = "red"
+for _ in range(5):
+    print(state)
+    state = traffic_light_next(state)
+
+
+# 範例:用 collections.Counter 快速統計出現次數
+from collections import Counter
+
+words = ["蘋果", "香蕉", "蘋果", "橘子", "蘋果", "香蕉"]
+counter = Counter(words)
+print(counter.most_common(2))  # 輸出出現次數最多的前兩名
+
+
+# 範例:使用類別繼承,實作不同類型的動物
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return f"{self.name} 發出了聲音"
+
+class Dog(Animal):
+    def speak(self):
+        return f"{self.name} 說:汪汪!"
+
+class Cat(Animal):
+    def speak(self):
+        return f"{self.name} 說:喵喵!"
+
+animals = [Dog("小黑"), Cat("小白")]
+for a in animals:
+    print(a.speak())
+
+
+# 範例:使用內建的 map 和 filter 函式
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+squared = list(map(lambda x: x ** 2, numbers))
+even = list(filter(lambda x: x % 2 == 0, numbers))
+print("平方:", squared)
+print("偶數:", even)
+
+
+# 範例:字串格式化的幾種常見寫法
+name = "小明"
+age = 18
+print("姓名: %s, 年齡: %d" % (name, age))
+print("姓名: {}, 年齡: {}".format(name, age))
+print(f"姓名: {name}, 年齡: {age}")
+
+
+# 範例:用 with 語句處理 JSON 檔案的讀寫
+import json
+
+data = {"name": "小明", "score": 90}
+
+with open("data.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False)
+
+with open("data.json", "r", encoding="utf-8") as f:
+    loaded = json.load(f)
+print(loaded)
+
+
+# 範例:簡單的驗證函式,檢查電子郵件格式是否合理
+import re
+
+def is_valid_email(email):
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    return re.match(pattern, email) is not None
+
+print(is_valid_email("test@example.com"))  # True
+print(is_valid_email("invalid-email"))     # False
+
+
+# 範例:使用上下文管理器自訂資源釋放邏輯
+class Timer:
+    def __enter__(self):
+        import time
+        self.start = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import time
+        elapsed = time.time() - self.start
+        print(f"經過時間: {elapsed:.4f} 秒")
+
+with Timer():
+    total = sum(range(1000000))
+
+
+# 範例:實作簡單的二元樹節點與走訪
+class TreeNode:
+    def __init__(self, value):
+        self.value = value
+        self.left = None
+        self.right = None
+
+def inorder_traversal(node, result=None):
+    if result is None:
+        result = []
+    if node:
+        inorder_traversal(node.left, result)
+        result.append(node.value)
+        inorder_traversal(node.right, result)
+    return result
+
+root = TreeNode(5)
+root.left = TreeNode(3)
+root.right = TreeNode(8)
+print(inorder_traversal(root))  # 輸出 [3, 5, 8]
+
+
+# 範例:用 enumerate 同時取得索引與元素
+fruits = ["蘋果", "香蕉", "橘子"]
+for index, fruit in enumerate(fruits):
+    print(f"第 {index + 1} 個水果是 {fruit}")
+
+
+# 範例:簡單的快取機制,避免重複計算
+cache = {}
+
+def expensive_calculation(n):
+    if n in cache:
+        return cache[n]
+    result = sum(i * i for i in range(n))
+    cache[n] = result
+    return result
+
+print(expensive_calculation(1000))
+print(expensive_calculation(1000))  # 第二次會直接從快取取得結果
+
+
+# 範例:使用 dataclass 簡化類別的寫法
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+    def distance_from_origin(self):
+        return (self.x ** 2 + self.y ** 2) ** 0.5
+
+p = Point(3, 4)
+print(p.distance_from_origin())  # 輸出 5.0
+
+
+# 範例:使用生成器表達式節省記憶體
+numbers = range(1, 1000001)
+total = sum(n for n in numbers if n % 3 == 0)
+print(total)
+
+
+# 範例:簡單的觀察者模式(observer pattern)
+class EventEmitter:
+    def __init__(self):
+        self.listeners = []
+
+    def subscribe(self, callback):
+        self.listeners.append(callback)
+
+    def emit(self, message):
+        for callback in self.listeners:
+            callback(message)
+
+def on_message(msg):
+    print(f"收到訊息: {msg}")
+
+emitter = EventEmitter()
+emitter.subscribe(on_message)
+emitter.emit("Hello World")
+
+
+# 範例:用 functools.reduce 累積計算結果
+from functools import reduce
+
+numbers = [1, 2, 3, 4, 5]
+product = reduce(lambda acc, x: acc * x, numbers)
+print(product)  # 輸出 120,也就是 5 的階乘
+
+
+# 範例:實作簡單的鏈結串列(linked list)
+class Node:
+    def __init__(self, value):
+        self.value = value
+        self.next = None
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def append(self, value):
+        new_node = Node(value)
+        if not self.head:
+            self.head = new_node
+            return
+        current = self.head
+        while current.next:
+            current = current.next
+        current.next = new_node
+
+    def to_list(self):
+        result = []
+        current = self.head
+        while current:
+            result.append(current.value)
+            current = current.next
+        return result
+
+ll = LinkedList()
+ll.append(1)
+ll.append(2)
+ll.append(3)
+print(ll.to_list())  # 輸出 [1, 2, 3]
+
+
+# 範例:使用 argparse 處理命令列參數
+import argparse
+
+parser = argparse.ArgumentParser(description="簡單的命令列工具")
+parser.add_argument("--name", type=str, default="World", help="要打招呼的對象")
+args = parser.parse_args()
+print(f"Hello, {args.name}!")
+
+
+# 範例:簡單的重試機制,失敗時自動重試幾次
+import time
+
+def retry(func, max_attempts=3, delay=1):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return func()
+        except Exception as e:
+            print(f"第 {attempt} 次嘗試失敗: {e}")
+            if attempt == max_attempts:
+                raise
+            time.sleep(delay)
+
+def unstable_task():
+    import random
+    if random.random() < 0.7:
+        raise ValueError("模擬失敗")
+    return "成功"
+
+
+# 範例:使用 itertools 產生排列組合
+from itertools import permutations, combinations
+
+items = ["A", "B", "C"]
+print(list(permutations(items, 2)))   # 排列
+print(list(combinations(items, 2)))   # 組合
+
+
+# 範例:使用 Enum 定義固定選項的常數
+from enum import Enum
+
+class Status(Enum):
+    PENDING = "待處理"
+    IN_PROGRESS = "進行中"
+    DONE = "已完成"
+
+def print_status(status):
+    print(f"目前狀態: {status.value}")
+
+print_status(Status.IN_PROGRESS)
+
+
+# 範例:簡單的批次處理,把大列表切成小塊
+def chunk_list(lst, size):
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
+
+numbers = list(range(1, 11))
+for chunk in chunk_list(numbers, 3):
+    print(chunk)
+
+
+# 範例:使用屬性裝飾器 @property 建立唯讀屬性
+class Circle:
+    def __init__(self, radius):
+        self.radius = radius
+
+    @property
+    def area(self):
+        return 3.14159 * self.radius ** 2
+
+c = Circle(5)
+print(c.area)  # 像存取一般屬性一樣,不需要加括號呼叫
+
+
+# 範例:簡單的單例模式(singleton pattern)
+class Singleton:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+a = Singleton()
+b = Singleton()
+print(a is b)  # True,兩者是同一個實例
+
+
+# 範例:使用 heapq 實作優先佇列
+import heapq
+
+tasks = []
+heapq.heappush(tasks, (2, "整理報告"))
+heapq.heappush(tasks, (1, "緊急客戶回覆"))
+heapq.heappush(tasks, (3, "團隊會議"))
+
+while tasks:
+    priority, task = heapq.heappop(tasks)
+    print(f"優先度 {priority}: {task}")
+
+
+# 範例:字串多行處理與清理
+text = """
+   第一行內容
+   第二行內容
+   第三行內容
+"""
+lines = [line.strip() for line in text.strip().split("\n")]
+print(lines)
+
+
+# 範例:使用 collections.defaultdict 簡化預設值處理
+from collections import defaultdict
+
+word_groups = defaultdict(list)
+words = ["蘋果", "香蕉", "橘子", "芭樂"]
+for word in words:
+    word_groups[len(word)].append(word)
+
+print(dict(word_groups))
+
+
+# 範例:簡單的深拷貝與淺拷貝差異
+import copy
+
+original = {"list": [1, 2, 3]}
+shallow = copy.copy(original)
+deep = copy.deepcopy(original)
+
+original["list"].append(4)
+print("淺拷貝:", shallow)  # 會跟著變,因為內部列表是共用的
+print("深拷貝:", deep)     # 不會跟著變,因為完全複製了一份
