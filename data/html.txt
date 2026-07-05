@@ -182,7 +182,6 @@ function sendMessage() {
     <source src="music.mp3" type="audio/mpeg">
     您的瀏覽器不支援音訊播放。
 </audio>
-<<<<<<< HEAD
 
 
 <!-- 範例:簡單的登入表單,包含帳號密碼欄位 -->
@@ -666,6 +665,3 @@ function checkStrength() {
     document.getElementById("strengthLabel").textContent = "強度: " + strength;
 }
 </script>
-=======
-  
->>>>>>> 8811b8caa5a65c13da33f58cdb4d44ca75673618

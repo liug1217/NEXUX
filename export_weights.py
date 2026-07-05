@@ -42,17 +42,36 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
     state_dict = checkpoint["model_state_dict"]
     vocab_size = checkpoint["vocab_size"]
 
-    # 把每一個 tensor 轉成單純的巢狀 list,這樣才能存進 JSON
-    weights = {name: tensor.tolist() for name, tensor in state_dict.items()}
-
-    # 順便把模型架構參數也存進去,推理端才知道 n_embd、n_head、n_layer 是多少
-    export_data = {
-        "config": {
-            "vocab_size": vocab_size,
+    # 優先使用 checkpoint 裡實際記錄的架構參數(新版 train.py 才會有這個欄位)。
+    # 如果是舊的 checkpoint 沒有這個欄位,才退回去讀 config.py 當下的設定
+    # (但這樣有風險:如果訓練時用的參數跟 config.py 現在的設定不一樣,
+    # 匯出的架構就會跟實際權重尺寸不一致,導致載入時 reshape 出錯)。
+    if "architecture" in checkpoint:
+        arch = checkpoint["architecture"]
+        print("[export_weights] 使用 checkpoint 裡記錄的架構參數(較安全)")
+    else:
+        arch = {
             "n_embd": config.n_embd,
             "n_head": config.n_head,
             "n_layer": config.n_layer,
             "block_size": config.block_size,
+        }
+        print(
+            "[export_weights] 警告:這是舊版 checkpoint,沒有記錄架構參數,"
+            "改用 config.py 目前的設定。如果訓練時的參數跟現在 config.py 不一致,"
+            "匯出結果可能會有問題,建議重新執行一次 train.py 產生新版 checkpoint。"
+        )
+
+    # 把每一個 tensor 轉成單純的巢狀 list,這樣才能存進 JSON
+    weights = {name: tensor.tolist() for name, tensor in state_dict.items()}
+
+    export_data = {
+        "config": {
+            "vocab_size": vocab_size,
+            "n_embd": arch["n_embd"],
+            "n_head": arch["n_head"],
+            "n_layer": arch["n_layer"],
+            "block_size": arch["block_size"],
         },
         "weights": weights,
     }

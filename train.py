@@ -105,6 +105,16 @@ def train(config: Config | None = None):
                 "optimizer_state_dict": optimizer.state_dict(),
                 "vocab_size": tokenizer.vocab_size,
                 "step": step,
+                # 把訓練時「實際用到」的架構參數也存進 checkpoint,
+                # 這樣之後即使 config.py 的預設值被改掉,
+                # export_weights.py 依然能匯出正確、對應得上權重的架構設定,
+                # 不會再發生「reshape 尺寸不合」這種錯誤。
+                "architecture": {
+                    "n_embd": config.n_embd,
+                    "n_head": config.n_head,
+                    "n_layer": config.n_layer,
+                    "block_size": config.block_size,
+                },
             },
             config.checkpoint_path,
         )
