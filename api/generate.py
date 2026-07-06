@@ -30,8 +30,10 @@ app = Flask(__name__)
 
 # ---- 推理設定(對應原本 config.py 裡跟生成有關的參數) ----
 MAX_NEW_TOKENS = 60
-TEMPERATURE = 0.8
+TEMPERATURE = 0.7
 TOP_K = 50
+TOP_P = 0.9
+REPETITION_PENALTY = 1.3
 
 _cache = {"model": None, "tokenizer": None}
 
@@ -81,6 +83,8 @@ def api_generate():
             max_new_tokens=MAX_NEW_TOKENS,
             temperature=TEMPERATURE,
             top_k=TOP_K,
+            top_p=TOP_P,
+            repetition_penalty=REPETITION_PENALTY,
         )
         full_text = tokenizer.decode(out_idx)
         reply = full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text

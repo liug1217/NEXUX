@@ -52,8 +52,10 @@ class Config:
 
     # ------- 推理 (inference) 參數 -------
     max_new_tokens: int = 300
-    temperature: float = 0.8
+    temperature: float = 0.7       # 略微調低,讓生成結果不要太隨機發散
     top_k: int = 50
+    top_p: float = 0.9             # 核採樣門檻,搭配 top_k 一起使用效果較好
+    repetition_penalty: float = 1.3  # 大於1.0會降低重複字詞出現的機率,避免像連續重複同一個符號
 
     # ------- 裝置 -------
     device: str = "cuda" if torch.cuda.is_available() else "cpu"

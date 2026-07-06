@@ -144,10 +144,22 @@ class GPTModel(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(
+        self,
+        idx,
+        max_new_tokens,
+        temperature=1.0,
+        top_k=None,
+        top_p=None,
+        repetition_penalty=1.0,
+    ):
         """
         自迴歸生成文字。
         idx: (B, T) 目前已有的 token 序列(prompt)
+        top_p: 核採樣(nucleus sampling),只保留累積機率達到 top_p 的最小候選集合,
+               通常比單純 top_k 更能兼顧多樣性與合理性。
+        repetition_penalty: 重複懲罰,大於 1.0 時,會降低「已經出現過的 token」
+               被再次選中的機率,可以有效減少像連續重複同一個字或符號的情況。
         回傳: (B, T + max_new_tokens) 的完整序列
         """
         self.eval()
@@ -157,9 +169,36 @@ class GPTModel(nn.Module):
             logits, _ = self(idx_cond)
             logits = logits[:, -1, :] / max(temperature, 1e-5)  # 只取最後一個位置的 logits
 
+            # ---- 重複懲罰:降低已經出現過的 token 的機率 ----
+            if repetition_penalty != 1.0:
+                for b in range(idx.size(0)):
+                    seen_tokens = set(idx[b].tolist())
+                    for token_id in seen_tokens:
+                        if logits[b, token_id] > 0:
+                            logits[b, token_id] /= repetition_penalty
+                        else:
+                            logits[b, token_id] *= repetition_penalty
+
+            # ---- top_k:只保留機率最高的 k 個候選 ----
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = float("-inf")
+
+            # ---- top_p(核採樣):只保留累積機率達到 top_p 的最小候選集合 ----
+            if top_p is not None:
+                sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+                sorted_probs = F.softmax(sorted_logits, dim=-1)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+
+                # 找出累積機率超過 top_p 的位置,把這些位置之後的候選都排除
+                sorted_indices_to_remove = cumulative_probs > top_p
+                # 保留第一個超過門檻的候選,避免完全沒有候選可選
+                sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                sorted_indices_to_remove[:, 0] = False
+
+                for b in range(logits.size(0)):
+                    indices_to_remove = sorted_indices[b][sorted_indices_to_remove[b]]
+                    logits[b, indices_to_remove] = float("-inf")
 
             probs = F.softmax(logits, dim=-1)
             next_id = torch.multinomial(probs, num_samples=1)  # (B, 1)
@@ -167,3 +206,4 @@ class GPTModel(nn.Module):
 
         self.train()
         return idx
+    

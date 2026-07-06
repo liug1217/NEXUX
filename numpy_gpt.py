@@ -127,9 +127,17 @@ class NumpyGPT:
         max_new_tokens: int,
         temperature: float = 1.0,
         top_k: int | None = None,
+        top_p: float | None = None,
+        repetition_penalty: float = 1.0,
         seed: int | None = None,
     ) -> list[int]:
-        """自迴歸生成,回傳完整序列(prompt + 新生成的 token)。"""
+        """
+        自迴歸生成,回傳完整序列(prompt + 新生成的 token)。
+
+        top_p: 核採樣(nucleus sampling),只保留累積機率達到 top_p 的最小候選集合。
+        repetition_penalty: 大於 1.0 時,會降低「已經出現過的 token」被再次選中的
+                             機率,減少連續重複同一個字或符號的情況。
+        """
         rng = np.random.default_rng(seed)
         idx = list(idx)
 
@@ -138,13 +146,39 @@ class NumpyGPT:
             logits = self.forward(idx_cond)
             last_logits = logits[-1] / max(temperature, 1e-5)
 
+            # ---- 重複懲罰 ----
+            if repetition_penalty != 1.0:
+                for token_id in set(idx):
+                    if last_logits[token_id] > 0:
+                        last_logits[token_id] /= repetition_penalty
+                    else:
+                        last_logits[token_id] *= repetition_penalty
+
+            # ---- top_k ----
             if top_k is not None:
-                top_k = min(top_k, last_logits.shape[-1])
-                threshold = np.sort(last_logits)[-top_k]
+                k = min(top_k, last_logits.shape[-1])
+                threshold = np.sort(last_logits)[-k]
                 last_logits = np.where(last_logits < threshold, -np.inf, last_logits)
+
+            # ---- top_p(核採樣) ----
+            if top_p is not None:
+                sorted_idx = np.argsort(last_logits)[::-1]
+                sorted_logits = last_logits[sorted_idx]
+                sorted_probs = softmax(sorted_logits)
+                cumulative_probs = np.cumsum(sorted_probs)
+
+                # 找出累積機率超過 top_p 的位置,把這些位置之後的候選都排除
+                remove_mask = cumulative_probs > top_p
+                # 保留第一個超過門檻的候選,避免完全沒有候選可選
+                remove_mask[1:] = remove_mask[:-1].copy()
+                remove_mask[0] = False
+
+                indices_to_remove = sorted_idx[remove_mask]
+                last_logits[indices_to_remove] = -np.inf
 
             probs = softmax(last_logits)
             next_id = rng.choice(len(probs), p=probs)
             idx.append(int(next_id))
 
         return idx
+    

@@ -83,6 +83,8 @@ def api_generate():
             max_new_tokens=config.max_new_tokens,
             temperature=config.temperature,
             top_k=config.top_k,
+            top_p=config.top_p,
+            repetition_penalty=config.repetition_penalty,
         )
         full_text = tokenizer.decode(out_idx[0].tolist())
 
@@ -98,3 +100,4 @@ def api_generate():
 if __name__ == "__main__":
     print("[server] 啟動中,請用瀏覽器開啟 http://localhost:5000")
     app.run(host="0.0.0.0", port=5000, debug=True)
+    

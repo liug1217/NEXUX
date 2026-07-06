@@ -75,7 +75,12 @@ def generate_text(
         raise ValueError("prompt 編碼後長度為 0,可能包含詞表以外的字元。")
 
     out_idx = model.generate(
-        idx, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_k
+        idx,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_k=top_k,
+        top_p=config.top_p,
+        repetition_penalty=config.repetition_penalty,
     )
     full_text = tokenizer.decode(out_idx[0].tolist())
     return full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text
@@ -87,3 +92,4 @@ if __name__ == "__main__":
     result = generate_text(prompt, cfg)
     print("\n----- 生成結果 -----")
     print(result)
+    
