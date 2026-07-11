@@ -6,15 +6,17 @@
 <title>山中問答 · 本地語言模型</title>
 <style>
   :root {
-    --bg: #141815;
-    --panel: #1c211d;
-    --panel-border: #2a2f2a;
+    --bg: #212121;
+    --panel: #2a2a2a;
+    --panel-border: rgba(255, 255, 255, 0.1);
     --ink: #ece8de;
-    --ink-dim: #9aa093;
+    --ink-dim: #9b9b9b;
     --accent: #6f9a6e;
     --accent-soft: rgba(111, 154, 110, 0.16);
-    --user-bubble: #2a3428;
+    --user-bubble: #2f2f2f;
     --error: #c97b63;
+    --pill-bg: rgba(113, 112, 112, 0.2);
+    --pill-border: rgba(255, 255, 255, 0.08);
     --serif: "Noto Serif TC", "Songti TC", serif;
     --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   }
@@ -41,9 +43,25 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(111,154,110,0.08), transparent 60%),
-      radial-gradient(ellipse 50% 30% at 100% 100%, rgba(111,154,110,0.05), transparent 60%);
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(111,154,110,0.06), transparent 60%),
+      radial-gradient(ellipse 50% 30% at 100% 100%, rgba(111,154,110,0.04), transparent 60%);
     pointer-events: none;
+  }
+
+  /* 左側細窄導覽軌,呼應設計稿裡收合狀態的側欄 */
+  .side-rail {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 52px;
+    background: rgba(255, 255, 255, 0.03);
+    border-right: 1px solid var(--panel-border);
+    z-index: 2;
+  }
+
+  @media (max-width: 720px) {
+    .side-rail { display: none; }
   }
 
   .app {
@@ -54,6 +72,10 @@
     flex-direction: column;
     position: relative;
     z-index: 1;
+  }
+
+  @media (min-width: 721px) {
+    .app { margin-left: 52px; }
   }
 
   header {
@@ -169,61 +191,97 @@
   }
 
   form.composer {
-    display: flex;
-    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
     padding: 16px 24px 24px;
-    border-top: 1px solid var(--panel-border);
     background: var(--bg);
+  }
+
+  .composer-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 29px;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .composer-pill:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25), 0 0 0 3px var(--accent-soft);
   }
 
   form.composer textarea {
     flex: 1;
     resize: none;
-    height: 48px;
-    padding: 13px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--panel-border);
-    background: var(--panel);
+    min-height: 24px;
+    max-height: 160px;
+    padding: 8px 4px;
+    border: none;
+    background: transparent;
     color: var(--ink);
     font-family: var(--sans);
     font-size: 15px;
     line-height: 1.4;
     outline: none;
-    transition: border-color 0.15s ease;
   }
 
   form.composer textarea::placeholder { color: var(--ink-dim); }
 
-  form.composer textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+  .model-tag {
+    flex-shrink: 0;
+    font-size: 12px;
+    line-height: 15px;
+    color: var(--ink-dim);
+    white-space: nowrap;
   }
 
-  form.composer button {
+  .icon-btn,
+  .send-btn {
     flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     border: none;
-    background: var(--accent);
-    color: #0f130f;
-    font-size: 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.15s ease, transform 0.1s ease;
+    transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease;
   }
 
-  form.composer button:hover { opacity: 0.9; }
-  form.composer button:active { transform: scale(0.95); }
+  .icon-btn {
+    background: transparent;
+    color: var(--ink);
+  }
 
-  form.composer button:disabled {
+  .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  .send-btn {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .send-btn svg { width: 16px; height: 16px; }
+
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:active { transform: scale(0.95); }
+
+  .send-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
-  form.composer button:focus-visible,
+  .icon-btn:focus-visible,
+  .send-btn:focus-visible,
   form.composer textarea:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -233,10 +291,12 @@
     header { padding: 20px 16px 14px; }
     .messages { padding: 16px; }
     form.composer { padding: 12px 16px 16px; }
+    .model-tag { display: none; }
   }
 </style>
 </head>
 <body>
+  <div class="side-rail"></div>
   <div class="app">
     <header>
       <div class="eyebrow">本地訓練 · 字元級語言模型</div>
@@ -247,13 +307,35 @@
     <div class="messages" id="messages"></div>
 
     <form class="composer" id="composer">
-      <textarea
-        id="prompt"
-        placeholder="輸入一段話,例如:從前有一座山"
-        maxlength="200"
-        required
-      ></textarea>
-      <button type="submit" id="sendBtn" aria-label="送出">➤</button>
+      <div class="composer-pill">
+        <button type="button" class="icon-btn add-btn" aria-label="新增附件" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <textarea
+          id="prompt"
+          placeholder="輸入一段話,例如:從前有一座山"
+          maxlength="200"
+          required
+        ></textarea>
+
+        <span class="model-tag">模型 5</span>
+
+        <button type="button" class="icon-btn mic-btn" aria-label="語音輸入" tabindex="-1">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5.3" y="1.3" width="5.4" height="8" rx="2.7" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M2.7 7.3v0.7a5.3 5.3 0 0 0 10.6 0v-0.7M8 13.3v1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <button type="submit" class="send-btn" id="sendBtn" aria-label="送出">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </form>
   </div>
 
