@@ -1301,3 +1301,1246 @@ def core_handler(request):
 
 handler = logging_middleware(core_handler)
 handler("使用者請求A")
+
+
+# 範例:氣泡排序法(bubble sort)
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
+
+print(bubble_sort([5, 2, 9, 1, 5, 6]))
+
+
+# 範例:插入排序法(insertion sort)
+def insertion_sort(arr):
+    for i in range(1, len(arr)):
+        key = arr[i]
+        j = i - 1
+        while j >= 0 and arr[j] > key:
+            arr[j + 1] = arr[j]
+            j -= 1
+        arr[j + 1] = key
+    return arr
+
+print(insertion_sort([9, 3, 7, 1, 5]))
+
+
+# 範例:快速排序法(quick sort)
+def quick_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quick_sort(left) + middle + quick_sort(right)
+
+print(quick_sort([3, 6, 8, 10, 1, 2, 1]))
+
+
+# 範例:合併排序法(merge sort)
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i]); i += 1
+        else:
+            result.append(right[j]); j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+
+print(merge_sort([5, 3, 8, 4, 2]))
+
+
+# 範例:選擇排序法(selection sort)
+def selection_sort(arr):
+    for i in range(len(arr)):
+        min_idx = i
+        for j in range(i + 1, len(arr)):
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        arr[i], arr[min_idx] = arr[min_idx], arr[i]
+    return arr
+
+print(selection_sort([64, 25, 12, 22, 11]))
+
+
+# 範例:歐幾里得演算法計算最大公因數(GCD)
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+
+print(gcd(48, 18))
+
+
+# 範例:計算最小公倍數(LCM)
+def lcm(a, b):
+    return a * b // gcd(a, b)
+
+print(lcm(4, 6))
+
+
+# 範例:判斷一個數字是不是質數
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+
+print(is_prime(17), is_prime(18))
+
+
+# 範例:使用埃拉托斯特尼篩法(Sieve of Eratosthenes)找出所有質數
+def sieve_of_eratosthenes(limit):
+    is_prime_list = [True] * (limit + 1)
+    is_prime_list[0] = is_prime_list[1] = False
+    for i in range(2, int(limit ** 0.5) + 1):
+        if is_prime_list[i]:
+            for multiple in range(i * i, limit + 1, i):
+                is_prime_list[multiple] = False
+    return [i for i, prime in enumerate(is_prime_list) if prime]
+
+print(sieve_of_eratosthenes(30))
+
+
+# 範例:快速冪運算(fast exponentiation)
+def fast_power(base, exp):
+    result = 1
+    while exp > 0:
+        if exp % 2 == 1:
+            result *= base
+        base *= base
+        exp //= 2
+    return result
+
+print(fast_power(2, 10))
+
+
+# 範例:判斷一個字串是否為變位詞(anagram)
+def is_anagram(s1, s2):
+    return sorted(s1) == sorted(s2)
+
+print(is_anagram("listen", "silent"))
+
+
+# 範例:計算一段文字中英文母音的數量
+def count_vowels(text):
+    return sum(1 for ch in text.lower() if ch in "aeiou")
+
+print(count_vowels("Hello World"))
+
+
+# 範例:凱薩密碼(Caesar cipher)加密與解密
+def caesar_cipher(text, shift):
+    result = []
+    for ch in text:
+        if ch.isalpha():
+            base = ord('A') if ch.isupper() else ord('a')
+            result.append(chr((ord(ch) - base + shift) % 26 + base))
+        else:
+            result.append(ch)
+    return "".join(result)
+
+encrypted = caesar_cipher("Hello", 3)
+print(encrypted)
+print(caesar_cipher(encrypted, -3))
+
+
+# 範例:文字統計每個單字出現的次數
+def word_frequency(text):
+    words = text.lower().split()
+    freq = {}
+    for word in words:
+        freq[word] = freq.get(word, 0) + 1
+    return freq
+
+print(word_frequency("the cat sat on the mat the cat ran"))
+
+
+# 範例:壓縮字串(run-length encoding)
+def run_length_encode(s):
+    result = []
+    count = 1
+    for i in range(1, len(s) + 1):
+        if i < len(s) and s[i] == s[i - 1]:
+            count += 1
+        else:
+            result.append(s[i - 1] + str(count))
+            count = 1
+    return "".join(result)
+
+print(run_length_encode("aaabbbccd"))
+
+
+# 範例:攤平巢狀列表(flatten nested list)
+def flatten(nested_list):
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+
+print(flatten([1, [2, 3, [4, 5]], 6]))
+
+
+# 範例:將列表切成固定大小的區塊(已有批次處理範例,這裡改用itertools實作)
+from itertools import islice
+
+def chunked(iterable, size):
+    it = iter(iterable)
+    while chunk := list(islice(it, size)):
+        yield chunk
+
+for c in chunked(range(10), 3):
+    print(c)
+
+
+# 範例:移除列表中的重複元素但保留原本順序
+def remove_duplicates(lst):
+    seen = set()
+    result = []
+    for item in lst:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+print(remove_duplicates([1, 2, 2, 3, 1, 4]))
+
+
+# 範例:兩數之和(two sum),找出加總等於目標值的兩個索引
+def two_sum(nums, target):
+    seen = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            return [seen[complement], i]
+        seen[num] = i
+    return None
+
+print(two_sum([2, 7, 11, 15], 9))
+
+
+# 範例:計算矩陣的轉置(transpose)
+def transpose(matrix):
+    return [list(row) for row in zip(*matrix)]
+
+print(transpose([[1, 2, 3], [4, 5, 6]]))
+
+
+# 範例:螺旋走訪矩陣(spiral traversal)
+def spiral_order(matrix):
+    result = []
+    while matrix:
+        result += matrix.pop(0)
+        matrix = [list(row) for row in zip(*matrix)][::-1]
+    return result
+
+print(spiral_order([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+
+
+# 範例:動態規劃解決硬幣找零問題(coin change)
+def coin_change(coins, amount):
+    dp = [float('inf')] * (amount + 1)
+    dp[0] = 0
+    for i in range(1, amount + 1):
+        for coin in coins:
+            if coin <= i:
+                dp[i] = min(dp[i], dp[i - coin] + 1)
+    return dp[amount] if dp[amount] != float('inf') else -1
+
+print(coin_change([1, 5, 10], 18))
+
+
+# 範例:動態規劃解決簡單的背包問題(0/1 knapsack)
+def knapsack(weights, values, capacity):
+    n = len(weights)
+    dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+    for i in range(1, n + 1):
+        for w in range(capacity + 1):
+            if weights[i - 1] <= w:
+                dp[i][w] = max(dp[i - 1][w], dp[i - 1][w - weights[i - 1]] + values[i - 1])
+            else:
+                dp[i][w] = dp[i - 1][w]
+    return dp[n][capacity]
+
+print(knapsack([2, 3, 4], [3, 4, 5], 5))
+
+
+# 範例:最長共同子序列(longest common subsequence)
+def lcs(s1, s2):
+    m, n = len(s1), len(s2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if s1[i - 1] == s2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    return dp[m][n]
+
+print(lcs("abcde", "ace"))
+
+
+# 範例:使用 BFS 走訪圖形結構
+from collections import deque
+
+def bfs(graph, start):
+    visited = set([start])
+    queue = deque([start])
+    order = []
+    while queue:
+        node = queue.popleft()
+        order.append(node)
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    return order
+
+graph = {"A": ["B", "C"], "B": ["D"], "C": ["D"], "D": []}
+print(bfs(graph, "A"))
+
+
+# 範例:並查集(union-find)實作,判斷元素是否屬於同一集合
+class UnionFind:
+    def __init__(self, n):
+        self.parent = list(range(n))
+
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+
+    def union(self, x, y):
+        root_x, root_y = self.find(x), self.find(y)
+        if root_x != root_y:
+            self.parent[root_x] = root_y
+
+uf = UnionFind(5)
+uf.union(0, 1)
+uf.union(1, 2)
+print(uf.find(0) == uf.find(2))
+
+
+# 範例:使用 datetime 模組處理日期與時間
+from datetime import datetime, timedelta
+
+now = datetime.now()
+tomorrow = now + timedelta(days=1)
+print(now.strftime("%Y-%m-%d %H:%M:%S"))
+print(tomorrow.strftime("%Y-%m-%d"))
+
+
+# 範例:使用 random 模組產生隨機資料
+import random
+
+print(random.randint(1, 100))
+print(random.choice(["蘋果", "香蕉", "橘子"]))
+print(random.sample(range(1, 50), 6))
+
+
+# 範例:使用 logging 模組記錄程式執行訊息
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.info("程式開始執行")
+logging.warning("這是一則警告訊息")
+
+
+# 範例:使用 unittest 撰寫簡單的單元測試
+import unittest
+
+def add(a, b):
+    return a + b
+
+class TestAdd(unittest.TestCase):
+    def test_add_positive(self):
+        self.assertEqual(add(2, 3), 5)
+
+    def test_add_negative(self):
+        self.assertEqual(add(-1, -1), -2)
+
+# unittest.main() # 在實際檔案中執行測試時使用
+
+
+# 範例:使用 threading 模組執行簡單的多執行緒任務
+import threading
+
+def worker(name):
+    print(f"執行緒 {name} 開始工作")
+
+threads = [threading.Thread(target=worker, args=(f"T{i}",)) for i in range(3)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+
+# 範例:使用 pathlib 走訪資料夾中的所有檔案
+from pathlib import Path
+
+def list_python_files(folder):
+    return [str(p) for p in Path(folder).glob("**/*.py")]
+
+# print(list_python_files("."))
+
+
+# 範例:使用 csv 模組讀取與寫入 CSV 檔案
+import csv
+
+rows = [["姓名", "分數"], ["小明", "90"], ["小華", "85"]]
+with open("scores.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerows(rows)
+
+with open("scores.csv", "r", encoding="utf-8") as f:
+    reader = csv.reader(f)
+    for row in reader:
+        print(row)
+
+
+# 範例:使用 collections.deque 實作固定長度的最近紀錄
+from collections import deque
+
+recent_actions = deque(maxlen=3)
+for action in ["登入", "瀏覽商品", "加入購物車", "結帳"]:
+    recent_actions.append(action)
+print(list(recent_actions))
+
+
+# 範例:使用 functools.partial 建立部分套用的函式
+from functools import partial
+
+def power(base, exponent):
+    return base ** exponent
+
+square = partial(power, exponent=2)
+cube = partial(power, exponent=3)
+print(square(4), cube(2))
+
+
+# 範例:使用抽象基底類別(abstract base class)定義介面
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        return 3.14159 * self.radius ** 2
+
+print(Circle(5).area())
+
+
+# 範例:轉接器模式(adapter pattern),讓不相容的介面能一起運作
+class OldPrinter:
+    def old_print(self, text):
+        print(f"[舊版列印機] {text}")
+
+class NewPrinterAdapter:
+    def __init__(self, old_printer):
+        self.old_printer = old_printer
+
+    def print_text(self, text):
+        self.old_printer.old_print(text)
+
+adapter = NewPrinterAdapter(OldPrinter())
+adapter.print_text("透過轉接器列印")
+
+
+# 範例:外觀模式(facade pattern),簡化複雜子系統的操作介面
+class CPU:
+    def start(self):
+        print("CPU 啟動")
+
+class Memory:
+    def load(self):
+        print("記憶體載入")
+
+class ComputerFacade:
+    def __init__(self):
+        self.cpu = CPU()
+        self.memory = Memory()
+
+    def start_computer(self):
+        self.cpu.start()
+        self.memory.load()
+        print("電腦開機完成")
+
+ComputerFacade().start_computer()
+
+
+# 範例:代理模式(proxy pattern),控制對真實物件的存取
+class RealImage:
+    def __init__(self, filename):
+        self.filename = filename
+        print(f"載入圖片: {filename}")
+
+    def display(self):
+        print(f"顯示圖片: {self.filename}")
+
+class ImageProxy:
+    def __init__(self, filename):
+        self.filename = filename
+        self.real_image = None
+
+    def display(self):
+        if self.real_image is None:
+            self.real_image = RealImage(self.filename)
+        self.real_image.display()
+
+proxy = ImageProxy("photo.jpg")
+proxy.display()
+proxy.display()
+
+
+# 範例:組合模式(composite pattern),用一致的方式處理單一物件與物件群組
+class FileItem:
+    def __init__(self, name):
+        self.name = name
+
+    def show(self, indent=0):
+        print(" " * indent + self.name)
+
+class FolderItem:
+    def __init__(self, name):
+        self.name = name
+        self.children = []
+
+    def add(self, item):
+        self.children.append(item)
+
+    def show(self, indent=0):
+        print(" " * indent + self.name + "/")
+        for child in self.children:
+            child.show(indent + 2)
+
+root = FolderItem("根目錄")
+root.add(FileItem("file1.txt"))
+sub = FolderItem("子資料夾")
+sub.add(FileItem("file2.txt"))
+root.add(sub)
+root.show()
+
+
+# 範例:原型模式(prototype pattern),透過複製現有物件建立新物件
+import copy
+
+class Config:
+    def __init__(self, settings):
+        self.settings = settings
+
+    def clone(self):
+        return copy.deepcopy(self)
+
+original = Config({"theme": "dark", "lang": "zh-TW"})
+cloned = original.clone()
+cloned.settings["theme"] = "light"
+print(original.settings, cloned.settings)
+
+
+# 範例:使用 __iter__ 和 __next__ 實作自訂迭代器
+class CountDown:
+    def __init__(self, start):
+        self.current = start
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.current <= 0:
+            raise StopIteration
+        self.current -= 1
+        return self.current + 1
+
+for num in CountDown(5):
+    print(num)
+
+
+# 範例:使用 __call__ 讓物件像函式一樣被呼叫
+class Multiplier:
+    def __init__(self, factor):
+        self.factor = factor
+
+    def __call__(self, value):
+        return value * self.factor
+
+double = Multiplier(2)
+print(double(10))
+
+
+# 範例:使用 __getitem__ 讓自訂物件支援索引存取
+class ReadOnlyList:
+    def __init__(self, data):
+        self._data = data
+
+    def __getitem__(self, index):
+        return self._data[index]
+
+    def __len__(self):
+        return len(self._data)
+
+r = ReadOnlyList([10, 20, 30])
+print(r[1], len(r))
+
+
+# 範例:運算子重載(operator overloading),讓自訂物件支援加法運算
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+
+print(Vector(1, 2) + Vector(3, 4))
+
+
+# 範例:使用 closures 實作計數器
+def make_counter():
+    count = 0
+    def counter():
+        nonlocal count
+        count += 1
+        return count
+    return counter
+
+counter = make_counter()
+print(counter(), counter(), counter())
+
+
+# 範例:高階函式,將函式當作參數傳遞
+def apply_twice(func, value):
+    return func(func(value))
+
+print(apply_twice(lambda x: x * 2, 3))
+
+
+# 範例:使用海象運算子(walrus operator)簡化條件判斷
+data = [1, 2, 3, 4, 5]
+if (n := len(data)) > 3:
+    print(f"資料共有 {n} 筆,超過門檻")
+
+
+# 範例:三元運算式(conditional expression)
+age = 20
+status = "成年" if age >= 18 else "未成年"
+print(status)
+
+
+# 範例:鏈式比較(chained comparison)
+score = 85
+print(60 <= score <= 100)
+
+
+# 範例:多重賦值與解構賦值
+a, b, c = 1, 2, 3
+first, *rest = [1, 2, 3, 4, 5]
+print(a, b, c)
+print(first, rest)
+
+
+# 範例:使用 f-string 進行格式化輸出
+name = "小美"
+score = 92.5
+print(f"{name} 的分數是 {score:.1f} 分")
+
+
+# 範例:使用 zip 建立字典
+keys = ["name", "age", "city"]
+values = ["小明", 25, "台北"]
+person = dict(zip(keys, values))
+print(person)
+
+
+# 範例:使用 all 和 any 檢查列表中的條件
+numbers = [2, 4, 6, 8]
+print(all(n % 2 == 0 for n in numbers))
+print(any(n > 5 for n in numbers))
+
+
+# 範例:使用 sorted 搭配 key 依照多重條件排序
+students = [{"name": "小明", "score": 90}, {"name": "小華", "score": 90}, {"name": "小美", "score": 85}]
+result = sorted(students, key=lambda s: (-s["score"], s["name"]))
+print(result)
+
+
+# 範例:使用 collections.namedtuple 定義座標點
+from collections import namedtuple
+
+Point = namedtuple("Point", ["x", "y"])
+p1 = Point(1, 2)
+print(p1.x, p1.y)
+
+
+# 範例:使用 dataclass 搭配 default_factory 設定預設值
+from dataclasses import dataclass, field
+
+@dataclass
+class Cart:
+    items: list = field(default_factory=list)
+
+    def add_item(self, item):
+        self.items.append(item)
+
+cart = Cart()
+cart.add_item("蘋果")
+print(cart.items)
+
+
+# 範例:使用 Enum 搭配 auto() 自動賦值
+from enum import Enum, auto
+
+class Status(Enum):
+    PENDING = auto()
+    PROCESSING = auto()
+    DONE = auto()
+
+print(Status.PROCESSING)
+
+
+# 範例:自訂例外類別
+class InsufficientBalanceError(Exception):
+    def __init__(self, balance, amount):
+        super().__init__(f"餘額不足:目前餘額 {balance},欲提領 {amount}")
+
+def withdraw(balance, amount):
+    if amount > balance:
+        raise InsufficientBalanceError(balance, amount)
+    return balance - amount
+
+try:
+    withdraw(100, 200)
+except InsufficientBalanceError as e:
+    print(e)
+
+
+# 範例:簡單的銀行帳戶類別,包含存款與提款方法
+class BankAccount:
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+
+    def deposit(self, amount):
+        self.balance += amount
+
+    def withdraw(self, amount):
+        if amount > self.balance:
+            print("餘額不足")
+            return
+        self.balance -= amount
+
+account = BankAccount("小明", 1000)
+account.deposit(500)
+account.withdraw(200)
+print(account.balance)
+
+
+# 範例:簡單的庫存管理類別
+class Inventory:
+    def __init__(self):
+        self.stock = {}
+
+    def add_stock(self, item, qty):
+        self.stock[item] = self.stock.get(item, 0) + qty
+
+    def remove_stock(self, item, qty):
+        if self.stock.get(item, 0) < qty:
+            raise ValueError("庫存不足")
+        self.stock[item] -= qty
+
+inv = Inventory()
+inv.add_stock("筆記本", 10)
+inv.remove_stock("筆記本", 3)
+print(inv.stock)
+
+
+# 範例:使用 mixin 類別擴充功能
+class JSONMixin:
+    def to_json(self):
+        import json
+        return json.dumps(self.__dict__, ensure_ascii=False)
+
+class User(JSONMixin):
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+print(User("小明", 25).to_json())
+
+
+# 範例:使用 contextlib.contextmanager 快速建立計時上下文管理器
+from contextlib import contextmanager
+import time
+
+@contextmanager
+def timer():
+    start = time.time()
+    yield
+    print(f"耗時 {time.time() - start:.4f} 秒")
+
+with timer():
+    total = sum(range(1000000))
+
+
+# 範例:使用 functools.lru_cache 加速遞迴計算
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fib(n):
+    if n <= 1:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+print(fib(30))
+
+
+# 範例:簡單的資料驗證裝飾器,檢查參數是否為正數
+def validate_positive(func):
+    def wrapper(*args, **kwargs):
+        for arg in args:
+            if isinstance(arg, (int, float)) and arg < 0:
+                raise ValueError("參數必須為正數")
+        return func(*args, **kwargs)
+    return wrapper
+
+@validate_positive
+def calculate_area(length, width):
+    return length * width
+
+print(calculate_area(5, 3))
+
+
+# 範例:使用 os 模組操作檔案與資料夾
+import os
+
+os.makedirs("temp_folder", exist_ok=True)
+print(os.path.exists("temp_folder"))
+print(os.listdir("."))
+
+
+# 範例:使用 shutil 複製與移動檔案
+import shutil
+
+# shutil.copy("source.txt", "destination.txt")
+# shutil.move("old_location.txt", "new_location.txt")
+print("shutil 模組可用於檔案複製、移動與刪除")
+
+
+# 範例:使用 json 模組序列化與反序列化資料
+import json
+
+data = {"name": "小明", "scores": [90, 85, 92]}
+json_str = json.dumps(data, ensure_ascii=False)
+print(json_str)
+parsed = json.loads(json_str)
+print(parsed["name"])
+
+
+# 範例:使用正規表達式驗證手機號碼格式
+import re
+
+def is_valid_phone(phone):
+    pattern = r"^09\d{8}$"
+    return bool(re.match(pattern, phone))
+
+print(is_valid_phone("0912345678"))
+print(is_valid_phone("12345"))
+
+
+# 範例:使用正規表達式取代字串中的敏感字詞
+import re
+
+text = "聯絡電話:0912345678"
+masked = re.sub(r"\d{8}$", "****", text)
+print(masked)
+
+
+# 範例:簡單的文字轉大寫/小寫/首字母大寫處理
+text = "hello world"
+print(text.upper())
+print(text.title())
+print(text.capitalize())
+
+
+# 範例:字串的 strip、split 與 join 綜合應用
+raw = "  apple, banana ,  cherry  "
+cleaned = [item.strip() for item in raw.split(",")]
+print(", ".join(cleaned))
+
+
+# 範例:簡單的隊列訊息處理系統模擬
+from queue import Queue
+
+q = Queue()
+q.put("任務1")
+q.put("任務2")
+while not q.empty():
+    print("處理:", q.get())
+
+
+# 範例:使用 itertools.permutations 產生排列組合(補充範例)
+from itertools import permutations
+
+for p in permutations(["A", "B", "C"], 2):
+    print(p)
+
+
+# 範例:使用 itertools.groupby 依條件分組
+from itertools import groupby
+
+data = [1, 1, 2, 2, 3, 1, 1]
+for key, group in groupby(data):
+    print(key, list(group))
+
+
+# 範例:簡單的判斷回文數字(不轉成字串)
+def is_palindrome_number(num):
+    original = num
+    reversed_num = 0
+    while num > 0:
+        reversed_num = reversed_num * 10 + num % 10
+        num //= 10
+    return original == reversed_num
+
+print(is_palindrome_number(12321))
+
+
+# 範例:阿姆斯壯數(Armstrong number)判斷
+def is_armstrong(num):
+    digits = str(num)
+    power = len(digits)
+    return num == sum(int(d) ** power for d in digits)
+
+print(is_armstrong(153))
+
+
+# 範例:完全數(perfect number)判斷
+def is_perfect_number(num):
+    divisors_sum = sum(i for i in range(1, num) if num % i == 0)
+    return divisors_sum == num
+
+print(is_perfect_number(28))
+
+
+# 範例:簡單的溫度轉換函式(攝氏轉華氏、華氏轉攝氏)
+def celsius_to_fahrenheit(c):
+    return c * 9 / 5 + 32
+
+def fahrenheit_to_celsius(f):
+    return (f - 32) * 5 / 9
+
+print(celsius_to_fahrenheit(25))
+print(fahrenheit_to_celsius(77))
+
+
+# 範例:簡單的貨幣格式化函式
+def format_currency(amount):
+    return f"NT$ {amount:,.0f}"
+
+print(format_currency(1234567))
+
+
+# 範例:簡單的文字命令列選單迴圈
+def show_menu():
+    options = {"1": "新增", "2": "查詢", "3": "刪除", "0": "離開"}
+    for key, value in options.items():
+        print(f"{key}. {value}")
+
+show_menu()
+
+
+# 範例:簡單的重試裝飾器,搭配指數退避(exponential backoff)
+import time
+from functools import wraps
+
+def retry_with_backoff(max_attempts=3):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            delay = 1
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"第 {attempt + 1} 次失敗: {e},{delay}秒後重試")
+                    time.sleep(delay)
+                    delay *= 2
+            raise Exception("已達最大重試次數")
+        return wrapper
+    return decorator
+
+@retry_with_backoff(max_attempts=2)
+def unstable_task():
+    raise ValueError("模擬失敗")
+
+# unstable_task() # 執行會觸發重試機制
+
+
+# 範例:備忘錄模式(memento pattern),儲存與還原物件狀態
+class TextEditor:
+    def __init__(self):
+        self.content = ""
+
+    def save(self):
+        return self.content
+
+    def restore(self, state):
+        self.content = state
+
+editor = TextEditor()
+editor.content = "第一版內容"
+snapshot = editor.save()
+editor.content = "第二版內容"
+editor.restore(snapshot)
+print(editor.content)
+
+
+# 範例:仲介者模式(mediator pattern),集中管理物件之間的溝通
+class ChatRoom:
+    def show_message(self, user, message):
+        print(f"[{user}]: {message}")
+
+class ChatUser:
+    def __init__(self, name, room):
+        self.name = name
+        self.room = room
+
+    def send(self, message):
+        self.room.show_message(self.name, message)
+
+room = ChatRoom()
+ChatUser("小明", room).send("大家好!")
+
+
+# 範例:輕量級的事件發布訂閱系統
+class EventBus:
+    def __init__(self):
+        self.subscribers = {}
+
+    def subscribe(self, event, callback):
+        self.subscribers.setdefault(event, []).append(callback)
+
+    def publish(self, event, data):
+        for callback in self.subscribers.get(event, []):
+            callback(data)
+
+bus = EventBus()
+bus.subscribe("order_created", lambda data: print(f"通知:訂單 {data} 已建立"))
+bus.publish("order_created", "ORD001")
+
+
+# 範例:簡單的分數(fraction)類別,實作約分功能
+class Fraction:
+    def __init__(self, numerator, denominator):
+        g = gcd(numerator, denominator)
+        self.numerator = numerator // g
+        self.denominator = denominator // g
+
+    def __repr__(self):
+        return f"{self.numerator}/{self.denominator}"
+
+print(Fraction(4, 8))
+
+
+# 範例:簡單的堆疊實作四則運算表達式求值(逆波蘭表示法)
+def eval_rpn(tokens):
+    stack = []
+    for token in tokens:
+        if token in "+-*/":
+            b, a = stack.pop(), stack.pop()
+            stack.append(int(eval(f"{a}{token}{b}")))
+        else:
+            stack.append(int(token))
+    return stack[0]
+
+print(eval_rpn(["2", "1", "+", "3", "*"]))
+
+
+# 範例:簡單的密碼強度檢查函式
+import re
+
+def check_password_strength(password):
+    if len(password) < 8:
+        return "弱"
+    has_upper = bool(re.search(r"[A-Z]", password))
+    has_digit = bool(re.search(r"\d", password))
+    has_symbol = bool(re.search(r"[!@#$%^&*]", password))
+    if has_upper and has_digit and has_symbol:
+        return "強"
+    return "中"
+
+print(check_password_strength("Abc123!@"))
+
+
+# 範例:簡單的購物車總價計算,含折扣邏輯
+def calculate_total(cart, discount_rate=0):
+    subtotal = sum(item["price"] * item["qty"] for item in cart)
+    return subtotal * (1 - discount_rate)
+
+cart = [{"name": "書", "price": 300, "qty": 2}, {"name": "筆", "price": 20, "qty": 5}]
+print(calculate_total(cart, discount_rate=0.1))
+
+
+# 範例:簡單的待辦事項管理類別
+class TodoList:
+    def __init__(self):
+        self.tasks = []
+
+    def add(self, task):
+        self.tasks.append({"task": task, "done": False})
+
+    def complete(self, index):
+        self.tasks[index]["done"] = True
+
+    def show(self):
+        for i, t in enumerate(self.tasks):
+            status = "✔" if t["done"] else "☐"
+            print(f"{status} {i}. {t['task']}")
+
+todo = TodoList()
+todo.add("寫報告")
+todo.add("買菜")
+todo.complete(0)
+todo.show()
+
+
+# 範例:簡單的猜數字遊戲邏輯
+import random
+
+def guess_number_game(secret, guess):
+    if guess == secret:
+        return "答對了!"
+    elif guess < secret:
+        return "太小了"
+    else:
+        return "太大了"
+
+secret_number = random.randint(1, 100)
+print(guess_number_game(secret_number, 50))
+
+
+# 範例:使用生成器實作簡單的分頁資料流
+def paginate(data, page_size):
+    for i in range(0, len(data), page_size):
+        yield data[i:i + page_size]
+
+for page in paginate(list(range(1, 11)), 3):
+    print(page)
+
+
+# 範例:簡單的文字雲字頻統計並排序
+from collections import Counter
+
+text = "python is great python is fun python is powerful"
+word_counts = Counter(text.split())
+print(word_counts.most_common(2))
+
+
+# 範例:簡單的溫度資料異常值偵測(超過平均值一定範圍視為異常)
+def detect_outliers(data, threshold=10):
+    avg = sum(data) / len(data)
+    return [x for x in data if abs(x - avg) > threshold]
+
+print(detect_outliers([25, 26, 24, 60, 27, 23]))
+
+
+# 範例:簡單的座標距離計算(歐幾里得距離)
+import math
+
+def euclidean_distance(p1, p2):
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+print(euclidean_distance((0, 0), (3, 4)))
+
+
+# 範例:簡單的角色扮演遊戲人物類別
+class Character:
+    def __init__(self, name, hp, attack):
+        self.name = name
+        self.hp = hp
+        self.attack = attack
+
+    def attack_target(self, target):
+        target.hp -= self.attack
+        print(f"{self.name} 攻擊 {target.name},造成 {self.attack} 傷害")
+
+hero = Character("勇者", 100, 15)
+enemy = Character("哥布林", 30, 5)
+hero.attack_target(enemy)
+print(enemy.hp)
+
+
+# 範例:簡單的訊息佇列消費者處理迴圈模擬
+tasks = ["task1", "task2", "task3"]
+
+def process_tasks(tasks):
+    while tasks:
+        current = tasks.pop(0)
+        print(f"處理任務: {current}")
+
+process_tasks(tasks)
+
+
+# 範例:簡單的學生成績等第轉換函式
+def score_to_grade(score):
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    else:
+        return "D"
+
+print(score_to_grade(85))
+
+
+# 範例:簡單的字串模板套用,批次產生問候訊息
+names = ["小明", "小華", "小美"]
+template = "親愛的{name},祝您有美好的一天!"
+messages = [template.format(name=n) for n in names]
+for m in messages:
+    print(m)
+
+
+# 範例:簡單的資料分群(依範圍分箱 binning)
+def bin_ages(ages):
+    bins = {"兒童": 0, "青少年": 0, "成人": 0, "長者": 0}
+    for age in ages:
+        if age < 13:
+            bins["兒童"] += 1
+        elif age < 18:
+            bins["青少年"] += 1
+        elif age < 65:
+            bins["成人"] += 1
+        else:
+            bins["長者"] += 1
+    return bins
+
+print(bin_ages([5, 12, 17, 30, 45, 70, 80]))

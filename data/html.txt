@@ -1164,3 +1164,1146 @@ function updateCount() {
     <div class="grid-main">主要內容</div>
     <div class="grid-footer">頁尾</div>
 </div>
+
+
+<!-- 範例:Flexbox 水平置中與間距排列 -->
+<style>
+.flex-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+}
+</style>
+
+<div class="flex-row">
+    <div>項目一</div>
+    <div>項目二</div>
+    <div>項目三</div>
+</div>
+
+
+<!-- 範例:語意化 HTML5 版面結構 -->
+<header>網站標頭</header>
+<nav>導覽選單</nav>
+<main>
+    <article>
+        <h2>文章標題</h2>
+        <p>文章內容段落。</p>
+    </article>
+    <aside>側邊補充資訊</aside>
+</main>
+<footer>網站頁尾</footer>
+
+
+<!-- 範例:滑鼠移過去改變顏色的按鈕過渡效果 -->
+<style>
+.hover-btn {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    transition: background 0.3s ease;
+}
+.hover-btn:hover {
+    background: #2980b9;
+}
+</style>
+
+<button class="hover-btn">滑過我看看</button>
+
+
+<!-- 範例:漸層背景色 -->
+<style>
+.gradient-box {
+    height: 150px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 10px;
+}
+</style>
+
+<div class="gradient-box"></div>
+
+
+<!-- 範例:漢堡選單圖示,點擊切換展開狀態 -->
+<style>
+.menu-toggle { font-size: 24px; cursor: pointer; }
+.menu-list { display: none; }
+.menu-list.open { display: block; }
+</style>
+
+<div class="menu-toggle" onclick="document.getElementById('menuList').classList.toggle('open')">☰</div>
+<ul id="menuList" class="menu-list">
+    <li>首頁</li>
+    <li>關於我們</li>
+    <li>聯絡我們</li>
+</ul>
+
+
+<!-- 範例:骨架屏(skeleton)載入效果 -->
+<style>
+.skeleton {
+    background: linear-gradient(90deg, #eee 25%, #ddd 50%, #eee 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    height: 20px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+</style>
+
+<div class="skeleton"></div>
+<div class="skeleton"></div>
+
+
+<!-- 範例:檔案上傳按鈕與檔名顯示 -->
+<input type="file" id="fileInput" onchange="document.getElementById('fileName').textContent = this.files[0]?.name || '尚未選擇檔案'">
+<p id="fileName">尚未選擇檔案</p>
+
+
+<!-- 範例:滑桿(range)輸入元件與數值顯示 -->
+<input type="range" min="0" max="100" value="50" oninput="document.getElementById('rangeVal').textContent = this.value">
+<span id="rangeVal">50</span>
+
+
+<!-- 範例:日期選擇欄位 -->
+<label for="birthday">選擇日期:</label>
+<input type="date" id="birthday" name="birthday">
+
+
+<!-- 範例:密碼顯示/隱藏切換按鈕 -->
+<input type="password" id="pwd" value="mypassword123">
+<button onclick="const p=document.getElementById('pwd'); p.type = p.type === 'password' ? 'text' : 'password';">顯示/隱藏</button>
+
+
+<!-- 範例:複製到剪貼簿按鈕 -->
+<input type="text" id="copyText" value="要複製的內容" readonly>
+<button onclick="navigator.clipboard.writeText(document.getElementById('copyText').value)">複製</button>
+
+
+<!-- 範例:徽章通知數字疊加在圖示上 -->
+<style>
+.icon-badge { position: relative; display: inline-block; font-size: 24px; }
+.badge-count {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: red;
+    color: white;
+    font-size: 12px;
+    border-radius: 50%;
+    padding: 2px 6px;
+}
+</style>
+
+<div class="icon-badge">🔔<span class="badge-count">5</span></div>
+
+
+<!-- 範例:麵包屑加上分隔符號的簡易版本 -->
+<nav>
+    <span>首頁</span> &gt;
+    <span>分類</span> &gt;
+    <span>目前頁面</span>
+</nav>
+
+
+<!-- 範例:提示訊息橫幅(alert banner) -->
+<style>
+.alert {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+.alert-success { background: #d4edda; color: #155724; }
+.alert-error { background: #f8d7da; color: #721c24; }
+</style>
+
+<div class="alert alert-success">操作成功!</div>
+<div class="alert alert-error">發生錯誤,請再試一次。</div>
+
+
+<!-- 範例:工具提示(tooltip),滑鼠移過顯示說明文字 -->
+<style>
+.tooltip { position: relative; cursor: pointer; }
+.tooltip .tooltip-text {
+    visibility: hidden;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.tooltip:hover .tooltip-text { visibility: visible; }
+</style>
+
+<span class="tooltip">滑過我
+    <span class="tooltip-text">這是提示文字</span>
+</span>
+
+
+<!-- 範例:自訂核取方塊樣式 -->
+<style>
+.custom-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #4caf50;
+}
+</style>
+
+<label><input type="checkbox" class="custom-checkbox"> 我同意條款</label>
+
+
+<!-- 範例:圓形頭像加上在線狀態小圓點 -->
+<style>
+.avatar-wrap { position: relative; width: 48px; height: 48px; }
+.avatar-wrap img { width: 100%; border-radius: 50%; }
+.status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #4caf50;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+</style>
+
+<div class="avatar-wrap">
+    <img src="avatar.jpg" alt="頭像">
+    <span class="status-dot"></span>
+</div>
+
+
+<!-- 範例:垂直步驟指示器(stepper) -->
+<style>
+.step { display: flex; align-items: center; margin-bottom: 12px; }
+.step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #3498db;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    margin-right: 10px;
+}
+</style>
+
+<div class="step"><span class="step-num">1</span>填寫基本資料</div>
+<div class="step"><span class="step-num">2</span>確認訂單內容</div>
+<div class="step"><span class="step-num">3</span>完成付款</div>
+
+
+<!-- 範例:簡單的分頁(pagination)元件 -->
+<style>
+.pagination a {
+    padding: 6px 12px;
+    margin: 0 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+}
+.pagination a.active { background: #3498db; color: white; }
+</style>
+
+<div class="pagination">
+    <a href="#">1</a>
+    <a href="#" class="active">2</a>
+    <a href="#">3</a>
+</div>
+
+
+<!-- 範例:分段式切換控制項(segmented control) -->
+<style>
+.segmented { display: inline-flex; background: #eee; border-radius: 8px; padding: 4px; }
+.segmented button {
+    border: none; background: none; padding: 6px 16px; border-radius: 6px; cursor: pointer;
+}
+.segmented button.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+</style>
+
+<div class="segmented">
+    <button class="active">日</button>
+    <button>週</button>
+    <button>月</button>
+</div>
+
+
+<!-- 範例:浮動標籤輸入框(floating label input) -->
+<style>
+.float-field { position: relative; margin-top: 20px; }
+.float-field input { padding: 10px; width: 200px; }
+.float-field label {
+    position: absolute; top: -18px; left: 4px; font-size: 12px; color: #666;
+}
+</style>
+
+<div class="float-field">
+    <label>電子郵件</label>
+    <input type="email" placeholder="請輸入信箱">
+</div>
+
+
+<!-- 範例:字元數限制的留言輸入框 -->
+<textarea id="comment" maxlength="100" oninput="document.getElementById('charCount').textContent = 100 - this.value.length"></textarea>
+<p>剩餘字數:<span id="charCount">100</span></p>
+
+
+<!-- 範例:價格方案月繳/年繳切換開關 -->
+<style>
+.price-toggle { display: flex; align-items: center; gap: 8px; }
+</style>
+
+<div class="price-toggle">
+    月繳
+    <label class="switch">
+        <input type="checkbox" onchange="document.getElementById('priceLabel').textContent = this.checked ? '年繳(省20%)' : '月繳'">
+        <span class="slider"></span>
+    </label>
+    <span id="priceLabel">月繳</span>
+</div>
+
+
+<!-- 範例:簡單的價格比較卡片群組 -->
+<style>
+.pricing-cards { display: flex; gap: 16px; }
+.pricing-card {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+.pricing-card.featured { border-color: #3498db; box-shadow: 0 4px 12px rgba(52,152,219,0.2); }
+</style>
+
+<div class="pricing-cards">
+    <div class="pricing-card">
+        <h3>基本方案</h3>
+        <p>NT$99 / 月</p>
+    </div>
+    <div class="pricing-card featured">
+        <h3>專業方案</h3>
+        <p>NT$299 / 月</p>
+    </div>
+</div>
+
+
+<!-- 範例:圖片前後對比滑動元件(簡化版) -->
+<style>
+.compare-container { position: relative; width: 400px; }
+.compare-container img { width: 100%; display: block; }
+.compare-overlay {
+    position: absolute; top: 0; left: 0; width: 50%; overflow: hidden;
+    border-right: 2px solid white;
+}
+</style>
+
+<div class="compare-container">
+    <img src="after.jpg">
+    <div class="compare-overlay">
+        <img src="before.jpg">
+    </div>
+</div>
+
+
+<!-- 範例:語言選擇下拉選單 -->
+<select onchange="document.documentElement.lang = this.value">
+    <option value="zh-TW">繁體中文</option>
+    <option value="en">English</option>
+    <option value="ja">日本語</option>
+</select>
+
+
+<!-- 範例:簡單的線上計算機介面 -->
+<input type="text" id="calcDisplay" readonly>
+<div>
+    <button onclick="document.getElementById('calcDisplay').value += '1'">1</button>
+    <button onclick="document.getElementById('calcDisplay').value += '+'">+</button>
+    <button onclick="document.getElementById('calcDisplay').value = eval(document.getElementById('calcDisplay').value)">=</button>
+    <button onclick="document.getElementById('calcDisplay').value = ''">C</button>
+</div>
+
+
+<!-- 範例:簡易番茄鐘倒數計時介面 -->
+<div id="pomodoroTime">25:00</div>
+<button onclick="alert('開始計時功能需搭配 JavaScript 計時器實作')">開始</button>
+
+
+<!-- 範例:卡片翻轉效果(flip card) -->
+<style>
+.flip-card { width: 200px; height: 120px; perspective: 1000px; }
+.flip-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.6s; transform-style: preserve-3d;
+}
+.flip-card:hover .flip-inner { transform: rotateY(180deg); }
+.flip-front, .flip-back {
+    position: absolute; width: 100%; height: 100%;
+    backface-visibility: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.flip-back { transform: rotateY(180deg); background: #3498db; color: white; }
+</style>
+
+<div class="flip-card">
+    <div class="flip-inner">
+        <div class="flip-front">正面內容</div>
+        <div class="flip-back">背面內容</div>
+    </div>
+</div>
+
+
+<!-- 範例:漸層文字效果 -->
+<style>
+.gradient-text {
+    font-size: 32px;
+    font-weight: bold;
+    background: linear-gradient(90deg, #f857a6, #ff5858);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+</style>
+
+<h1 class="gradient-text">漸層文字標題</h1>
+
+
+<!-- 範例:按鈕載入中狀態(loading state) -->
+<style>
+.btn-loading { opacity: 0.7; cursor: not-allowed; }
+</style>
+
+<button class="btn-loading" disabled>處理中...</button>
+
+
+<!-- 範例:輸入框內含圖示的搜尋列 -->
+<style>
+.search-box { position: relative; }
+.search-box input { padding: 8px 8px 8px 32px; width: 200px; }
+.search-box span { position: absolute; left: 8px; top: 8px; }
+</style>
+
+<div class="search-box">
+    <span>🔍</span>
+    <input type="text" placeholder="搜尋...">
+</div>
+
+
+<!-- 範例:簡單的每日金句卡片 -->
+<style>
+.quote-card {
+    background: #fdf6e3;
+    border-left: 4px solid #b58900;
+    padding: 16px;
+    font-style: italic;
+}
+</style>
+
+<div class="quote-card">
+    「今天的努力,是明天的實力。」
+</div>
+
+
+<!-- 範例:三欄式響應式文章排版 -->
+<style>
+.columns-layout {
+    column-count: 3;
+    column-gap: 20px;
+}
+@media (max-width: 600px) {
+    .columns-layout { column-count: 1; }
+}
+</style>
+
+<div class="columns-layout">
+    <p>這是一段會依照螢幕寬度自動調整欄數的文字內容,適合用在長篇文章的排版上。</p>
+</div>
+
+
+<!-- 範例:引言區塊樣式(blockquote) -->
+<style>
+blockquote {
+    border-left: 4px solid #ccc;
+    margin: 0;
+    padding-left: 16px;
+    color: #555;
+}
+</style>
+
+<blockquote>
+    這是一段引用他人說過的話,通常用來強調重點或引用來源。
+</blockquote>
+
+
+<!-- 範例:程式碼區塊樣式 -->
+<style>
+pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+</style>
+
+<pre><code>function hello() {
+    console.log("Hello, world!");
+}</code></pre>
+
+
+<!-- 範例:目錄(table of contents)連結列表 -->
+<nav>
+    <h4>目錄</h4>
+    <ul>
+        <li><a href="#section1">第一章</a></li>
+        <li><a href="#section2">第二章</a></li>
+        <li><a href="#section3">第三章</a></li>
+    </ul>
+</nav>
+
+
+<!-- 範例:平滑捲動到指定區塊 -->
+<a href="#target" style="scroll-behavior: smooth;">跳到指定區塊</a>
+<div id="target" style="margin-top: 500px;">這是目標區塊</div>
+
+
+<!-- 範例:圖片延遲載入(lazy loading) -->
+<img src="photo.jpg" loading="lazy" alt="延遲載入的圖片">
+
+
+<!-- 範例:響應式圖片,依螢幕大小載入不同尺寸 -->
+<img srcset="small.jpg 480w, large.jpg 1024w"
+     sizes="(max-width: 600px) 480px, 1024px"
+     src="large.jpg" alt="響應式圖片">
+
+
+<!-- 範例:偏好深色模式的媒體查詢 -->
+<style>
+body { background: white; color: black; }
+@media (prefers-color-scheme: dark) {
+    body { background: #121212; color: white; }
+}
+</style>
+
+
+<!-- 範例:Cookie 同意提示橫幅 -->
+<style>
+.cookie-banner {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #333; color: white; padding: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+</style>
+
+<div class="cookie-banner">
+    <span>本網站使用 cookie 以提供更好的使用體驗。</span>
+    <button onclick="this.parentElement.remove()">我同意</button>
+</div>
+
+
+<!-- 範例:電子報訂閱表單 -->
+<form>
+    <input type="email" placeholder="輸入你的電子郵件">
+    <button type="submit">訂閱電子報</button>
+</form>
+
+
+<!-- 範例:聊天泡泡樣式(chat bubble) -->
+<style>
+.bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin-bottom: 8px;
+}
+.bubble.mine { background: #3498db; color: white; margin-left: auto; }
+.bubble.other { background: #eee; }
+</style>
+
+<div class="bubble other">你好,今天過得怎麼樣?</div>
+<div class="bubble mine">還不錯,謝謝關心!</div>
+
+
+<!-- 範例:使用者個人資料下拉選單 -->
+<style>
+.profile-menu { position: relative; }
+.profile-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%; right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    min-width: 120px;
+}
+.profile-menu:hover .profile-dropdown { display: block; }
+</style>
+
+<div class="profile-menu">
+    <span>👤 使用者</span>
+    <div class="profile-dropdown">
+        <div>個人資料</div>
+        <div>設定</div>
+        <div>登出</div>
+    </div>
+</div>
+
+
+<!-- 範例:社群登入按鈕排版 -->
+<style>
+.social-login button {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+</style>
+
+<div class="social-login">
+    <button>使用 Google 登入</button>
+    <button>使用 Facebook 登入</button>
+</div>
+
+
+<!-- 範例:滑動開關(toggle)搭配文字標籤 -->
+<style>
+.toggle-row { display: flex; align-items: center; gap: 8px; }
+</style>
+
+<div class="toggle-row">
+    <label class="switch">
+        <input type="checkbox" checked>
+        <span class="slider"></span>
+    </label>
+    <span>啟用通知</span>
+</div>
+
+
+<!-- 範例:折扣標籤(badge)顯示在商品卡片上 -->
+<style>
+.product-card { position: relative; width: 200px; border: 1px solid #eee; padding: 10px; }
+.discount-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: #e74c3c; color: white;
+    padding: 2px 8px; border-radius: 4px; font-size: 12px;
+}
+</style>
+
+<div class="product-card">
+    <span class="discount-badge">-20%</span>
+    <p>商品名稱</p>
+</div>
+
+
+<!-- 範例:空狀態插圖與提示文字(購物車無商品) -->
+<div style="text-align: center; padding: 40px;">
+    <p style="font-size: 48px;">🛒</p>
+    <p>購物車目前是空的</p>
+    <button>去逛逛商品</button>
+</div>
+
+
+<!-- 範例:滿意度評分(表情符號)選擇元件 -->
+<div style="font-size: 28px;">
+    <span style="cursor:pointer;">😡</span>
+    <span style="cursor:pointer;">😐</span>
+    <span style="cursor:pointer;">🙂</span>
+    <span style="cursor:pointer;">😄</span>
+</div>
+
+
+<!-- 範例:多層巢狀手風琴(nested accordion) -->
+<details>
+    <summary>常見問題分類一</summary>
+    <details>
+        <summary>子問題 A</summary>
+        <p>子問題 A 的解答內容。</p>
+    </details>
+</details>
+
+
+<!-- 範例:表格內含操作按鈕欄位 -->
+<table border="1">
+    <tr><th>姓名</th><th>操作</th></tr>
+    <tr>
+        <td>王小明</td>
+        <td><button>編輯</button><button>刪除</button></td>
+    </tr>
+</table>
+
+
+<!-- 範例:簡單的甘特圖(進度長條)排版 -->
+<style>
+.gantt-row { display: flex; align-items: center; margin-bottom: 6px; }
+.gantt-bar { height: 16px; background: #3498db; border-radius: 4px; }
+</style>
+
+<div class="gantt-row">
+    <span style="width:80px;">任務一</span>
+    <div class="gantt-bar" style="width: 150px;"></div>
+</div>
+
+
+<!-- 範例:訂單狀態時間軸(進行中的步驟高亮) -->
+<style>
+.order-steps { display: flex; }
+.order-step { flex: 1; text-align: center; color: #999; }
+.order-step.done { color: #4caf50; font-weight: bold; }
+</style>
+
+<div class="order-steps">
+    <div class="order-step done">已下單</div>
+    <div class="order-step done">處理中</div>
+    <div class="order-step">已出貨</div>
+    <div class="order-step">已完成</div>
+</div>
+
+
+<!-- 範例:意見回饋星等加文字說明的複合元件 -->
+<div>
+    <span style="color: gold;">★★★★☆</span>
+    <p>「服務很好,出貨速度也很快!」</p>
+</div>
+
+
+<!-- 範例:內嵌地圖 iframe -->
+<iframe src="https://www.google.com/maps/embed" width="100%" height="300" style="border:0;"></iframe>
+
+
+<!-- 範例:多語系切換的簡易旗標按鈕 -->
+<div>
+    <button>🇹🇼 中文</button>
+    <button>🇺🇸 English</button>
+</div>
+
+
+<!-- 範例:購物車數量增減元件 -->
+<div style="display:flex; align-items:center; gap:8px;">
+    <button onclick="document.getElementById('qty').value--">-</button>
+    <input id="qty" type="number" value="1" style="width:40px; text-align:center;">
+    <button onclick="document.getElementById('qty').value++">+</button>
+</div>
+
+
+<!-- 範例:簡單的問卷單選題排版 -->
+<fieldset>
+    <legend>你對這次活動的滿意度?</legend>
+    <label><input type="radio" name="satisfaction"> 非常滿意</label><br>
+    <label><input type="radio" name="satisfaction"> 滿意</label><br>
+    <label><input type="radio" name="satisfaction"> 普通</label>
+</fieldset>
+
+
+<!-- 範例:簡單的浮水印文字疊加 -->
+<style>
+.watermark { position: relative; }
+.watermark::after {
+    content: "SAMPLE";
+    position: absolute;
+    top: 40%; left: 30%;
+    font-size: 40px;
+    color: rgba(0,0,0,0.1);
+    transform: rotate(-20deg);
+}
+</style>
+
+<div class="watermark" style="height:150px; border:1px solid #ccc;"></div>
+
+
+<!-- 範例:兩欄式聯絡我們表單搭配說明文字 -->
+<div style="display:flex; gap:20px;">
+    <div style="flex:1;">
+        <h3>聯絡我們</h3>
+        <p>有任何問題歡迎與我們聯繫。</p>
+    </div>
+    <form style="flex:1;">
+        <input type="text" placeholder="姓名"><br>
+        <input type="email" placeholder="電子郵件"><br>
+        <textarea placeholder="訊息內容"></textarea><br>
+        <button type="submit">送出</button>
+    </form>
+</div>
+
+
+<!-- 範例:顏色選擇器輸入 -->
+<label for="colorPick">選擇顏色:</label>
+<input type="color" id="colorPick" value="#3498db">
+
+
+<!-- 範例:簡單的 QR code 佔位區塊 -->
+<div style="width:120px; height:120px; background:#eee; display:flex; align-items:center; justify-content:center;">
+    QR Code
+</div>
+
+
+<!-- 範例:限時搶購倒數提示 -->
+<div style="background:#fff3cd; padding:10px; border-radius:6px;">
+    ⏰ 限時優惠倒數:<span id="countdown">02:59:59</span>
+</div>
+
+
+<!-- 範例:自動輪播文字跑馬燈 -->
+<style>
+.marquee {
+    overflow: hidden;
+    white-space: nowrap;
+}
+.marquee span {
+    display: inline-block;
+    animation: marquee 10s linear infinite;
+}
+@keyframes marquee {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
+}
+</style>
+
+<div class="marquee"><span>最新公告:網站將於本週六進行系統維護。</span></div>
+
+
+<!-- 範例:BMI 計算機輸入介面 -->
+<label>身高(cm):<input type="number" id="height"></label>
+<label>體重(kg):<input type="number" id="weight"></label>
+<button onclick="const h=document.getElementById('height').value/100; const w=document.getElementById('weight').value; alert('BMI: ' + (w/(h*h)).toFixed(1))">計算 BMI</button>
+
+
+<!-- 範例:溫度單位轉換輸入 -->
+<label>攝氏溫度:<input type="number" id="celsius" oninput="document.getElementById('fahrenheit').textContent = (this.value * 9/5 + 32).toFixed(1)"></label>
+<p>華氏溫度:<span id="fahrenheit">32</span></p>
+
+
+<!-- 範例:簡單的抽獎轉盤按鈕 -->
+<div style="text-align:center;">
+    <div style="width:150px; height:150px; border-radius:50%; background:conic-gradient(#f39c12,#e74c3c,#3498db,#2ecc71); margin:auto;"></div>
+    <button>開始抽獎</button>
+</div>
+
+
+<!-- 範例:垂直捲動的公告清單 -->
+<style>
+.notice-list { max-height: 100px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; }
+</style>
+
+<div class="notice-list">
+    <p>公告一:系統將於今晚維護。</p>
+    <p>公告二:新功能已上線。</p>
+    <p>公告三:歡迎加入會員計畫。</p>
+</div>
+
+
+<!-- 範例:簡單的意見調查滿意度滑桿 -->
+<label>整體滿意度(1-10):</label>
+<input type="range" min="1" max="10" value="8">
+
+
+<!-- 範例:訂單摘要卡片 -->
+<style>
+.order-summary { border: 1px solid #ddd; border-radius: 8px; padding: 16px; width: 250px; }
+.order-summary .row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.order-summary .total { font-weight: bold; border-top: 1px solid #ddd; padding-top: 6px; }
+</style>
+
+<div class="order-summary">
+    <div class="row"><span>商品小計</span><span>NT$1,200</span></div>
+    <div class="row"><span>運費</span><span>NT$60</span></div>
+    <div class="row total"><span>總計</span><span>NT$1,260</span></div>
+</div>
+
+
+<!-- 範例:簡單的多欄位地址表單 -->
+<form>
+    <input type="text" placeholder="收件人姓名"><br>
+    <input type="tel" placeholder="聯絡電話"><br>
+    <input type="text" placeholder="郵遞區號" style="width:80px;">
+    <input type="text" placeholder="詳細地址"><br>
+    <button type="submit">儲存地址</button>
+</form>
+
+
+<!-- 範例:簡單的圖示按鈕群組(工具列) -->
+<div style="display:flex; gap:8px;">
+    <button>📁</button>
+    <button>💾</button>
+    <button>🖨️</button>
+    <button>🗑️</button>
+</div>
+
+
+<!-- 範例:兩步驟驗證碼輸入格 -->
+<div style="display:flex; gap:8px;">
+    <input type="text" maxlength="1" style="width:30px; text-align:center;">
+    <input type="text" maxlength="1" style="width:30px; text-align:center;">
+    <input type="text" maxlength="1" style="width:30px; text-align:center;">
+    <input type="text" maxlength="1" style="width:30px; text-align:center;">
+</div>
+
+
+<!-- 範例:簡單的收藏(愛心)按鈕切換 -->
+<span id="favBtn" style="cursor:pointer; font-size:24px;" onclick="this.textContent = this.textContent === '🤍' ? '❤️' : '🤍'">🤍</span>
+
+
+<!-- 範例:文章標籤雲(tag cloud) -->
+<style>
+.tag-cloud span {
+    display: inline-block;
+    background: #eee;
+    padding: 4px 10px;
+    margin: 4px;
+    border-radius: 12px;
+    font-size: 13px;
+}
+</style>
+
+<div class="tag-cloud">
+    <span>科技</span><span>生活</span><span>旅遊</span><span>美食</span><span>財經</span>
+</div>
+
+
+<!-- 範例:簡單的比較清單(打勾/打叉) -->
+<table border="1">
+    <tr><th>功能</th><th>免費版</th><th>付費版</th></tr>
+    <tr><td>基本功能</td><td>✔️</td><td>✔️</td></tr>
+    <tr><td>進階功能</td><td>❌</td><td>✔️</td></tr>
+</table>
+
+
+<!-- 範例:簡單的旋轉載入圖示(spinner) -->
+<style>
+.spinner {
+    width: 32px; height: 32px;
+    border: 4px solid #eee;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="spinner"></div>
+
+
+<!-- 範例:簡單的問卷進度百分比顯示 -->
+<p>問卷完成度:<progress value="60" max="100"></progress> 60%</p>
+
+
+<!-- 範例:訊息已讀/未讀狀態圖示 -->
+<div>
+    <p>訊息一 ✅ 已讀</p>
+    <p>訊息二 ⬜ 未讀</p>
+</div>
+
+
+<!-- 範例:簡單的側邊篩選器(checkbox 群組) -->
+<fieldset>
+    <legend>篩選分類</legend>
+    <label><input type="checkbox"> 電子產品</label><br>
+    <label><input type="checkbox"> 服飾</label><br>
+    <label><input type="checkbox"> 居家用品</label>
+</fieldset>
+
+
+<!-- 範例:簡單的地區選擇器(縣市/鄉鎮兩層下拉) -->
+<select onchange="document.getElementById('district').disabled = false">
+    <option>請選擇縣市</option>
+    <option>台北市</option>
+    <option>台中市</option>
+</select>
+<select id="district" disabled>
+    <option>請選擇鄉鎮區</option>
+</select>
+
+
+<!-- 範例:簡單的字級大小調整按鈕 -->
+<button onclick="document.body.style.fontSize = '14px'">小</button>
+<button onclick="document.body.style.fontSize = '18px'">中</button>
+<button onclick="document.body.style.fontSize = '22px'">大</button>
+
+
+<!-- 範例:簡單的網頁列印按鈕 -->
+<button onclick="window.print()">列印此頁</button>
+
+
+<!-- 範例:回到頂端與回到底部雙按鈕 -->
+<div style="position:fixed; right:20px; bottom:20px;">
+    <button onclick="window.scrollTo(0,0)">⬆️</button>
+    <button onclick="window.scrollTo(0,document.body.scrollHeight)">⬇️</button>
+</div>
+
+
+<!-- 範例:簡單的意見留言表單附星級評分 -->
+<form>
+    <label>評分:
+        <select>
+            <option>★★★★★</option>
+            <option>★★★★</option>
+            <option>★★★</option>
+        </select>
+    </label><br>
+    <textarea placeholder="留下你的評論"></textarea><br>
+    <button type="submit">送出評論</button>
+</form>
+
+
+<!-- 範例:簡單的產品規格表格 -->
+<table border="1">
+    <tr><th>規格項目</th><th>內容</th></tr>
+    <tr><td>尺寸</td><td>20 x 10 x 5 cm</td></tr>
+    <tr><td>重量</td><td>350g</td></tr>
+    <tr><td>顏色</td><td>黑色 / 白色</td></tr>
+</table>
+
+
+<!-- 範例:簡單的社群分享數統計顯示 -->
+<div style="display:flex; gap:16px;">
+    <span>👍 128 個讚</span>
+    <span>💬 32 則留言</span>
+    <span>🔄 15 次分享</span>
+</div>
+
+
+<!-- 範例:簡單的最近瀏覽紀錄清單 -->
+<ul>
+    <li>商品A - 剛剛瀏覽</li>
+    <li>商品B - 5 分鐘前</li>
+    <li>商品C - 1 小時前</li>
+</ul>
+
+
+<!-- 範例:簡單的訊息已送出提示動畫區塊 -->
+<style>
+.sent-toast {
+    background: #d4edda;
+    padding: 10px;
+    border-radius: 6px;
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+}
+@keyframes fadeIn { to { opacity: 1; } }
+</style>
+
+<div class="sent-toast">訊息已成功送出!</div>
+
+
+<!-- 範例:簡單的頁面載入進度條(固定於頂部) -->
+<style>
+.page-loader {
+    position: fixed; top: 0; left: 0;
+    height: 3px; width: 40%;
+    background: #3498db;
+}
+</style>
+
+<div class="page-loader"></div>
+
+
+<!-- 範例:簡單的兩張圖片並排比較區塊 -->
+<div style="display:flex; gap:10px;">
+    <div><img src="a.jpg" style="width:150px;"><p>選項A</p></div>
+    <div><img src="b.jpg" style="width:150px;"><p>選項B</p></div>
+</div>
+
+
+<!-- 範例:簡單的常見標籤篩選按鈕列 -->
+<div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button>全部</button>
+    <button>熱門</button>
+    <button>最新</button>
+    <button>推薦</button>
+</div>
+
+
+<!-- 範例:簡單的問答式常見問題(FAQ)搜尋列 -->
+<input type="text" placeholder="搜尋常見問題...">
+<ul>
+    <li>如何修改帳號密碼?</li>
+    <li>如何申請退貨?</li>
+</ul>
+
+
+<!-- 範例:簡單的個人簡介卡片 -->
+<style>
+.profile-card {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid #eee; padding: 12px; border-radius: 8px;
+}
+</style>
+
+<div class="profile-card">
+    <img src="user.jpg" style="width:60px; height:60px; border-radius:50%;">
+    <div>
+        <h4>王小明</h4>
+        <p>前端工程師</p>
+    </div>
+</div>
+
+
+<!-- 範例:簡單的意見反饋評分按鈕(讚/倒讚) -->
+<div>
+    這篇文章對你有幫助嗎?
+    <button>👍 有幫助</button>
+    <button>👎 沒幫助</button>
+</div>
+
+
+<!-- 範例:簡單的商品數量庫存提示 -->
+<p style="color: #e74c3c;">庫存僅剩 3 件,手刀搶購!</p>
+
+
+<!-- 範例:簡單的多選標籤選擇器(可移除) -->
+<style>
+.chip { display:inline-block; background:#eee; padding:4px 10px; border-radius:12px; margin:2px; }
+.chip button { border:none; background:none; margin-left:4px; cursor:pointer; }
+</style>
+
+<div>
+    <span class="chip">前端<button onclick="this.parentElement.remove()">×</button></span>
+    <span class="chip">後端<button onclick="this.parentElement.remove()">×</button></span>
+</div>
+
+
+<!-- 範例:簡單的天氣資訊卡片 -->
+<style>
+.weather-card {
+    background: linear-gradient(135deg, #74ebd5, #acb6e5);
+    color: white; padding: 16px; border-radius: 10px; width: 180px;
+}
+</style>
+
+<div class="weather-card">
+    <p>台北市</p>
+    <h2>26°C</h2>
+    <p>多雲時晴</p>
+</div>
+
+
+<!-- 範例:簡單的訊息通知列表(附時間) -->
+<ul style="list-style:none; padding:0;">
+    <li style="border-bottom:1px solid #eee; padding:8px 0;">系統通知:您的訂單已出貨 <small>2小時前</small></li>
+    <li style="border-bottom:1px solid #eee; padding:8px 0;">系統通知:新訊息提醒 <small>昨天</small></li>
+</ul>
+
+
+<!-- 範例:簡單的關於我們團隊成員排版 -->
+<div style="display:flex; gap:16px;">
+    <div style="text-align:center;">
+        <img src="member1.jpg" style="width:80px; border-radius:50%;">
+        <p>創辦人</p>
+    </div>
+    <div style="text-align:center;">
+        <img src="member2.jpg" style="width:80px; border-radius:50%;">
+        <p>技術長</p>
+    </div>
+</div>
