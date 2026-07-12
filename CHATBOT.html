@@ -79,6 +79,8 @@
   }
 
   .messages {
+    position: relative;
+    z-index: 2;
     flex: 1;
     overflow-y: auto;
     padding: 24px;
@@ -450,7 +452,7 @@
             el.textContent += text[i];
             i++;
             messagesEl.scrollTop = messagesEl.scrollHeight;
-            setTimeout(typeNext, 25);
+            setTimeout(typeNext, 45);
           } else {
             resolve(el);
           }
