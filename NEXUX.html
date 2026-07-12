@@ -198,7 +198,7 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    min-height: 130px;
     width: 100%;
     padding: 0;
     background: var(--pill-bg);
@@ -231,8 +231,8 @@
 
   form.composer textarea {
     width: 100%;
+    flex: 1 0 44px;
     resize: none;
-    min-height: 44px;
     max-height: 200px;
     padding: 22px 22px 0 22px;
     border: none;
@@ -289,7 +289,11 @@
      改成真正可以選擇模型來源的下拉選單(自己的模型 / 暫時借用的第三方API)。 */
   .model-tag {
     flex-shrink: 0;
+    box-sizing: content-box;
+    height: 15px;
+    margin: 0;
     border: none;
+    outline: none;
     background: transparent;
     appearance: none;
     -webkit-appearance: none;
@@ -299,6 +303,7 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 15px;
+    vertical-align: middle;
     color: #FFFFFF;
     white-space: nowrap;
     cursor: pointer;
@@ -380,6 +385,7 @@
           id="prompt"
           placeholder="想問啥就問啥"
           maxlength="200"
+          rows="1"
           required
         ></textarea>
 
