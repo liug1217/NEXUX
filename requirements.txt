@@ -1,2 +1,6 @@
 flask
 numpy
+python-dotenv
+openai
+anthropic
+google-genai

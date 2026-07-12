@@ -19,3 +19,9 @@ __pycache__/
 # 隨時可以用 qa.txt / chat.txt 重新產生,不需要 commit。
 sft_data.jsonl
 
+# 第三方 AI API 金鑰,絕對不要 commit 上傳。
+# 本機執行 server.py 時,靠 python-dotenv 讀取這個檔案;
+# Vercel 上則要另外在 Vercel 專案設定裡加同樣名稱的環境變數
+# (Settings → Environment Variables),不是靠這個檔案。
+.env
+

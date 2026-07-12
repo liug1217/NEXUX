@@ -25,13 +25,19 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import torch
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_from_directory, Response
 
 torch.set_num_threads(1)
 
+# 本機開發用 .env 檔案提供第三方 API 金鑰(OPENAI_API_KEY 等),
+# 這個檔案不會被 commit 上傳(見 .gitignore)。
+load_dotenv()
+
 from config import Config
 from inference import load_model
 from text_cleanup import find_next_turn_marker
+from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -68,9 +74,24 @@ def api_generate():
     """
     payload = request.get_json(silent=True) or {}
     prompt = (payload.get("prompt") or "").strip()
+    provider = payload.get("provider") or "own"
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
+
+    if provider not in SUPPORTED_PROVIDERS:
+        return jsonify({"error": f"不支援的模型來源: {provider}"}), 400
+
+    # 第三方 API(OpenAI / Anthropic / Google / Groq)只是暫時借來頂著用,
+    # 沒有串接串流,一次生成完整回覆再一次回傳,前端會自己補上打字機效果。
+    if provider != "own":
+        try:
+            reply = call_provider(provider, prompt)
+        except ProviderError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": f"呼叫 {provider} 時發生錯誤: {e}"}), 500
+        return jsonify({"reply": reply})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
