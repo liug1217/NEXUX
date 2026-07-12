@@ -535,9 +535,18 @@
 
         const contentType = res.headers.get("content-type") || "";
 
-        if (!res.ok || contentType.includes("application/json")) {
+        if (contentType.includes("application/json")) {
+          // 非串流:一次拿到完整 JSON 回應(Vercel 上的 api/generate.py 走這條路,
+          // 不管成功或失敗都會是 JSON,要看 res.ok / data.error 才能判斷是不是錯誤,
+          // 不能只看「是不是 JSON」就當成錯誤)。
           const data = await res.json();
-          addMessage(data.error || "發生未知錯誤,請稍後再試。", "error");
+          if (!res.ok || data.error) {
+            addMessage(data.error || "發生未知錯誤,請稍後再試。", "error");
+          } else {
+            addMessage(data.reply || "(模型沒有生成任何內容)", "assistant");
+          }
+        } else if (!res.ok) {
+          addMessage("發生未知錯誤,請稍後再試。", "error");
         } else {
           // 串流讀取:伺服器每生成一個字就傳一個字過來,邊收邊顯示,
           // 不用等整段回覆生成完才看到文字。

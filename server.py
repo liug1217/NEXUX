@@ -15,8 +15,19 @@ server.py
 """
 
 import os
+
+# 跟 train.py 同樣的道理:這台機器上 torch 用多執行緒跑 CPU 運算時偶爾會跟
+# OpenMP/MKL 搶執行緒資源導致不穩定,推理(生成回覆)時也可能受影響,
+# 在 import torch 之前先鎖定成單執行緒模式。
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 import torch
 from flask import Flask, request, jsonify, send_from_directory, Response
+
+torch.set_num_threads(1)
 
 from config import Config
 from inference import load_model

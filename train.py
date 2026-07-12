@@ -9,8 +9,19 @@ train.py
 """
 
 import os
+
+# 這台機器上 torch 用多執行緒跑 CPU 運算時,會跟 OpenMP/MKL 等數學函式庫搶執行緒
+# 資源導致直接當掉(segmentation fault)。在 import torch 之前,先把這些環境變數
+# 設定成單執行緒模式,徹底避開這個問題,不用每次手動在終端機另外設定。
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 import math
 import torch
+
+torch.set_num_threads(1)
 
 from config import Config
 from tokenizer import CharTokenizer
