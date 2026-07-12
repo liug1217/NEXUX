@@ -6,6 +6,6 @@
     }
   },
   "rewrites": [
-    { "source": "/", "destination": "/CHATBOT.html" }
+    { "source": "/", "destination": "/NEXUS%20AI.html" }
   ]
 }

@@ -2,7 +2,7 @@
 server.py
 ---------
 一個很輕量的本地伺服器,負責:
-1. 提供 CHATBOT.html 這個聊天介面網頁
+1. 提供 NEXUS AI.html 這個聊天介面網頁
 2. 提供 /api/generate 這個 API,讓網頁把使用者輸入的文字傳過來,
    由這裡呼叫 model.py / inference.py 產生回覆,再傳回網頁顯示。
 
@@ -62,7 +62,13 @@ def get_model_and_tokenizer():
 @app.route("/")
 def index():
     """提供聊天介面的 HTML 檔案。"""
-    return send_from_directory(BASE_DIR, "CHATBOT.html")
+    return send_from_directory(BASE_DIR, "NEXUS AI.html")
+
+
+@app.route("/NEXUS AI.png")
+def favicon():
+    """提供瀏覽器分頁圖示 / logo 用的圖片。"""
+    return send_from_directory(BASE_DIR, "NEXUS AI.png")
 
 
 @app.route("/api/generate", methods=["POST"])

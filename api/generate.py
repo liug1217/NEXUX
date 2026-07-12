@@ -24,6 +24,7 @@ from flask import Flask, request, jsonify  # noqa: E402
 from tokenizer import CharTokenizer  # noqa: E402
 from numpy_gpt import NumpyGPT  # noqa: E402
 from text_cleanup import truncate_at_next_turn  # noqa: E402
+from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -61,9 +62,24 @@ def get_model_and_tokenizer():
 def api_generate():
     payload = request.get_json(silent=True) or {}
     prompt = (payload.get("prompt") or "").strip()
+    provider = payload.get("provider") or "own"
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
+
+    if provider not in SUPPORTED_PROVIDERS:
+        return jsonify({"error": f"不支援的模型來源: {provider}"}), 400
+
+    # 第三方 API(OpenAI / Anthropic / Google / Groq)只是暫時借來頂著用,
+    # 金鑰要另外在 Vercel 專案的 Environment Variables 設定裡加好。
+    if provider != "own":
+        try:
+            reply = call_provider(provider, prompt)
+        except ProviderError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": f"呼叫 {provider} 時發生錯誤: {e}"}), 500
+        return jsonify({"reply": reply})
 
     try:
         model, tokenizer = get_model_and_tokenizer()
