@@ -154,6 +154,8 @@
      只在還沒開始對話(輸入框置中)時顯示,送出第一則訊息後跟著輸入框一起淡出。 */
   .composer-heading {
     margin: 0 0 20px;
+    max-height: 60px;
+    overflow: hidden;
     text-align: center;
     font-family: 'Inter', var(--sans);
     font-style: normal;
@@ -161,17 +163,20 @@
     font-size: 25px;
     line-height: 30px;
     color: #FFFFFF;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
   }
 
   /* Rectangle 14/23/24/25/26:輸入框上方的快速提示按鈕列,
-     只在還沒開始對話(輸入框置中)時顯示,送出第一則訊息後跟著輸入框一起隱藏。 */
+     只在還沒開始對話(輸入框置中)時顯示,送出第一則訊息後跟著輸入框一起收合。
+     用 max-height 過渡取代直接 display:none,避免版面高度瞬間跳動造成畫面抖動。 */
   .quick-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 15px;
     margin-top: 20px;
-    transition: opacity 0.3s ease;
+    max-height: 60px;
+    overflow: hidden;
+    transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
   }
 
   .quick-actions button {
@@ -493,14 +498,27 @@
 
     function slideComposerToBottom() {
       form.style.transform = "translateY(0px)";
-      // 標題文字和快速提示按鈕只在還沒開始對話時出現,送出第一則訊息後淡出並收起,
-      // 讓輸入框上方不會留下多餘的空白區域。
+      // 標題文字和快速提示按鈕只在還沒開始對話時出現,送出第一則訊息後
+      // 平滑收合(透明度 + 高度 + margin 一起動畫),避免版面高度瞬間跳動造成畫面抖動。
       composerHeading.style.opacity = "0";
+      composerHeading.style.maxHeight = "0px";
+      composerHeading.style.marginBottom = "0px";
       quickActions.style.opacity = "0";
-      setTimeout(() => {
+      quickActions.style.maxHeight = "0px";
+      quickActions.style.marginTop = "0px";
+
+      // 動畫結束後徹底移出版面(display:none),避免留下 0 高度的空殼元素。
+      // 用 transitionend 抓精確時機,並保留一個跟 CSS transition 秒數一致的
+      // 備援 timeout,避免極少數瀏覽器情境(例如分頁在背景)transitionend 沒觸發時卡住。
+      let collapsed = false;
+      function collapseQuickStart() {
+        if (collapsed) return;
+        collapsed = true;
         composerHeading.style.display = "none";
         quickActions.style.display = "none";
-      }, 300);
+      }
+      composerHeading.addEventListener("transitionend", collapseQuickStart, { once: true });
+      setTimeout(collapseQuickStart, 350);
     }
 
     // 立刻同步執行(不等 load 事件),避免先在底部畫面停留一下才跳到中間、
