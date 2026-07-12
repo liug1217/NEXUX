@@ -38,3 +38,11 @@ def truncate_at_next_turn(text: str) -> str:
     if match:
         return text[:match.start()].rstrip()
     return text.rstrip()
+
+
+def find_next_turn_marker(text: str):
+    """
+    回傳文字裡「第一個新一輪對話標記」的 match 物件(找不到則回傳 None)。
+    給 server.py 的串流生成邏輯用,判斷要不要提早停止串流。
+    """
+    return _PATTERN.search(text)

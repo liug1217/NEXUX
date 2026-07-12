@@ -450,29 +450,6 @@
       return el;
     }
 
-    // 逐字把回覆的文字打出來,製造打字機效果
-    function addTypingMessage(text, role) {
-      const el = document.createElement("div");
-      el.className = "msg " + role;
-      messagesEl.appendChild(el);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-
-      return new Promise((resolve) => {
-        let i = 0;
-        function typeNext() {
-          if (i < text.length) {
-            el.textContent += text[i];
-            i++;
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-            setTimeout(typeNext, 45);
-          } else {
-            resolve(el);
-          }
-        }
-        typeNext();
-      });
-    }
-
     // 還沒有任何訊息時,把輸入框往上移到畫面偏中央的位置(比照設計稿 Rectangle 12),
     // 送出第一則訊息後,再讓它滑動回到底部(比照設計稿 Rectangle 13)。
     const CENTERED_VERTICAL_RATIO = 720 / 1440; // Rectangle 12 垂直中心 / 畫布高度(top:655 之後剛好是畫面正中央)
@@ -555,12 +532,35 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt }),
         });
-        const data = await res.json();
 
-        if (!res.ok || data.error) {
+        const contentType = res.headers.get("content-type") || "";
+
+        if (!res.ok || contentType.includes("application/json")) {
+          const data = await res.json();
           addMessage(data.error || "發生未知錯誤,請稍後再試。", "error");
         } else {
-          await addTypingMessage(data.reply || "(模型沒有生成任何內容)", "assistant");
+          // 串流讀取:伺服器每生成一個字就傳一個字過來,邊收邊顯示,
+          // 不用等整段回覆生成完才看到文字。
+          const el = document.createElement("div");
+          el.className = "msg assistant";
+          messagesEl.appendChild(el);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let received = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            received += decoder.decode(value, { stream: true });
+            el.textContent = received;
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+          }
+
+          if (!received.trim()) {
+            el.textContent = "(模型沒有生成任何內容)";
+          }
         }
       } catch (err) {
         addMessage("無法連線到伺服器,請確認 server.py 是否正在執行。", "error");

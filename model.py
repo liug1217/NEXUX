@@ -206,4 +206,59 @@ class GPTModel(nn.Module):
 
         self.train()
         return idx
+
+    @torch.no_grad()
+    def generate_stream(
+        self,
+        idx,
+        max_new_tokens,
+        temperature=1.0,
+        top_k=None,
+        top_p=None,
+        repetition_penalty=1.0,
+    ):
+        """
+        跟 generate() 邏輯完全一樣,差別只在於用 yield 把「每一個新產生的 token id」
+        逐一吐出來,而不是等全部生成完才一次回傳完整序列,讓呼叫端(server.py)
+        可以邊生成邊把文字傳給前端,做出真正的串流效果。
+        """
+        self.eval()
+        for _ in range(max_new_tokens):
+            idx_cond = idx[:, -self.config.block_size:]
+            logits, _ = self(idx_cond)
+            logits = logits[:, -1, :] / max(temperature, 1e-5)
+
+            if repetition_penalty != 1.0:
+                for b in range(idx.size(0)):
+                    seen_tokens = set(idx[b].tolist())
+                    for token_id in seen_tokens:
+                        if logits[b, token_id] > 0:
+                            logits[b, token_id] /= repetition_penalty
+                        else:
+                            logits[b, token_id] *= repetition_penalty
+
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = float("-inf")
+
+            if top_p is not None:
+                sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+                sorted_probs = F.softmax(sorted_logits, dim=-1)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+
+                sorted_indices_to_remove = cumulative_probs > top_p
+                sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                sorted_indices_to_remove[:, 0] = False
+
+                for b in range(logits.size(0)):
+                    indices_to_remove = sorted_indices[b][sorted_indices_to_remove[b]]
+                    logits[b, indices_to_remove] = float("-inf")
+
+            probs = F.softmax(logits, dim=-1)
+            next_id = torch.multinomial(probs, num_samples=1)  # (B, 1)
+            idx = torch.cat([idx, next_id], dim=1)
+
+            yield next_id[0].tolist()
+
+        self.train()
     

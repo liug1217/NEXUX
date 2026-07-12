@@ -16,11 +16,11 @@ server.py
 
 import os
 import torch
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 
 from config import Config
 from inference import load_model
-from text_cleanup import truncate_at_next_turn
+from text_cleanup import find_next_turn_marker
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -52,7 +52,8 @@ def index():
 def api_generate():
     """
     接收 { "prompt": "使用者輸入的文字" },
-    回傳 { "reply": "模型生成的回覆" } 或 { "error": "錯誤訊息" }。
+    以串流(text/plain,chunked transfer)的方式把模型生成的文字逐字傳回去,
+    讓前端可以邊生成邊顯示,不用等整段回覆生成完才看到文字,大幅縮短「等待感」。
     """
     payload = request.get_json(silent=True) or {}
     prompt = (payload.get("prompt") or "").strip()
@@ -68,35 +69,54 @@ def api_generate():
                      "再重新啟動 server.py。"
         }), 400
 
-    try:
-        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
-        # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
-        wrapped_prompt = f"問:{prompt}\n答:" if is_sft else prompt
+    # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
+    # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
+    wrapped_prompt = f"問:{prompt}\n答:" if is_sft else prompt
 
-        idx = torch.tensor(
-            [tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device
-        )
-        if idx.shape[1] == 0:
-            return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
+    idx = torch.tensor(
+        [tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device
+    )
+    if idx.shape[1] == 0:
+        return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
 
-        out_idx = model.generate(
-            idx,
-            max_new_tokens=config.max_new_tokens,
-            temperature=config.temperature,
-            top_k=config.top_k,
-            top_p=config.top_p,
-            repetition_penalty=config.repetition_penalty,
-        )
-        full_text = tokenizer.decode(out_idx[0].tolist())
+    def stream():
+        accumulated = ""
+        sent_len = 0
+        # 尾巴保留幾個字元先不送出,避免剛好把「換行標記」(例如 \nA:)送出一半,
+        # 等累積的文字夠長、確定不是標記的開頭之後,才把安全的部分吐給前端。
+        HOLD = 3
 
-        # 只取「新生成」的部分回覆給前端,不要把包裝用的文字也顯示給使用者
-        reply = full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text
-        reply = truncate_at_next_turn(reply)
+        try:
+            for token_ids in model.generate_stream(
+                idx,
+                max_new_tokens=config.max_new_tokens,
+                temperature=config.temperature,
+                top_k=config.top_k,
+                top_p=config.top_p,
+                repetition_penalty=config.repetition_penalty,
+            ):
+                accumulated += tokenizer.decode(token_ids)
 
-        return jsonify({"reply": reply})
+                marker = find_next_turn_marker(accumulated)
+                if marker:
+                    final_text = accumulated[:marker.start()].rstrip()
+                    if len(final_text) > sent_len:
+                        yield final_text[sent_len:]
+                    return
 
-    except Exception as e:  # noqa: BLE001 - 這裡刻意攔截所有例外,回傳給前端顯示
-        return jsonify({"error": f"生成時發生錯誤: {e}"}), 500
+                safe_len = max(0, len(accumulated) - HOLD)
+                if safe_len > sent_len:
+                    yield accumulated[sent_len:safe_len]
+                    sent_len = safe_len
+
+            final_text = accumulated.rstrip()
+            if len(final_text) > sent_len:
+                yield final_text[sent_len:]
+
+        except Exception as e:  # noqa: BLE001 - 這裡刻意攔截所有例外,回傳給前端顯示
+            yield f"\n[生成時發生錯誤: {e}]"
+
+    return Response(stream(), mimetype="text/plain; charset=utf-8")
 
 
 if __name__ == "__main__":
