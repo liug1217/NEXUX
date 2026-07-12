@@ -37,6 +37,10 @@
     align-items: center;
   }
 
+  @media (min-width: 721px) {
+    body { padding-left: 52px; }
+  }
+
   /* 背景加一點極淡的水墨紋理感,呼叫語料裡「山」的意象 */
   body::before {
     content: "";
@@ -66,16 +70,12 @@
 
   .app {
     width: 100%;
-    max-width: 720px;
+    max-width: 771.5px;
     height: 100vh;
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 1;
-  }
-
-  @media (min-width: 721px) {
-    .app { margin-left: 52px; }
   }
 
   .messages {
@@ -170,7 +170,7 @@
     max-width: 100%;
     box-sizing: border-box;
     margin: 0 auto;
-    padding: 16px 24px 30px;
+    padding: 16px 0 30px;
     background: var(--bg);
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -478,7 +478,9 @@
       if (messagesEl.children.length > 0) return;
       form.style.transition = "none";
       form.style.transform = "translateY(0px)";
-      const rect = form.getBoundingClientRect();
+      // 用膠囊本身(.composer-pill)的中心點來對齊,而不是整個 form 的中心點,
+      // 因為 form 裡面還包含下方的快速提示按鈕列,用 form 整體的中心點會算偏。
+      const rect = document.querySelector(".composer-pill").getBoundingClientRect();
       const currentCenterY = rect.top + rect.height / 2;
       const targetCenterY = window.innerHeight * CENTERED_VERTICAL_RATIO;
       const delta = targetCenterY - currentCenterY;
