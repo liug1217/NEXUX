@@ -17,22 +17,31 @@ import os
 import sys
 import logging
 
-# Vercel 的 Python 執行環境預設編碼不是 UTF-8,遇到中文字送進 OpenAI / Anthropic /
-# Google 的 SDK 時,SDK 內部某些除錯輸出(例如 httpx 的請求日誌)會嘗試用 ascii
-# 編碼印出內容,一撞到中文字就整個噴錯。這裡直接在程式碼層強制 stdout/stderr
-# 用 UTF-8,不依賴 vercel.json 裡的環境變數設定(那個設定在 Vercel 的 Python
-# runtime 上不一定真的生效)。同時把這幾個 SDK 內部的除錯日誌關掉,
-# 從根源避免它們嘗試印出中文字。
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
-
-for _logger_name in ("httpx", "httpcore", "openai", "anthropic", "google_genai"):
-    logging.getLogger(_logger_name).setLevel(logging.CRITICAL)
-
 SUPPORTED_PROVIDERS = ["own", "openai", "anthropic", "google", "groq"]
+
+
+def _ensure_utf8_safe_environment() -> None:
+    """
+    實際重現過的根本原因:openai/httpx 內部的除錯訊息(例如
+    「Request options: {...}」)裡面會直接包含使用者輸入的原始 UTF-8 字元
+    (不是跳脫過的 \\uXXXX 格式)。如果這行訊息被寫到編碼是 ascii 的輸出串流,
+    就會整個丟出 UnicodeEncodeError,把整次 API 呼叫搞壞。
+
+    Vercel 的 Serverless Function 每次呼叫都可能是全新的執行環境(甚至同一個
+    warm instance 裡,平台也可能在每次請求時重新包一層 stdout/stderr 做日誌
+    擷取),所以「只在模組載入時設定一次」不夠可靠,這裡改成每次呼叫 provider
+    之前都重新套用一次:
+    1. 用 logging.disable() 整個關掉 CRITICAL 以下的所有 log,從源頭讓這些
+       函式庫不會嘗試印出任何東西(比針對個別 logger 設定等級更保險)。
+    2. stdout/stderr 也重新 reconfigure 成 UTF-8,當作第二層保險。
+    """
+    logging.disable(logging.CRITICAL)
+
+    for _stream in (sys.stdout, sys.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 
 class ProviderError(Exception):
@@ -40,6 +49,8 @@ class ProviderError(Exception):
 
 
 def call_provider(provider: str, prompt: str) -> str:
+    _ensure_utf8_safe_environment()
+
     if provider == "openai":
         return _call_openai(prompt)
     if provider == "anthropic":
