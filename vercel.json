@@ -7,5 +7,9 @@
   },
   "rewrites": [
     { "source": "/", "destination": "/NEXUS%20AI.html" }
-  ]
+  ],
+  "env": {
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8"
+  }
 }
