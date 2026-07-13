@@ -378,6 +378,13 @@
     /* iOS 對 font-size 小於16px的輸入欄位,聚焦時會自動放大整個畫面,
        這裡把手機上的輸入框字級調到16px,避免打字時畫面突然被放大。 */
     form.composer textarea { font-size: 16px; }
+    /* 手機空間較窄,標題文字容易換到第三行被 max-height 裁掉,
+       字級調小一號並放寬 max-height,避免文字被截斷。 */
+    .composer-heading {
+      font-size: 20px;
+      line-height: 25px;
+      max-height: 75px;
+    }
   }
 </style>
 </head>
