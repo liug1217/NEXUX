@@ -18,11 +18,16 @@ smalltalk.py
 """
 
 import random
+from datetime import datetime, timedelta, timezone
 
 # 輸入字數超過這個長度,就不當作單純的寒暄短句處理,交給模型生成。
 MAX_SMALLTALK_LEN = 12
 
+# 使用者主要是台灣繁體中文使用者,「現在幾點」這類問題,回覆用台灣時區(UTC+8)。
+_TAIWAN_TZ = timezone(timedelta(hours=8))
+
 _CATEGORIES: list[tuple[str, list[str]]] = [
+    ("time", ["幾點"]),
     ("farewell", ["掰掰", "再見", "拜拜", "先走了", "先這樣"]),
     ("thanks", ["謝謝", "感謝", "多謝"]),
     ("apology", ["對不起", "抱歉", "不好意思"]),
@@ -48,9 +53,17 @@ _REPLIES: dict[str, list[str]] = {
 }
 
 
+def _current_time_reply() -> str:
+    """回傳台灣時區當下的時間,例如「現在是下午3點25分。」。"""
+    now = datetime.now(_TAIWAN_TZ)
+    period = "上午" if now.hour < 12 else "下午"
+    hour12 = now.hour % 12 or 12
+    return f"現在是{period}{hour12}點{now.minute}分。"
+
+
 def match_smalltalk_reply(prompt: str) -> str | None:
     """
-    輸入使用者的原始 prompt,如果符合某個寒暄類別就回傳一句固定回覆,
+    輸入使用者的原始 prompt,如果符合某個寒暄類別就回傳一句回覆,
     否則回傳 None(代表應該交給模型正常生成)。
     """
     text = prompt.strip()
@@ -59,6 +72,8 @@ def match_smalltalk_reply(prompt: str) -> str | None:
 
     for category, keywords in _CATEGORIES:
         if any(kw in text for kw in keywords):
+            if category == "time":
+                return _current_time_reply()
             return random.choice(_REPLIES[category])
 
     return None
