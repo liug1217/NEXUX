@@ -18,12 +18,12 @@ class Config:
 
     # ------- 資料切分 -------
     train_split: float = 0.9   # 90% 訓練 / 10% 驗證
-    block_size: int = 160      # 模型一次看多長的文字(context length),加大讓長一點的問答不會斷了上下文
+    block_size: int = 96      # 模型一次看多長的文字(context length)
 
     # ------- 模型架構 -------
-    n_embd: int = 192       # embedding 維度,加大以提升語意表達能力
-    n_head: int = 8        # attention head 數量(192 / 8 = 24 維/head)
-    n_layer: int = 8        # transformer block 層數,加深以學習更複雜的規律
+    n_embd: int = 128       # embedding 維度
+    n_head: int = 8        # attention head 數量
+    n_layer: int = 6        # transformer block 層數
     dropout: float = 0.1
 
     # ------- 訓練超參數 -------
@@ -31,14 +31,15 @@ class Config:
     learning_rate: float = 3e-4
     min_learning_rate: float = 3e-5   # cosine 衰減後的最低學習率
     warmup_iters: int = 200           # 前 N 步線性 warmup,避免一開始梯度過大
-    max_iters: int = 4000
+    max_iters: int = 5000      # 語料量變大,從頭訓練,步數比原本4000略增
     weight_decay: float = 0.01        # AdamW 的權重衰減,抑制過擬合
     grad_clip: float = 1.0            # 梯度裁剪上限,避免梯度爆炸(0 表示不裁剪)
     eval_interval: int = 200   # 每多少步驟評估一次
     eval_iters: int = 10       # 評估時取多少個 batch 平均
 
     # ------- Checkpoint / 續訓練 -------
-    resume: bool = False   # True 時會從 checkpoint_path 載入既有權重,接續訓練
+    resume: bool = False   # 這次新增語料引入了253個原本詞表沒有的新字,詞表必須重建,
+                            # 導致 embedding 維度對不上舊 checkpoint,無法沿用續訓,只能從頭重新訓練
     save_interval: int = 500   # 每多少步驟額外存一次 checkpoint(避免中斷後全部重來)
 
     # ------- SFT(問答微調)設定 -------
@@ -47,7 +48,7 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
-    sft_max_iters: int = 900                # 資料量從394筆增加到890筆,依相近比例調高步數,同時避免過擬合
+    sft_max_iters: int = 1000                # 資料量持續增加,依比例調高步數,同時避免過擬合
     sft_eval_interval: int = 150
 
     # ------- 推理 (inference) 參數 -------

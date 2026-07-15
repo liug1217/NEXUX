@@ -17,6 +17,7 @@ api/generate.py
 
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -25,6 +26,7 @@ from tokenizer import CharTokenizer  # noqa: E402
 from numpy_gpt import NumpyGPT  # noqa: E402
 from text_cleanup import truncate_at_next_turn  # noqa: E402
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
+from conversation import build_context_prompt  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -63,6 +65,8 @@ def api_generate():
     payload = request.get_json(silent=True) or {}
     prompt = (payload.get("prompt") or "").strip()
     provider = payload.get("provider") or "own"
+    history = payload.get("history") or []
+    debug = bool(payload.get("debug"))
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
@@ -87,14 +91,27 @@ def api_generate():
         return jsonify({"error": str(e)}), 400
 
     try:
-        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
+        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
         # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
-        wrapped_prompt = f"問:{prompt}\n答:" if model.is_sft else prompt
+        if model.is_sft:
+            wrapped_prompt = build_context_prompt(
+                history, prompt, tokenizer, model.block_size, MAX_NEW_TOKENS
+            )
+        else:
+            wrapped_prompt = prompt
 
         idx = tokenizer.encode(wrapped_prompt)
         if len(idx) == 0:
             return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
 
+        if debug:
+            print(
+                f"[inference-debug] context tokens: {len(idx)}/{model.block_size} "
+                f"| history turns received: {len(history)} "
+                f"| wrapped_prompt:\n{wrapped_prompt!r}"
+            )
+
+        start_time = time.time()
         out_idx = model.generate(
             idx,
             max_new_tokens=MAX_NEW_TOKENS,
@@ -106,6 +123,12 @@ def api_generate():
         full_text = tokenizer.decode(out_idx)
         reply = full_text[len(wrapped_prompt):] if full_text.startswith(wrapped_prompt) else full_text
         reply = truncate_at_next_turn(reply)
+
+        if debug:
+            print(
+                f"[inference-debug] generated {len(out_idx) - len(idx)} tokens "
+                f"in {time.time() - start_time:.2f}s"
+            )
 
         return jsonify({"reply": reply})
 
