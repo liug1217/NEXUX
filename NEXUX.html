@@ -432,6 +432,12 @@
       line-height: 1.3;
       max-height: 40px;
     }
+    /* .messages 的 padding 在這個尺寸縮成 16px(見上面 .messages 規則),
+       桌機版用來切齊輸入框邊界的負邊距是配 24px 算出來的 -24px,
+       手機版要跟著改成 -16px,不然會多拉出 8px 造成跑版。 */
+    .msg.user { margin-right: -16px; }
+    .msg.assistant { margin-left: -16px; }
+    .time-card { margin-left: -16px; }
   }
 </style>
 </head>
