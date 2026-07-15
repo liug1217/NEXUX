@@ -140,6 +140,28 @@
     margin-left: -24px;
   }
 
+  /* Rectangle 7:使用者問「現在幾點」時,回覆文字上方額外顯示的
+     大時鐘卡片,寬度固定 329.5px、圓角 15px。 */
+  .time-card {
+    width: 329.5px;
+    height: 120px;
+    margin: 0 0 50px -24px;
+    background: rgba(113, 112, 112, 0.2);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .time-card-display {
+    font-family: 'SF Pro Display', 'Inter', var(--sans);
+    font-weight: 274;
+    font-size: 60px;
+    line-height: 72px;
+    color: #FFFFFF;
+    font-variant-numeric: tabular-nums;
+  }
+
   .msg.error {
     align-self: flex-start;
     background: transparent;
@@ -543,6 +565,27 @@
       });
     }
 
+    // 使用者問「現在幾點」時,在回覆文字上方插入一張時鐘卡片(Rectangle 7),
+    // 顯示即時更新的 HH:MM:SS,讓回覆不只是一句話,而是像小工具一樣。
+    function renderTimeCard() {
+      const card = document.createElement("div");
+      card.className = "time-card";
+      const display = document.createElement("span");
+      display.className = "time-card-display";
+      card.appendChild(display);
+      messagesEl.appendChild(card);
+
+      function tick() {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        display.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      }
+      tick();
+      setInterval(tick, 1000);
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
     // 還沒有任何訊息時,把輸入框往上移到畫面偏中央的位置(比照設計稿 Rectangle 12),
     // 送出第一則訊息後,再讓它滑動回到底部(比照設計稿 Rectangle 13)。
     const CENTERED_VERTICAL_RATIO = 720 / 1440; // Rectangle 12 垂直中心 / 畫布高度(top:655 之後剛好是畫面正中央)
@@ -660,6 +703,9 @@
           if (!res.ok || data.error) {
             addMessage(data.error || "發生未知錯誤,請稍後再試。", "error");
           } else {
+            if (data.type === "time") {
+              renderTimeCard();
+            }
             const el = document.createElement("div");
             el.className = "msg assistant";
             messagesEl.appendChild(el);

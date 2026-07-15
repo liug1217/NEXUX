@@ -27,7 +27,7 @@ from numpy_gpt import NumpyGPT  # noqa: E402
 from text_cleanup import truncate_at_next_turn  # noqa: E402
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
 from conversation import build_context_prompt  # noqa: E402
-from smalltalk import match_smalltalk_reply  # noqa: E402
+from smalltalk import match_smalltalk  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -88,9 +88,10 @@ def api_generate():
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。
-    smalltalk_reply = match_smalltalk_reply(prompt)
-    if smalltalk_reply is not None:
-        return jsonify({"reply": smalltalk_reply})
+    smalltalk_match = match_smalltalk(prompt)
+    if smalltalk_match is not None:
+        smalltalk_reply, smalltalk_category = smalltalk_match
+        return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
     try:
         model, tokenizer = get_model_and_tokenizer()

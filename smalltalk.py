@@ -61,10 +61,13 @@ def _current_time_reply() -> str:
     return f"現在是{period}{hour12}點{now.minute}分。"
 
 
-def match_smalltalk_reply(prompt: str) -> str | None:
+def match_smalltalk(prompt: str) -> tuple[str, str] | None:
     """
-    輸入使用者的原始 prompt,如果符合某個寒暄類別就回傳一句回覆,
-    否則回傳 None(代表應該交給模型正常生成)。
+    輸入使用者的原始 prompt,如果符合某個寒暄類別,回傳
+    (回覆文字, 類別名稱) 的 tuple;否則回傳 None(代表應該交給模型正常生成)。
+
+    類別名稱給前端用,例如 category == "time" 時,前端會在回覆上方
+    多顯示一個時鐘卡片(見 NEXUX.html 的 renderTimeCard)。
     """
     text = prompt.strip()
     if not text or len(text) > MAX_SMALLTALK_LEN:
@@ -73,7 +76,7 @@ def match_smalltalk_reply(prompt: str) -> str | None:
     for category, keywords in _CATEGORIES:
         if any(kw in text for kw in keywords):
             if category == "time":
-                return _current_time_reply()
-            return random.choice(_REPLIES[category])
+                return _current_time_reply(), category
+            return random.choice(_REPLIES[category]), category
 
     return None
