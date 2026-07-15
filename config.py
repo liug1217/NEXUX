@@ -30,15 +30,16 @@ class Config:
     batch_size: int = 32
     learning_rate: float = 3e-4
     min_learning_rate: float = 3e-5   # cosine 衰減後的最低學習率
-    warmup_iters: int = 150           # 前 N 步線性 warmup,避免一開始梯度過大
-    max_iters: int = 4000
+    warmup_iters: int = 200           # 前 N 步線性 warmup,避免一開始梯度過大
+    max_iters: int = 5000      # 語料量變大,從頭訓練,步數比原本4000略增
     weight_decay: float = 0.01        # AdamW 的權重衰減,抑制過擬合
     grad_clip: float = 1.0            # 梯度裁剪上限,避免梯度爆炸(0 表示不裁剪)
     eval_interval: int = 200   # 每多少步驟評估一次
     eval_iters: int = 10       # 評估時取多少個 batch 平均
 
     # ------- Checkpoint / 續訓練 -------
-    resume: bool = False   # True 時會從 checkpoint_path 載入既有權重,接續訓練
+    resume: bool = False   # 這次新增語料引入了253個原本詞表沒有的新字,詞表必須重建,
+                            # 導致 embedding 維度對不上舊 checkpoint,無法沿用續訓,只能從頭重新訓練
     save_interval: int = 500   # 每多少步驟額外存一次 checkpoint(避免中斷後全部重來)
 
     # ------- SFT(問答微調)設定 -------
@@ -47,14 +48,14 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
-    sft_max_iters: int = 400                # 降低步數,減少對394筆資料重複學習的次數,緩解過擬合
-    sft_eval_interval: int = 100
+    sft_max_iters: int = 1000                # 資料量持續增加,依比例調高步數,同時避免過擬合
+    sft_eval_interval: int = 150
 
     # ------- 推理 (inference) 參數 -------
     max_new_tokens: int = 300
-    temperature: float = 0.5       # 再調低,讓生成結果更保守、更不容易亂跳
-    top_k: int = 40
-    top_p: float = 0.85             # 核採樣門檻,搭配 top_k 一起使用效果較好
+    temperature: float = 0.4       # 再調低,讓生成結果更保守、更不容易亂跳
+    top_k: int = 30
+    top_p: float = 0.8             # 核採樣門檻,搭配 top_k 一起使用效果較好
     repetition_penalty: float = 1.5  # 提高懲罰力道,更積極避免重複字詞
 
     # ------- 裝置 -------

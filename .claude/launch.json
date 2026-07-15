@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "chatbot-server",
-      "runtimeExecutable": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeExecutable": "C:\\Users\\liug1\\AppData\\Local\\Python\\bin\\python.exe",
       "runtimeArgs": ["server.py"],
       "port": 5000
     }

@@ -150,6 +150,7 @@
     max-height: 60px;
     overflow: hidden;
     text-align: center;
+    white-space: nowrap;
     font-family: 'Inter', var(--sans);
     font-style: normal;
     font-weight: 400;
@@ -378,6 +379,13 @@
     /* iOS 對 font-size 小於16px的輸入欄位,聚焦時會自動放大整個畫面,
        這裡把手機上的輸入框字級調到16px,避免打字時畫面突然被放大。 */
     form.composer textarea { font-size: 16px; }
+    /* 手機空間較窄,標題文字改成永遠不換行,改用 clamp() 讓字級
+       隨螢幕寬度自動縮小,確保整句話都能維持在同一行內顯示。 */
+    .composer-heading {
+      font-size: clamp(14px, 5vw, 25px);
+      line-height: 1.3;
+      max-height: 40px;
+    }
   }
 </style>
 </head>
@@ -452,6 +460,10 @@
   </div>
 
   <script>
+    // 對話記憶:記錄目前這個分頁裡聊過的每一輪對話,讓後端組 context 時
+    // 能看到之前聊過什麼(例如「我叫小明」->「我叫什麼?」),重新整理頁面就會清空。
+    const conversationHistory = [];
+
     const messagesEl = document.getElementById("messages");
     const form = document.getElementById("composer");
     const textarea = document.getElementById("prompt");
@@ -565,7 +577,12 @@
 
       const isFirstMessage = messagesEl.children.length === 0;
 
+      // 送出前先把「目前為止」的歷史記下來,不包含這一句新輸入,
+      // 這樣後端才能分清楚「已經聊過的內容」跟「這次的新問題」。
+      const historyForRequest = conversationHistory.slice();
+
       addMessage(prompt, "user");
+      conversationHistory.push({ role: "user", text: prompt });
       textarea.value = "";
       sendBtn.disabled = true;
 
@@ -577,7 +594,11 @@
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, provider: providerSelect.value }),
+          body: JSON.stringify({
+            prompt,
+            provider: providerSelect.value,
+            history: historyForRequest,
+          }),
         });
 
         const contentType = res.headers.get("content-type") || "";
@@ -594,7 +615,9 @@
             const el = document.createElement("div");
             el.className = "msg assistant";
             messagesEl.appendChild(el);
-            await typeOutText(el, data.reply || "(模型沒有生成任何內容)");
+            const replyText = data.reply || "(模型沒有生成任何內容)";
+            await typeOutText(el, replyText);
+            conversationHistory.push({ role: "assistant", text: replyText });
           }
         } else if (!res.ok) {
           addMessage("發生未知錯誤,請稍後再試。", "error");
@@ -634,6 +657,8 @@
 
           if (!received.trim()) {
             el.textContent = "(模型沒有生成任何內容)";
+          } else {
+            conversationHistory.push({ role: "assistant", text: received.trim() });
           }
         }
       } catch (err) {

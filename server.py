@@ -34,10 +34,13 @@ torch.set_num_threads(1)
 # 這個檔案不會被 commit 上傳(見 .gitignore)。
 load_dotenv()
 
+import time
+
 from config import Config
 from inference import load_model
 from text_cleanup import find_next_turn_marker
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
+from conversation import build_context_prompt
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -81,6 +84,8 @@ def api_generate():
     payload = request.get_json(silent=True) or {}
     prompt = (payload.get("prompt") or "").strip()
     provider = payload.get("provider") or "own"
+    history = payload.get("history") or []
+    debug = bool(payload.get("debug"))
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
@@ -107,9 +112,14 @@ def api_generate():
                      "再重新啟動 server.py。"
         }), 400
 
-    # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,
+    # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
     # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
-    wrapped_prompt = f"問:{prompt}\n答:" if is_sft else prompt
+    if is_sft:
+        wrapped_prompt = build_context_prompt(
+            history, prompt, tokenizer, config.block_size, config.max_new_tokens
+        )
+    else:
+        wrapped_prompt = prompt
 
     idx = torch.tensor(
         [tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device
@@ -117,12 +127,21 @@ def api_generate():
     if idx.shape[1] == 0:
         return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
 
+    if debug:
+        print(
+            f"[inference-debug] context tokens: {idx.shape[1]}/{config.block_size} "
+            f"| history turns received: {len(history)} "
+            f"| wrapped_prompt:\n{wrapped_prompt!r}"
+        )
+
     def stream():
         accumulated = ""
         sent_len = 0
         # 尾巴保留幾個字元先不送出,避免剛好把「換行標記」(例如 \nA:)送出一半,
         # 等累積的文字夠長、確定不是標記的開頭之後,才把安全的部分吐給前端。
         HOLD = 3
+        start_time = time.time()
+        step = 0
 
         try:
             for token_ids in model.generate_stream(
@@ -133,13 +152,22 @@ def api_generate():
                 top_p=config.top_p,
                 repetition_penalty=config.repetition_penalty,
             ):
+                step += 1
                 accumulated += tokenizer.decode(token_ids)
+
+                if debug:
+                    print(
+                        f"[inference-debug] step {step:3d} | context_len {idx.shape[1] + step} "
+                        f"| new token: {tokenizer.decode(token_ids)!r}"
+                    )
 
                 marker = find_next_turn_marker(accumulated)
                 if marker:
                     final_text = accumulated[:marker.start()].rstrip()
                     if len(final_text) > sent_len:
                         yield final_text[sent_len:]
+                    if debug:
+                        print(f"[inference-debug] stopped at turn marker, {step} tokens generated in {time.time()-start_time:.2f}s")
                     return
 
                 safe_len = max(0, len(accumulated) - HOLD)
@@ -150,6 +178,9 @@ def api_generate():
             final_text = accumulated.rstrip()
             if len(final_text) > sent_len:
                 yield final_text[sent_len:]
+
+            if debug:
+                print(f"[inference-debug] reached max_new_tokens, {step} tokens generated in {time.time()-start_time:.2f}s")
 
         except Exception as e:  # noqa: BLE001 - 這裡刻意攔截所有例外,回傳給前端顯示
             yield f"\n[生成時發生錯誤: {e}]"
