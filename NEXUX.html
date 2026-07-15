@@ -74,9 +74,10 @@
   .messages {
     position: relative;
     z-index: 2;
-    /* 容器本身「點擊穿透」,避免空白區域擋住視覺上疊在下面的輸入框按鈕,
-       實際的訊息泡泡再用 pointer-events:auto 復原成可以互動。 */
-    pointer-events: none;
+    /* 輸入框(form.composer)的 z-index 比這裡高,兩者視覺重疊時
+       輸入框一定在最上層可以點擊,所以這裡不需要再用 pointer-events:none
+       讓滑鼠穿透——之前這樣做會連滾輪滾動的手勢也一起被擋掉,
+       滑到訊息之間的空白處就完全滾不動。 */
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -84,10 +85,6 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-  }
-
-  .messages .msg {
-    pointer-events: auto;
   }
 
   .msg {
@@ -143,6 +140,8 @@
     box-sizing: border-box;
     margin: 0 auto;
     padding: 16px 0 30px;
+    position: relative;
+    z-index: 3;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
