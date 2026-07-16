@@ -367,6 +367,7 @@
 
   /* add:24x24,純圖示、無背景圓,內縮 20.83% / 20.83%,實心白色「+」 */
   .add-btn {
+    position: relative;
     flex-shrink: 0;
     width: 24px;
     height: 24px;
@@ -378,6 +379,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Ellipse 6:+ 按鈕背後的黑色圓形背景,用偽元素置中疊在圖示後面,
+     不改變按鈕本身 24x24 的版位,避免影響旁邊元素的間距計算。 */
+  .add-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    background: #000000;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
   }
 
   /* 模型 5:Inter, 12px/15px, 純白色文字。
@@ -412,8 +428,9 @@
     color: #FFFFFF;
   }
 
-  /* Mic:16x16,純圖示、無背景圓,內縮 20.83%(左右)/ 4.17%(上下),1.6px白色線條 */
+  /* Mic:16x16,內縮 20.83%(左右)/ 4.17%(上下),1.6px白色線條 */
   .mic-btn {
+    position: relative;
     flex-shrink: 0;
     width: 16px;
     height: 16px;
@@ -425,6 +442,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Ellipse 5:麥克風按鈕背後的黑色圓形背景,同樣用偽元素置中疊在
+     圖示後面,不改變按鈕本身 16x16 的版位。 */
+  .mic-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    background: #000000;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
   }
 
   /* Ellipse 2 + Arrow up:36x36 白底圓形送出鍵,內含 24x24 黑色線條的上箭頭圖示 */
