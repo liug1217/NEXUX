@@ -738,11 +738,12 @@
             conversationHistory.push({ role: "assistant", text: replyText });
 
             // 時間類回覆也預設12小時制文字(伺服器已經是這樣寫的),
-            // 點一下切換成24小時制的數字時間,再點一次切回原本的文字。
+            // 點一下切換成24小時制,句子風格要跟12小時制版本一致
+            // (「現在是X點Y分。」),只差在24小時制不用上午/下午、
+            // 時數改成0~23,不要換成數字冒號那種不同的寫法。
             if (data.type === "time") {
-              const pad = (n) => String(n).padStart(2, "0");
               const now = new Date();
-              const text24 = `現在是${pad(now.getHours())}:${pad(now.getMinutes())}。`;
+              const text24 = `現在是${now.getHours()}點${now.getMinutes()}分。`;
               let showing24 = false;
               el.style.cursor = "pointer";
               el.title = "點一下切換 12 / 24 小時制";
