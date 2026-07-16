@@ -739,11 +739,12 @@
 
             // 時間類回覆也預設12小時制文字(伺服器已經是這樣寫的),
             // 點一下切換成24小時制,句子風格要跟12小時制版本一致
-            // (「現在是X點Y分。」),只差在24小時制不用上午/下午、
-            // 時數改成0~23,不要換成數字冒號那種不同的寫法。
+            // (「現在是{上午/下午}X點Y分。」),12小時制和24小時制
+            // 都要保留上午/下午標示,只有時數表示法不同(1~12 vs 0~23)。
             if (data.type === "time") {
               const now = new Date();
-              const text24 = `現在是${now.getHours()}點${now.getMinutes()}分。`;
+              const period = now.getHours() < 12 ? "上午" : "下午";
+              const text24 = `現在是${period}${now.getHours()}點${now.getMinutes()}分。`;
               let showing24 = false;
               el.style.cursor = "pointer";
               el.title = "點一下切換 12 / 24 小時制";
