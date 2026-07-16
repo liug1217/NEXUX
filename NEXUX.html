@@ -143,6 +143,7 @@
   /* Rectangle 7:使用者問「現在幾點」時,回覆文字上方額外顯示的
      大時鐘卡片,寬度固定 329.5px、圓角 15px。 */
   .time-card {
+    position: relative;
     width: 329.5px;
     height: 120px;
     margin: 0 0 50px -24px;
@@ -150,20 +151,66 @@
     border: 1px solid var(--pill-border);
     border-radius: 15px;
     box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    user-select: none;
   }
 
   .time-card-display {
+    position: absolute;
+    left: 32px;
+    top: 24px;
+    width: 240px;
+    height: 72px;
     font-family: 'SF Pro Display', 'Inter', var(--sans);
     font-weight: 274;
     font-size: 60px;
     line-height: 72px;
     color: #FFFFFF;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Rectangle 30:12/24小時制的垂直滑動開關,拿掉整張卡片可點的做法,
+     改成只有這個開關能點,滑塊(Rectangle 31)用 top 動畫在上下兩個
+     位置之間滑動。 */
+  .time-card-switch {
+    position: absolute;
+    left: 304px;
+    top: 5px;
+    width: 20px;
+    height: 64px;
+    background: rgba(113, 112, 112, 0.2);
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .time-card-switch-thumb {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 16px;
+    height: 30px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    transition: top 0.2s ease;
+  }
+
+  /* 開關切到24小時制時,滑塊滑到軌道下方(64 - 2 inset*2 - 30 高 = 32px)。 */
+  .time-card-switch.is-24h .time-card-switch-thumb {
+    top: 32px;
+  }
+
+  .time-card-switch-label {
+    position: absolute;
+    left: 304px;
+    top: 69px;
+    width: 20px;
+    font-family: 'SF Pro Display', 'Inter', var(--sans);
+    font-weight: 274;
+    font-size: 5px;
+    line-height: 6px;
+    color: #FFFFFF;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
   .msg.error {
@@ -579,15 +626,34 @@
     function renderTimeCard() {
       const card = document.createElement("div");
       card.className = "time-card";
-      card.title = "點一下切換 12 / 24 小時制";
+
       const display = document.createElement("span");
       display.className = "time-card-display";
       card.appendChild(display);
+
+      // 垂直滑動開關:只有這個開關能點,不是整張卡片。
+      const switchEl = document.createElement("div");
+      switchEl.className = "time-card-switch";
+      switchEl.title = "點一下切換 12 / 24 小時制";
+      const thumb = document.createElement("div");
+      thumb.className = "time-card-switch-thumb";
+      switchEl.appendChild(thumb);
+      card.appendChild(switchEl);
+
+      const label = document.createElement("span");
+      label.className = "time-card-switch-label";
+      card.appendChild(label);
+
       messagesEl.appendChild(card);
 
-      // 預設 12 小時制,點卡片切換成 24 小時制,再點一次切回去。
+      // 預設 12 小時制,點開關切換成 24 小時制,再點一次切回去。
       let use24Hour = false;
       const pad = (n) => String(n).padStart(2, "0");
+
+      function render() {
+        switchEl.classList.toggle("is-24h", use24Hour);
+        label.textContent = use24Hour ? "24小時制" : "12小時制";
+      }
 
       function tick() {
         const now = new Date();
@@ -599,11 +665,13 @@
           display.textContent = `${pad(hour12)}:${pad(now.getMinutes())}:${seconds}`;
         }
       }
+      render();
       tick();
       setInterval(tick, 1000);
 
-      card.addEventListener("click", () => {
+      switchEl.addEventListener("click", () => {
         use24Hour = !use24Hour;
+        render();
         tick();
       });
 
