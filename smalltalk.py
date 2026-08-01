@@ -81,6 +81,18 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("pity", ["好可惜", "真可惜", "太可惜了"]),
     ("see_you_later", ["晚點見", "待會見", "等等見"]),
     ("request_help", ["可以幫我嗎", "能幫我嗎", "能幫忙嗎"]),
+    ("annoyed", ["我很煩", "好煩"]),
+    ("ask_my_feelings", ["你知道到我現在心情嗎", "你知道我現在心情嗎"]),
+    ("adopt_me", ["你可以養我嗎", "可以養我嗎"]),
+    ("world_complex", ["這世界很複雜", "世界很複雜"]),
+    # 這句話中間有逗號,會被拆成「很聰明的話」「處理各種問題」兩段,
+    # 靠 match_smalltalk 的多段組合機制各自命中同一類別。
+    ("smart_help", ["很聰明的話", "處理各種問題"]),
+    ("cant_understand", ["這件事很難我看不懂", "很難我看不懂"]),
+    ("how_to_handle", ["要怎麼處理這個問題", "怎麼處理這個問題"]),
+    ("solve_trouble", ["你能解決這個麻煩嗎", "解決這個麻煩"]),
+    ("do_you_understand", ["你懂不懂我在說什麼", "懂不懂我在說"]),
+    ("capabilities", ["你能回答的問題有哪些", "能回答的問題有哪些"]),
     # howareyou 的關鍵字「你好嗎」包含 greeting 的「你好」,
     # 必須排在 greeting 前面,不然會被 greeting 搶先攔截。
     ("howareyou", ["你好嗎", "過得如何", "過得好嗎"]),
@@ -136,6 +148,16 @@ _REPLIES: dict[str, list[str]] = {
     "pity": ["是啊,有點可惜。", "沒關係,下次還有機會。", "確實,不過盡力就好。"],
     "see_you_later": ["好,晚點見。", "好,待會見。", "嗯,等等見。"],
     "request_help": ["當然可以,你說。", "沒問題,我來幫你。", "可以啊,需要我做什麼?"],
+    "annoyed": ["怎麼了,想說說是什麼讓你心煩的嗎?"],
+    "ask_my_feelings": ["我沒辦法真的感同身受,但如果你想說,我在聽。"],
+    "adopt_me": ["哈哈,我沒辦法養你,不過有需要都可以找我聊聊。"],
+    "world_complex": ["確實,很多事情不是三言兩語能說清楚的。"],
+    "smart_help": ["我會盡力幫你想辦法,你可以直接告訴我問題是什麼。"],
+    "cant_understand": ["沒關係,你可以說說是哪個部分看不懂,我幫你拆解看看。"],
+    "how_to_handle": ["可以多告訴我一點細節嗎?我幫你一起想辦法。"],
+    "solve_trouble": ["你可以說說是什麼麻煩,我盡量幫你看看。"],
+    "do_you_understand": ["我盡量理解,如果沒抓到重點,你可以再說清楚一點。"],
+    "capabilities": ["什麼都可以問我,像是聊天、寫程式、解釋觀念、給建議等等,我都可以試著幫你。"],
     "howareyou": ["還不錯,謝謝關心,你呢?", "還可以,平平淡淡地過。", "我很好,謝謝你問起。"],
     "greeting": [
         "嗨,很高興認識你。",
@@ -200,3 +222,4 @@ def match_smalltalk(prompt: str) -> tuple[str, str] | None:
         return None
 
     return _match_single_category(text)
+    
