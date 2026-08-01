@@ -18,10 +18,15 @@ smalltalk.py
 """
 
 import random
+import re
 from datetime import datetime, timedelta, timezone
 
 # 輸入字數超過這個長度,就不當作單純的寒暄短句處理,交給模型生成。
 MAX_SMALLTALK_LEN = 12
+
+# 用來把「早安,辛苦了」「哈囉,你好嗎?」這種疊在一起的多句寒暄拆開,
+# 逐段判斷。只有逗號、句號這類標點才拆,不會誤拆掉正常詞語。
+_SEGMENT_SPLIT = re.compile(r"[,,、。!!??\s]+")
 
 # 使用者主要是台灣繁體中文使用者,「現在幾點」這類問題,回覆用台灣時區(UTC+8)。
 _TAIWAN_TZ = timezone(timedelta(hours=8))
@@ -97,6 +102,16 @@ def _current_time_reply() -> str:
     return f"現在是{period}{hour12}點{now.minute}分。"
 
 
+def _match_single_category(text: str) -> tuple[str, str] | None:
+    """只判斷單一片段(裡面沒有逗號、句號分隔的一小句)符合哪個類別。"""
+    for category, keywords in _CATEGORIES:
+        if any(kw in text for kw in keywords):
+            if category == "time":
+                return _current_time_reply(), category
+            return random.choice(_REPLIES[category]), category
+    return None
+
+
 def match_smalltalk(prompt: str) -> tuple[str, str] | None:
     """
     輸入使用者的原始 prompt,如果符合某個寒暄類別,回傳
@@ -106,13 +121,30 @@ def match_smalltalk(prompt: str) -> tuple[str, str] | None:
     多顯示一個時鐘卡片(見 NEXUX.html 的 renderTimeCard)。
     """
     text = prompt.strip()
-    if not text or len(text) > MAX_SMALLTALK_LEN:
+    if not text:
         return None
 
-    for category, keywords in _CATEGORIES:
-        if any(kw in text for kw in keywords):
-            if category == "time":
-                return _current_time_reply(), category
-            return random.choice(_REPLIES[category]), category
+    # 先試著用標點把輸入拆成多個片段,例如「早安,辛苦了」拆成
+    # 「早安」「辛苦了」兩段。如果每一段都各自命中某個寒暄類別,
+    # 代表整句其實就是「好幾句寒暄疊在一起」,不是一個需要理解的
+    # 完整問題,即使合起來的字數超過 MAX_SMALLTALK_LEN,也直接把
+    # 每一段的回覆接起來回覆,不會被誤丟給模型生成。
+    # 只要有任何一段沒命中(代表可能是完整句子的一部分,不是純寒暄),
+    # 就整句一起走原本「字數夠短才比對」的邏輯,交給下面處理。
+    segments = [seg for seg in _SEGMENT_SPLIT.split(text) if seg]
+    if len(segments) > 1:
+        matches = [_match_single_category(seg) for seg in segments]
+        if all(matches):
+            replies: list[str] = []
+            categories: list[str] = []
+            for reply, category in matches:
+                if reply not in replies:
+                    replies.append(reply)
+                categories.append(category)
+            combined_type = "time" if "time" in categories else categories[0]
+            return "".join(replies), combined_type
 
-    return None
+    if len(text) > MAX_SMALLTALK_LEN:
+        return None
+
+    return _match_single_category(text)
