@@ -93,6 +93,9 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("solve_trouble", ["你能解決這個麻煩嗎", "解決這個麻煩"]),
     ("do_you_understand", ["你懂不懂我在說什麼", "懂不懂我在說"]),
     ("capabilities", ["你能回答的問題有哪些", "能回答的問題有哪些"]),
+    ("advice", ["你能給我一些建議嗎", "給我一些建議"]),
+    ("motto", ["給我一句座右銘", "一句座右銘"]),
+    ("replace_jobs", ["你覺得你能取代哪些職業", "能取代哪些職業"]),
     # howareyou 的關鍵字「你好嗎」包含 greeting 的「你好」,
     # 必須排在 greeting 前面,不然會被 greeting 搶先攔截。
     ("howareyou", ["你好嗎", "過得如何", "過得好嗎"]),
@@ -158,6 +161,15 @@ _REPLIES: dict[str, list[str]] = {
     "solve_trouble": ["你可以說說是什麼麻煩,我盡量幫你看看。"],
     "do_you_understand": ["我盡量理解,如果沒抓到重點,你可以再說清楚一點。"],
     "capabilities": ["什麼都可以問我,像是聊天、寫程式、解釋觀念、給建議等等,我都可以試著幫你。"],
+    "advice": ["當然可以,你想問哪方面的建議?工作、感情還是學習都可以說說看。", "可以喔,想聽哪方面的建議呢?"],
+    "motto": [
+        "天行健,君子以自強不息。",
+        "有志者事竟成。",
+        "失敗為成功之母。",
+        "堅持下去,你比自己想的更強大。",
+        "路是自己走出來的,勇敢邁出第一步。",
+    ],
+    "replace_jobs": ["我比較適合幫忙處理重複性高、資料整理類的工作,像是查資料、寫草稿這些,真正需要人情味跟臨場判斷的工作,我覺得還是需要人來做。"],
     "howareyou": ["還不錯,謝謝關心,你呢?", "還可以,平平淡淡地過。", "我很好,謝謝你問起。"],
     "greeting": [
         "嗨,很高興認識你。",
@@ -222,4 +234,3 @@ def match_smalltalk(prompt: str) -> tuple[str, str] | None:
         return None
 
     return _match_single_category(text)
-    
