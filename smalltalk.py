@@ -93,6 +93,7 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("solve_trouble", ["解決這個麻煩", "這個麻煩怎麼辦", "能不能解決"]),
     ("do_you_understand", ["懂不懂我在說", "你懂不懂"]),
     ("capabilities", ["能回答的問題", "你能回答什麼", "能回答哪些問題"]),
+    ("advice", ["你能給我一些建議嗎", "給我一些建議", "給我建議"]),
     ("motto", ["一句座右銘", "給我座右銘", "座右銘"]),
     ("replace_jobs", ["能取代哪些職業", "取代哪些職業", "能取代什麼職業"]),
     # howareyou 的關鍵字「你好嗎」包含 greeting 的「你好」,
@@ -160,6 +161,7 @@ _REPLIES: dict[str, list[str]] = {
     "solve_trouble": ["你可以說說是什麼麻煩,我盡量幫你看看。"],
     "do_you_understand": ["我盡量理解,如果沒抓到重點,你可以再說清楚一點。"],
     "capabilities": ["什麼都可以問我,像是聊天、寫程式、解釋觀念、給建議等等,我都可以試著幫你。"],
+    "advice": ["當然可以,你想問哪方面的建議?工作、感情還是學習都可以說說看。", "可以喔,想聽哪方面的建議呢?"],
     "motto": [
         "天行健,君子以自強不息。",
         "有志者事竟成。",
@@ -186,6 +188,27 @@ def _current_time_reply() -> str:
     return f"現在是{period}{hour12}點{now.minute}分。"
 
 
+# 這些類別的固定回覆本身是「開放式追問」,例如 advice 回覆的
+# 「想聽哪方面的建議呢?」預期使用者下一句會自由回答(工作、感情...等等),
+# 不是又一句可以規則比對的寒暄。如果緊接在這些回覆後面的下一句,還是照樣
+# 拿去跟關鍵字比對,一旦使用者的回答剛好帶到別的規則關鍵字(例如回答時順口
+# 說了聲「好的」或「謝謝」),就會被那個不相干的規則搶先攔截,使用者真正
+# 想接續回答的內容反而被忽略掉。所以只要偵測到上一句 AI 回覆是這種開放式
+# 追問,下一句一律跳過規則比對,直接交給模型處理。
+_FOLLOWUP_CATEGORIES = {"advice"}
+_FOLLOWUP_REPLIES = {reply for category in _FOLLOWUP_CATEGORIES for reply in _REPLIES[category]}
+
+
+def _previous_turn_expects_followup(history: list[dict] | None) -> bool:
+    """判斷聊天記錄裡最後一句 AI 回覆,是不是預期使用者接著自由回答的開放式追問。"""
+    if not history:
+        return False
+    last = history[-1]
+    if not isinstance(last, dict):
+        return False
+    return last.get("role") == "assistant" and last.get("text") in _FOLLOWUP_REPLIES
+
+
 def _match_single_category(text: str) -> tuple[str, str] | None:
     """只判斷單一片段(裡面沒有逗號、句號分隔的一小句)符合哪個類別。"""
     for category, keywords in _CATEGORIES:
@@ -196,14 +219,21 @@ def _match_single_category(text: str) -> tuple[str, str] | None:
     return None
 
 
-def match_smalltalk(prompt: str) -> tuple[str, str] | None:
+def match_smalltalk(prompt: str, history: list[dict] | None = None) -> tuple[str, str] | None:
     """
     輸入使用者的原始 prompt,如果符合某個寒暄類別,回傳
     (回覆文字, 類別名稱) 的 tuple;否則回傳 None(代表應該交給模型正常生成)。
 
     類別名稱給前端用,例如 category == "time" 時,前端會在回覆上方
     多顯示一個時鐘卡片(見 NEXUX.html 的 renderTimeCard)。
+
+    history 是目前為止的對話記錄(前端傳來的 [{role, text}, ...]);
+    如果上一句 AI 回覆是像 advice 那種開放式追問,這裡會直接回傳 None,
+    跳過規則比對,確保使用者的回答不會被其他不相干的規則搶先攔截。
     """
+    if _previous_turn_expects_followup(history):
+        return None
+
     text = prompt.strip()
     if not text:
         return None
@@ -232,4 +262,4 @@ def match_smalltalk(prompt: str) -> tuple[str, str] | None:
         return None
 
     return _match_single_category(text)
-    
+
