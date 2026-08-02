@@ -31,6 +31,26 @@ _SEGMENT_SPLIT = re.compile(r"[,,、。!!??\s]+")
 # 使用者主要是台灣繁體中文使用者,「現在幾點」這類問題,回覆用台灣時區(UTC+8)。
 _TAIWAN_TZ = timezone(timedelta(hours=8))
 
+
+def _expand(prefixes: list[str], core: str, suffixes: list[str]) -> list[str]:
+    """
+    把「前綴 + 核心字 + 結尾同義詞」的組合自動展開成完整關鍵字清單,
+    例如 prefixes=["", "你", "最近"]、core="過得"、suffixes=["如何", "好嗎"]
+    會展開成「過得如何」「過得好嗎」「你過得如何」「你過得好嗎」...等。
+    比起一句一句手動列出每個完整片語,以後要新增說法只要在對應的
+    suffixes(或 prefixes)清單裡加一個詞,不用管排列組合。
+    """
+    return [prefix + core + suffix for prefix in prefixes for suffix in suffixes]
+
+
+# howareyou 示範:「今天過得如何」可以拆成「今天」(prefix)+「過得」(core)+「如何」(suffix),
+# 「如何」還能替換成「好嗎」「怎樣」等同義詞,靠 _expand 自動展開成完整關鍵字清單。
+_HOWAREYOU_KEYWORDS = _expand(
+    ["", "你", "最近", "今天", "你最近", "你今天"],
+    "過得",
+    ["如何", "好嗎", "怎樣", "如何呢", "好不好", "還好嗎", "還好嘛"],
+) + ["你好嗎", "你還好嗎", "你還好嘛"]
+
 _CATEGORIES: list[tuple[str, list[str]]] = [
     ("time", ["幾點"]),
     ("farewell", ["掰掰", "再見", "拜拜", "先走了", "先這樣"]),
@@ -98,7 +118,7 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("replace_jobs", ["能取代哪些職業", "取代哪些職業", "能取代什麼職業"]),
     # howareyou 的關鍵字「你好嗎」包含 greeting 的「你好」,
     # 必須排在 greeting 前面,不然會被 greeting 搶先攔截。
-    ("howareyou", ["你好嗎", "過得如何", "過得好嗎"]),
+    ("howareyou", _HOWAREYOU_KEYWORDS),
     ("greeting", ["哈囉", "嗨", "你好", "hi", "hello"]),
 ]
 
