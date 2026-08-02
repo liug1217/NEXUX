@@ -1,19 +1,13 @@
 # CHATBOT 專案筆記
 
-## 語料格式:標準 messages JSON
+## 語料格式:標準 messages JSONL
 
-`data/` 底下的語料統一存成標準的 `messages` 格式(`.json`,不再是 `.txt`),
-每個檔案是一個 JSON 陣列,每個元素是一段對話:
+`data/` 底下的語料統一存成標準的 `messages` 格式,用 `.jsonl`(一行一筆 JSON,
+不是單一大陣列),方便新增語料時直接在檔案後面加一行,不用整份重新解析寫入:
 
-```json
-[
-  {
-    "messages": [
-      {"role": "user", "content": "嗨"},
-      {"role": "assistant", "content": "你好!今天過得怎麼樣?"}
-    ]
-  }
-]
+```jsonl
+{"messages": [{"role": "user", "content": "嗨"}, {"role": "assistant", "content": "你好!今天過得怎麼樣?"}]}
+{"messages": [{"role": "user", "content": "你叫什麼?"}, {"role": "assistant", "content": "我是AI助手。"}, {"role": "user", "content": "你可以做什麼?"}, {"role": "assistant", "content": "我可以回答問題。"}]}
 ```
 
 一段對話可以只有一問一答,也可以是多輪(訊息陣列交替 user/assistant)。
@@ -25,17 +19,25 @@
 
 ## 模型再訓練與更新流程(重要,務必遵守)
 
-每當 `data/` 資料夾底下任何 `.json` 語料檔案有新增或修改,或是進行了重新訓練,
+每當 `data/` 資料夾底下任何 `.jsonl` 語料檔案有新增或修改,或是進行了重新訓練,
 都必須執行完整的「訓練 → 匯出 → 上傳」流程,讓部署到 Vercel 上的模型與最新語料保持一致:
 
 1. `python train.py`
-   讀取 `data/` 下所有 `.json`,重新訓練 checkpoint(輸出 `checkpoint.pt`)。
+   讀取 `data/` 下所有 `.jsonl`,重新訓練 checkpoint(輸出 `checkpoint.pt`)。
+   **注意**:如果語料改變導致詞表(vocab)變動,`train.py` 預設會沿用既有的
+   `tokenizer.json`(靜默忽略新字元!),新增語料後如果不確定詞表有沒有變,
+   訓練前先刪除 `tokenizer.json` 和 `checkpoint.pt`,強制重新建立詞表比較保險。
 2. `python prepare_sft_data.py` 接著 `python train_sft.py`
-   把 `data/` 下所有 `.json` 對話展開成 SFT 訓練用的 `sft_data.jsonl`,在預訓練成果上做問答微調。
+   把 `data/` 下所有 `.jsonl` 對話展開成 SFT 訓練用的 `sft_data.jsonl`,在預訓練成果上做問答微調。
 3. `python export_weights.py`
    把 `checkpoint.pt` 轉成 `weights.json`(Vercel 上的 numpy 推理引擎讀這個檔案)。
 4. `git add -A`、`git commit`(說明是資料更新/重新訓練)、`git push`
    commit 訊息需簡述新增了哪些語料或訓練變更;push 到 GitHub 後 Vercel 會自動重新部署。
+
+如果這台機器有 NVIDIA GPU(`nvidia-smi` 能看到裝置),訓練時優先用 CUDA 版 torch
+(`pip install torch --index-url https://download.pytorch.org/whl/cu126`,依驅動版本調整
+cu126 這個標籤),`config.py` 的 `device` 會自動偵測並優先用 GPU,速度比單執行緒 CPU
+快非常多(實測同樣步數快了 30 倍以上),值得優先確認。
 
 執行 `python`、`pip` 前記得把新安裝的 Python 加進當次 shell 的 PATH(此機器的 python.exe 位於
 `C:\Users\Administrator\AppData\Local\Programs\Python\Python312`,winget 安裝後新開的

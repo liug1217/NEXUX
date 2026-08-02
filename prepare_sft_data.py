@@ -1,7 +1,7 @@
 """
 prepare_sft_data.py
 --------------------
-把 data/ 底下所有 .json 語料(標準 messages 格式,見 messages_format.py)
+把 data/ 底下所有 .jsonl 語料(標準 messages 格式,見 messages_format.py)
 展開成 SFT 訓練用的 JSONL 格式,存成 sft_data.jsonl。
 
 每一行 JSONL 都是一筆 {"input": "...", "output": "..."} 的資料,
@@ -14,7 +14,7 @@ train.py 純接龍訓練那樣,不分青紅皂白地接續所有文字。
 
 跟舊版(直接用正規表達式解析 qa.txt / chat.txt / greeting.txt)不同,
 現在所有語料都已經是結構化的 messages 格式,不需要再用正規表達式猜格式;
-而且對於多輪對話(例如 chat.json),每一輪回答都會把前面的對話歷史一併
+而且對於多輪對話(例如 chat.jsonl),每一輪回答都會把前面的對話歷史一併
 包進 input,讓模型能學到「參考上文」的多輪對話能力,而不是每一輪都當成
 獨立、沒有上下文的單輪問答。
 
@@ -60,7 +60,7 @@ def main():
 
     if not all_pairs:
         raise ValueError(
-            f"沒有從 {config.data_dir} 底下的 .json 語料展開出任何訓練資料,"
+            f"沒有從 {config.data_dir} 底下的 .jsonl 語料展開出任何訓練資料,"
             "請確認每個檔案都是 [{\"messages\": [{\"role\":..., \"content\":...}, ...]}, ...] 格式。"
         )
 

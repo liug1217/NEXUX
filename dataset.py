@@ -21,7 +21,7 @@ from messages_format import load_conversations, render_messages
 
 def load_corpus_text(data_dir: str) -> str:
     """
-    讀取 data_dir 底下所有 .json 語料(見 messages_format.py),把每段對話的
+    讀取 data_dir 底下所有 .jsonl 語料(見 messages_format.py),把每段對話的
     messages 轉成「問:...\n答:...」文字,再合併成一份完整文字給預訓練階段
     (TextDataset)當作純接龍語料使用。
 
@@ -115,7 +115,7 @@ class SFTDataset:
                 self.examples.append((item["input"], item["output"]))
 
         if not self.examples:
-            raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 data/*.json 內容格式正確。")
+            raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 data/*.jsonl 內容格式正確。")
 
         print(f"[dataset] 已讀取 {len(self.examples)} 筆 SFT 訓練樣本")
 
@@ -160,19 +160,19 @@ class SFTDataset:
 
 
 if __name__ == "__main__":
-    # 簡單自我測試:需要先有一個 data/ 資料夾,裡面至少一個 .json 語料檔
+    # 簡單自我測試:需要先有一個 data/ 資料夾,裡面至少一個 .jsonl 語料檔
     cfg = Config()
     os.makedirs(cfg.data_dir, exist_ok=True)
-    sample_path = os.path.join(cfg.data_dir, "_sample.json")
-    if not any(glob.glob(os.path.join(cfg.data_dir, "*.json"))):
+    sample_path = os.path.join(cfg.data_dir, "_sample.jsonl")
+    if not any(glob.glob(os.path.join(cfg.data_dir, "*.jsonl"))):
         # 若資料夾是空的,先建立一份小範例方便測試
         import json
-        sample = [{"messages": [
+        sample = {"messages": [
             {"role": "user", "content": "你好"},
             {"role": "assistant", "content": "你好世界" * 50},
-        ]}]
+        ]}
         with open(sample_path, "w", encoding="utf-8") as f:
-            json.dump(sample, f, ensure_ascii=False)
+            f.write(json.dumps(sample, ensure_ascii=False) + "\n")
 
     text = load_corpus_text(cfg.data_dir)
     tok = CharTokenizer.build_from_text(text)

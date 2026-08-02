@@ -19,6 +19,7 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import math
+import time
 import torch
 
 torch.set_num_threads(1)
@@ -71,8 +72,8 @@ def train(config: Config | None = None):
     torch.manual_seed(config.seed)
 
     # ---- 1. Tokenizer ----
-    # load_corpus_text 會讀取 data_dir 底下所有 .json 檔案(messages 格式)並合併
-    # (例如 chat.json、story.json、qa.json),找不到資料夾或
+    # load_corpus_text 會讀取 data_dir 底下所有 .jsonl 檔案(messages 格式)並合併
+    # (例如 chat.jsonl、story.jsonl、qa.jsonl),找不到資料夾或
     # 資料夾是空的時候,會直接拋出清楚的錯誤訊息。
     text = load_corpus_text(config.data_dir)
 
@@ -109,28 +110,45 @@ def train(config: Config | None = None):
         start_step = checkpoint.get("step", 0) + 1
         print(f"[train] 已從 checkpoint 接續訓練,起始步數: {start_step}")
 
-    def save_checkpoint(step: int):
-        torch.save(
-            {
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "vocab_size": tokenizer.vocab_size,
-                "step": step,
-                # 把訓練時「實際用到」的架構參數也存進 checkpoint,
-                # 這樣之後即使 config.py 的預設值被改掉,
-                # export_weights.py 依然能匯出正確、對應得上權重的架構設定,
-                # 不會再發生「reshape 尺寸不合」這種錯誤。
-                "architecture": {
-                    "n_embd": config.n_embd,
-                    "n_head": config.n_head,
-                    "n_layer": config.n_layer,
-                    "block_size": config.block_size,
-                },
+    def save_checkpoint(step: int, val_loss: float):
+        payload = {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "vocab_size": tokenizer.vocab_size,
+            "step": step,
+            "val_loss": val_loss,
+            # 把訓練時「實際用到」的架構參數也存進 checkpoint,
+            # 這樣之後即使 config.py 的預設值被改掉,
+            # export_weights.py 依然能匯出正確、對應得上權重的架構設定,
+            # 不會再發生「reshape 尺寸不合」這種錯誤。
+            "architecture": {
+                "n_embd": config.n_embd,
+                "n_head": config.n_head,
+                "n_layer": config.n_layer,
+                "block_size": config.block_size,
             },
-            config.checkpoint_path,
-        )
+        }
+        # 這個專案放在 OneDrive 同步資料夾底下,checkpoint 剛寫入時偶爾會被
+        # OneDrive 短暫鎖住觸發同步,導致緊接著的下一次寫入失敗
+        # (WinError 1224 / RuntimeError file with a user-mapped section)。
+        # 這裡加上短暫重試,避免早停機制因為這種暫時性的檔案鎖定而整個訓練中斷。
+        for attempt in range(5):
+            try:
+                torch.save(payload, config.checkpoint_path)
+                return
+            except RuntimeError:
+                if attempt == 4:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
 
     # ---- 4. 訓練迴圈 ----
+    # 早停(early stopping):模型參數量相對語料量偏大時,train loss 會持續下降,
+    # 但 val loss 過了某個點之後反而會回升(代表模型在背答案而不是學規律)。
+    # 這裡不再是「無論如何都存最後一步」,而是只在 val loss 創新低的時候才
+    # 存檔,checkpoint.pt 最終保留的會是驗證集表現最好的那個版本,能有效避免
+    # 訓練跑越久、實際泛化能力反而越差的問題。
+    best_val_loss = float("inf")
+    best_step = start_step
     for step in range(start_step, config.max_iters):
         # 動態調整學習率(warmup + cosine decay)
         lr = get_lr(step, config)
@@ -139,8 +157,14 @@ def train(config: Config | None = None):
 
         if step % config.eval_interval == 0 or step == config.max_iters - 1:
             losses = estimate_loss(model, dataset, config)
+            is_best = losses["val"] < best_val_loss
             print(f"[step {step:5d}] train loss {losses['train']:.4f} | "
-                  f"val loss {losses['val']:.4f} | lr {lr:.2e}")
+                  f"val loss {losses['val']:.4f} | lr {lr:.2e}"
+                  + (" (新低,已存檔)" if is_best else ""))
+            if is_best:
+                best_val_loss = losses["val"]
+                best_step = step
+                save_checkpoint(step, best_val_loss)
 
         x, y = dataset.get_batch("train")
         _, loss = model(x, y)
@@ -154,14 +178,8 @@ def train(config: Config | None = None):
 
         optimizer.step()
 
-        # 定期額外存檔,避免訓練中斷時全部進度遺失
-        if config.save_interval > 0 and step > 0 and step % config.save_interval == 0:
-            save_checkpoint(step)
-            print(f"[train] 已於第 {step} 步儲存中繼 checkpoint")
-
-    # ---- 5. 儲存最終模型 ----
-    save_checkpoint(config.max_iters - 1)
-    print(f"[train] 訓練完成,模型已儲存至: {config.checkpoint_path}")
+    print(f"[train] 訓練完成,最佳 checkpoint 在第 {best_step} 步"
+          f"(val loss {best_val_loss:.4f}),已儲存至: {config.checkpoint_path}")
 
 
 if __name__ == "__main__":

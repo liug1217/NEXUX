@@ -20,10 +20,28 @@ numpy 比 torch 小很多,才塞得進 Vercel 的限制裡。
 
 import json
 import os
+import numpy as np
 import torch
 
 from config import Config
 from tokenizer import CharTokenizer
+
+
+def _array_to_json(arr: np.ndarray) -> str:
+    """
+    把 numpy 陣列轉成 JSON 陣列文字,數字只保留5位有效數字。
+
+    json.dump() 預設會用 Python float 的完整雙精度表示法印出每個數字
+    (動輒十幾位小數),但權重本來就是 float32 訓練出來的,只有大約7位
+    有效數字才有意義,而且單純对 tensor 做四捨五入沒有用——四捨五入後的
+    值一樣是個二進位浮點數,repr() 出來還是一樣長。真正能縮小檔案的方式
+    是直接用字串格式化控制輸出的位數,而不是仰賴 Python 自動選出的
+    「最短能還原原值」表示法。這樣可以讓 weights.json 縮小到原本的
+    三分之一以下,留在 GitHub 單檔 100MB 的推送上限之內。
+    """
+    if arr.ndim == 1:
+        return "[" + ",".join(np.char.mod("%.5g", arr)) + "]"
+    return "[" + ",".join(_array_to_json(sub) for sub in arr) + "]"
 
 
 def export_weights(config: Config | None = None, output_path: str = "weights.json"):
@@ -62,14 +80,11 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
             "匯出結果可能會有問題,建議重新執行一次 train.py 產生新版 checkpoint。"
         )
 
-    # 把每一個 tensor 轉成單純的巢狀 list,這樣才能存進 JSON
-    weights = {name: tensor.tolist() for name, tensor in state_dict.items()}
-
     is_sft = checkpoint.get("sft_applied", False)
     if is_sft:
         print("[export_weights] 偵測到這是經過 SFT 微調的模型,會標記為問答模式")
 
-    export_data = {
+    header = {
         "config": {
             "vocab_size": vocab_size,
             "n_embd": arch["n_embd"],
@@ -78,11 +93,19 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
             "block_size": arch["block_size"],
         },
         "sft_applied": is_sft,
-        "weights": weights,
     }
 
+    # weights 這部分刻意不透過 json.dump(),改用 _array_to_json() 手動控制
+    # 每個數字的輸出精度(見該函式的說明),其餘結構(config、sft_applied)
+    # 資料量很小,直接用標準 json.dumps() 沒有影響。
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(export_data, f)
+        f.write(json.dumps(header)[:-1])  # 去掉結尾的 "}",接著手動補上 weights
+        f.write(',"weights":{')
+        f.write(",".join(
+            f'{json.dumps(name)}:{_array_to_json(tensor.numpy())}'
+            for name, tensor in state_dict.items()
+        ))
+        f.write("}}")
 
     size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print(f"[export_weights] 已匯出至 {output_path}({size_mb:.2f} MB)")

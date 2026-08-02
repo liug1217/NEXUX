@@ -10,7 +10,7 @@ SFT(問答微調)訓練主程式。
 
 使用順序一定是:
     1. python train.py              (先預訓練,產生 checkpoint.pt)
-    2. python prepare_sft_data.py   (把 data/*.json 對話展開成 SFT 訓練用的 jsonl)
+    2. python prepare_sft_data.py   (把 data/*.jsonl 對話展開成 SFT 訓練用的 jsonl)
     3. python train_sft.py          (在預訓練成果上,進行問答微調)
     4. python export_weights.py     (匯出最終權重)
 
