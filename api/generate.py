@@ -29,6 +29,7 @@ from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa:
 from conversation import build_context_prompt  # noqa: E402
 from smalltalk import match_smalltalk  # noqa: E402
 from question_log import log_question  # noqa: E402
+from qa_lookup import match_qa  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -98,6 +99,13 @@ def api_generate():
     if smalltalk_match is not None:
         smalltalk_reply, smalltalk_category = smalltalk_match
         return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
+
+    # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
+    # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
+    # 出現過的問題都常常答錯,先確保這些「已知題目」一定答對(見 qa_lookup.py)。
+    qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
+    if qa_reply is not None:
+        return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
     try:
         model, tokenizer = get_model_and_tokenizer()

@@ -42,6 +42,7 @@ from text_cleanup import find_next_turn_marker
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 from conversation import build_context_prompt
 from smalltalk import match_smalltalk
+from qa_lookup import match_qa
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -107,10 +108,17 @@ def api_generate():
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。
-    match_smalltalk(prompt, history)
+    smalltalk_match = match_smalltalk(prompt, history)
     if smalltalk_match is not None:
         smalltalk_reply, smalltalk_category = smalltalk_match
         return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
+
+    # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
+    # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
+    # 出現過的問題都常常答錯,先確保這些「已知題目」一定答對(見 qa_lookup.py)。
+    qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
+    if qa_reply is not None:
+        return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
