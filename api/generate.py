@@ -28,6 +28,7 @@ from text_cleanup import truncate_at_next_turn  # noqa: E402
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
 from conversation import build_context_prompt  # noqa: E402
 from smalltalk import match_smalltalk  # noqa: E402
+from question_log import log_question  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -74,6 +75,11 @@ def api_generate():
 
     if provider not in SUPPORTED_PROVIDERS:
         return jsonify({"error": f"不支援的模型來源: {provider}"}), 400
+
+    # 記錄使用者實際輸入的問題(見 question_log.py),方便之後回顧真實
+    # 使用情境、補強語料。如果沒有設定 Upstash 的環境變數,這裡會直接
+    # 靜默略過,不影響任何回覆邏輯。
+    log_question(prompt, provider)
 
     # 第三方 API(OpenAI / Anthropic / Google / Groq)只是暫時借來頂著用,
     # 金鑰要另外在 Vercel 專案的 Environment Variables 設定裡加好。
