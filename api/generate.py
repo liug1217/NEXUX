@@ -90,7 +90,11 @@ def api_generate():
         except ProviderError as e:
             return jsonify({"error": str(e)}), 400
         except Exception as e:  # noqa: BLE001
-            return jsonify({"error": f"呼叫 {provider} 時發生錯誤: {e}"}), 500
+            import traceback
+            return jsonify({
+                "error": f"呼叫 {provider} 時發生錯誤: {e}",
+                "traceback": traceback.format_exc(),
+            }), 500
         return jsonify({"reply": reply})
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,

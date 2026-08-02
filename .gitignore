@@ -25,3 +25,6 @@ sft_data.jsonl
 # (Settings → Environment Variables),不是靠這個檔案。
 .env
 
+# Groq 批次生成語料的執行 log,只是本機除錯用,不需要 commit。
+_groq_big.log
+
