@@ -1,15 +1,40 @@
 # CHATBOT 專案筆記
 
+## 語料格式:標準 messages JSON
+
+`data/` 底下的語料統一存成標準的 `messages` 格式(`.json`,不再是 `.txt`),
+每個檔案是一個 JSON 陣列,每個元素是一段對話:
+
+```json
+[
+  {
+    "messages": [
+      {"role": "user", "content": "嗨"},
+      {"role": "assistant", "content": "你好!今天過得怎麼樣?"}
+    ]
+  }
+]
+```
+
+一段對話可以只有一問一答,也可以是多輪(訊息陣列交替 user/assistant)。
+讀取、驗證邏輯集中在 `messages_format.py`(`load_conversations` / `render_messages`)。
+`train.py`(純接龍預訓練)跟 `prepare_sft_data.py`(展開成 SFT 訓練用的 jsonl)都是從這裡讀取,
+內部會轉成「問:.../答:...」文字,跟 `inference.py` / `conversation.py` / `server.py`
+推論時使用、`text_cleanup.py` 判斷生成該不該停止的標記保持一致,所以新增語料時
+只要維持 `messages` 格式,不需要自己組「問:/答:」字串。
+
 ## 模型再訓練與更新流程(重要,務必遵守)
 
-每當 `data/` 資料夾底下任何 `.txt` 語料檔案有新增或修改,或是進行了重新訓練,
+每當 `data/` 資料夾底下任何 `.json` 語料檔案有新增或修改,或是進行了重新訓練,
 都必須執行完整的「訓練 → 匯出 → 上傳」流程,讓部署到 Vercel 上的模型與最新語料保持一致:
 
 1. `python train.py`
-   讀取 `data/` 下所有 `.txt`,重新訓練 checkpoint(輸出 `checkpoint.pt`)。
-2. `python export_weights.py`
+   讀取 `data/` 下所有 `.json`,重新訓練 checkpoint(輸出 `checkpoint.pt`)。
+2. `python prepare_sft_data.py` 接著 `python train_sft.py`
+   把 `data/` 下所有 `.json` 對話展開成 SFT 訓練用的 `sft_data.jsonl`,在預訓練成果上做問答微調。
+3. `python export_weights.py`
    把 `checkpoint.pt` 轉成 `weights.json`(Vercel 上的 numpy 推理引擎讀這個檔案)。
-3. `git add -A`、`git commit`(說明是資料更新/重新訓練)、`git push`
+4. `git add -A`、`git commit`(說明是資料更新/重新訓練)、`git push`
    commit 訊息需簡述新增了哪些語料或訓練變更;push 到 GitHub 後 Vercel 會自動重新部署。
 
 執行 `python`、`pip` 前記得把新安裝的 Python 加進當次 shell 的 PATH(此機器的 python.exe 位於

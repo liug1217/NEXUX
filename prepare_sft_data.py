@@ -1,121 +1,67 @@
 """
 prepare_sft_data.py
 --------------------
-把 qa.txt(問:.../答:...)、chat.txt(A:.../B:...)和 greeting.txt
-(成對的問候句)這幾種已經有明確「一問一答」結構的語料,解析成結構化的
-JSONL 格式,存成 sft_data.jsonl。
+把 data/ 底下所有 .json 語料(標準 messages 格式,見 messages_format.py)
+展開成 SFT 訓練用的 JSONL 格式,存成 sft_data.jsonl。
 
 每一行 JSONL 都是一筆 {"input": "...", "output": "..."} 的資料,
-input 是「問題/上下文」,output 是「該學會生成的回答」。
+input 是「問:.../答:...」組成的對話上文(包含這一輪的問題,結尾是「答:」),
+output 是這一輪該學會生成的回答。
 
 之後 train_sft.py 會讀取這份 JSONL,只針對 output 的部分計算 loss,
 讓模型學會「看到問題,就該認真回答」這個行為模式,而不是像
 train.py 純接龍訓練那樣,不分青紅皂白地接續所有文字。
+
+跟舊版(直接用正規表達式解析 qa.txt / chat.txt / greeting.txt)不同,
+現在所有語料都已經是結構化的 messages 格式,不需要再用正規表達式猜格式;
+而且對於多輪對話(例如 chat.json),每一輪回答都會把前面的對話歷史一併
+包進 input,讓模型能學到「參考上文」的多輪對話能力,而不是每一輪都當成
+獨立、沒有上下文的單輪問答。
 
 使用方式:
     python prepare_sft_data.py
 """
 
 import json
-import re
 from config import Config
+from messages_format import load_conversations
 
 
-def parse_qa_file(path: str) -> list[dict]:
-    """解析『問:...\n答:...』格式的檔案。"""
-    pairs = []
-    with open(path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # 用正規表達式抓出每一組「問:...」「答:...」
-    matches = re.findall(r"問[:：](.+?)\n答[:：](.+?)(?=\n\n|\n問|\Z)", content, re.DOTALL)
-    for question, answer in matches:
-        question = question.strip()
-        answer = answer.strip()
-        if question and answer:
-            pairs.append({
-                "input": f"問:{question}\n答:",
-                "output": answer,
-            })
-    return pairs
-
-
-def parse_chat_file(path: str) -> list[dict]:
-    """解析『A:...\nB:...』格式的對話檔案,把每一組 A/B 都當作一筆問答配對。"""
-    pairs = []
-    with open(path, "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
-
-    for i in range(len(lines) - 1):
-        line_a = lines[i]
-        line_b = lines[i + 1]
-        if line_a.startswith("A:") and line_b.startswith("B:"):
-            question = line_a[2:].strip()
-            answer = line_b[2:].strip()
-            if question and answer:
-                pairs.append({
-                    "input": f"A:{question}\nB:",
-                    "output": answer,
-                })
-    return pairs
-
-
-def parse_greeting_file(path: str) -> list[dict]:
+def conversation_to_examples(messages: list[dict]) -> list[dict]:
     """
-    解析 greeting.txt:沒有『A:』『B:』這種前綴,單純是「一行問候/開場白,
-    下一行回應」兩兩成對排列。用「問:/答:」包裝,跟 qa.txt 用同一種格式,
-    因為 server.py / inference.py 實際跟使用者對話時,固定就是用
-    「問:{使用者輸入}\n答:」這個格式包住 prompt,所以訓練資料的包裝
-    格式也要跟推理時用的格式一致,模型才學得到「看到哈囉,該怎麼回」。
+    把一段對話的 messages,展開成多筆 {"input", "output"} 訓練樣本。
+    每遇到一則 assistant 訊息,就用「目前為止的對話上文」當作 input,
+    這則 assistant 訊息的內容當作 output,然後把這則回答也併入上文,
+    繼續往下一輪展開。
     """
-    pairs = []
-    with open(path, "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
-
-    for i in range(0, len(lines) - 1, 2):
-        prompt_line = lines[i]
-        reply_line = lines[i + 1]
-        if prompt_line and reply_line:
-            pairs.append({
-                "input": f"問:{prompt_line}\n答:",
-                "output": reply_line,
-            })
-    return pairs
+    examples = []
+    context = ""
+    for message in messages:
+        role = message.get("role")
+        content = (message.get("content") or "").strip()
+        if not content:
+            continue
+        if role == "user":
+            context += f"問:{content}\n答:"
+        elif role == "assistant":
+            if context.endswith("答:"):
+                examples.append({"input": context, "output": content})
+            context += f"{content}\n"
+    return examples
 
 
 def main():
     config = Config()
+
+    conversations = load_conversations(config.data_dir)
     all_pairs = []
-
-    qa_path = "data/qa.txt"
-    chat_path = "data/chat.txt"
-    greeting_path = "data/greeting.txt"
-
-    try:
-        qa_pairs = parse_qa_file(qa_path)
-        all_pairs.extend(qa_pairs)
-        print(f"[prepare_sft_data] 從 {qa_path} 解析出 {len(qa_pairs)} 筆問答資料")
-    except FileNotFoundError:
-        print(f"[prepare_sft_data] 找不到 {qa_path},略過")
-
-    try:
-        chat_pairs = parse_chat_file(chat_path)
-        all_pairs.extend(chat_pairs)
-        print(f"[prepare_sft_data] 從 {chat_path} 解析出 {len(chat_pairs)} 筆對話資料")
-    except FileNotFoundError:
-        print(f"[prepare_sft_data] 找不到 {chat_path},略過")
-
-    try:
-        greeting_pairs = parse_greeting_file(greeting_path)
-        all_pairs.extend(greeting_pairs)
-        print(f"[prepare_sft_data] 從 {greeting_path} 解析出 {len(greeting_pairs)} 筆問候資料")
-    except FileNotFoundError:
-        print(f"[prepare_sft_data] 找不到 {greeting_path},略過")
+    for messages in conversations:
+        all_pairs.extend(conversation_to_examples(messages))
 
     if not all_pairs:
         raise ValueError(
-            "沒有解析出任何資料,請確認 data/qa.txt、data/chat.txt、data/greeting.txt 的格式"
-            "是否符合『問:...\\n答:...』、『A:...\\nB:...』或成對的問候句格式。"
+            f"沒有從 {config.data_dir} 底下的 .json 語料展開出任何訓練資料,"
+            "請確認每個檔案都是 [{\"messages\": [{\"role\":..., \"content\":...}, ...]}, ...] 格式。"
         )
 
     output_path = config.sft_data_path
@@ -123,9 +69,8 @@ def main():
         for pair in all_pairs:
             f.write(json.dumps(pair, ensure_ascii=False) + "\n")
 
-    print(f"[prepare_sft_data] 已產生 {len(all_pairs)} 筆訓練資料,存至 {output_path}")
+    print(f"[prepare_sft_data] 從 {len(conversations)} 段對話展開出 {len(all_pairs)} 筆訓練資料,存至 {output_path}")
 
 
 if __name__ == "__main__":
     main()
-    

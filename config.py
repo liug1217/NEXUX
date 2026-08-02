@@ -12,7 +12,7 @@ import torch
 @dataclass
 class Config:
     # ------- 資料路徑 -------
-    data_dir: str = "data"               # 語料資料夾,底下所有 .txt 檔案都會被讀取並合併
+    data_dir: str = "data"               # 語料資料夾,底下所有 .json 檔案(messages 格式)都會被讀取並合併
     checkpoint_path: str = "checkpoint.pt"  # 模型權重存放位置
     tokenizer_path: str = "tokenizer.json"  # 詞表存放位置
 

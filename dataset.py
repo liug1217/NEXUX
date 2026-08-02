@@ -16,34 +16,23 @@ import glob
 import torch
 from config import Config
 from tokenizer import CharTokenizer
+from messages_format import load_conversations, render_messages
 
 
 def load_corpus_text(data_dir: str) -> str:
     """
-    讀取 data_dir 底下所有 .txt 檔案,依檔名排序後合併成一份完整文字。
-    這樣可以把語料依用途拆成多個檔案管理(例如 chat.txt、story.txt、
-    qa.txt、code.txt),彼此互不影響,之後要增減某一類語料也很清楚。
+    讀取 data_dir 底下所有 .json 語料(見 messages_format.py),把每段對話的
+    messages 轉成「問:...\n答:...」文字,再合併成一份完整文字給預訓練階段
+    (TextDataset)當作純接龍語料使用。
+
+    這樣即使語料本身存成結構化的 messages 格式,預訓練階段依然能看到跟
+    SFT 階段、跟推論時(inference.py / conversation.py)一致的「問:/答:」
+    標記,學到的語感才會跟後面的階段接得上。
     """
-    if not os.path.isdir(data_dir):
-        raise FileNotFoundError(
-            f"找不到語料資料夾: {data_dir}\n"
-            "請建立這個資料夾,並在裡面放入至少一個 .txt 檔案。"
-        )
-
-    txt_files = sorted(glob.glob(os.path.join(data_dir, "*.txt")))
-    if not txt_files:
-        raise FileNotFoundError(
-            f"{data_dir} 資料夾底下沒有任何 .txt 檔案,請至少放入一個語料檔。"
-        )
-
-    texts = []
-    for path in txt_files:
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-        texts.append(content)
-        print(f"[dataset] 已讀取語料檔: {path} ({len(content)} 字元)")
-
-    # 用換行分隔不同檔案的內容,避免前一個檔案的結尾和下一個檔案的開頭黏在一起
+    conversations = load_conversations(data_dir)
+    texts = [render_messages(messages) for messages in conversations]
+    texts = [t for t in texts if t]
+    # 用換行分隔不同對話的內容,避免前一段對話的結尾和下一段的開頭黏在一起
     return "\n".join(texts)
 
 
@@ -126,7 +115,7 @@ class SFTDataset:
                 self.examples.append((item["input"], item["output"]))
 
         if not self.examples:
-            raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 qa.txt / chat.txt 內容格式正確。")
+            raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 data/*.json 內容格式正確。")
 
         print(f"[dataset] 已讀取 {len(self.examples)} 筆 SFT 訓練樣本")
 
@@ -171,14 +160,19 @@ class SFTDataset:
 
 
 if __name__ == "__main__":
-    # 簡單自我測試:需要先有一個 data/ 資料夾,裡面至少一個 .txt 檔案
+    # 簡單自我測試:需要先有一個 data/ 資料夾,裡面至少一個 .json 語料檔
     cfg = Config()
     os.makedirs(cfg.data_dir, exist_ok=True)
-    sample_path = os.path.join(cfg.data_dir, "_sample.txt")
-    if not any(glob.glob(os.path.join(cfg.data_dir, "*.txt"))):
+    sample_path = os.path.join(cfg.data_dir, "_sample.json")
+    if not any(glob.glob(os.path.join(cfg.data_dir, "*.json"))):
         # 若資料夾是空的,先建立一份小範例方便測試
+        import json
+        sample = [{"messages": [
+            {"role": "user", "content": "你好"},
+            {"role": "assistant", "content": "你好世界" * 50},
+        ]}]
         with open(sample_path, "w", encoding="utf-8") as f:
-            f.write("你好世界" * 200)
+            json.dump(sample, f, ensure_ascii=False)
 
     text = load_corpus_text(cfg.data_dir)
     tok = CharTokenizer.build_from_text(text)

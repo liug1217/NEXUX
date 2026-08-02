@@ -71,8 +71,8 @@ def train(config: Config | None = None):
     torch.manual_seed(config.seed)
 
     # ---- 1. Tokenizer ----
-    # load_corpus_text 會讀取 data_dir 底下所有 .txt 檔案並合併
-    # (例如 chat.txt、story.txt、qa.txt、code.txt),找不到資料夾或
+    # load_corpus_text 會讀取 data_dir 底下所有 .json 檔案(messages 格式)並合併
+    # (例如 chat.json、story.json、qa.json),找不到資料夾或
     # 資料夾是空的時候,會直接拋出清楚的錯誤訊息。
     text = load_corpus_text(config.data_dir)
 
