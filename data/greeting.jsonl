@@ -505,3 +505,7 @@
 {"messages": [{"role": "user", "content": "嗨,最近皮膚保養得怎麼樣?"}, {"role": "assistant", "content": "還可以,有認真做防曬。"}]}
 {"messages": [{"role": "user", "content": "哈囉,今天天氣紫外線很強喔。"}, {"role": "assistant", "content": "謝謝提醒,我會做好防曬。"}]}
 {"messages": [{"role": "user", "content": "嗨,恭喜你考試通過。"}, {"role": "assistant", "content": "謝謝,終於可以放鬆一下了。"}]}
+{"messages": [{"role": "user", "content": "哈囉,最近工作型態有轉遠距嗎?"}, {"role": "assistant", "content": "有一部分,現在算混合辦公。"}]}
+{"messages": [{"role": "user", "content": "嗨,恭喜你接到新的接案。"}, {"role": "assistant", "content": "謝謝,終於等到喜歡的案子了。"}]}
+{"messages": [{"role": "user", "content": "哈囉,今天有研究AI工具嗎?"}, {"role": "assistant", "content": "有,試了幾個新的功能。"}]}
+{"messages": [{"role": "user", "content": "嗨,通勤會很累嗎?"}, {"role": "assistant", "content": "還好,習慣之後不會覺得太辛苦。"}]}
