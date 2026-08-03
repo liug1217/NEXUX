@@ -43,6 +43,7 @@ from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 from conversation import build_context_prompt
 from smalltalk import match_smalltalk
 from qa_lookup import match_qa
+from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -202,6 +203,62 @@ def api_generate():
             yield f"\n[生成時發生錯誤: {e}]"
 
     return Response(stream(), mimetype="text/plain; charset=utf-8")
+
+
+@app.route("/api/bead_pattern", methods=["POST"])
+def api_bead_pattern():
+    """
+    本機開發用的拼豆對照圖端點,邏輯跟 api/bead_pattern.py 一致
+    (共用同一個 bead_pattern.py),純圖片處理,不會用到語言模型。
+    """
+    import base64
+
+    payload = request.get_json(silent=True) or {}
+    image_b64 = payload.get("image") or ""
+    grid_width = payload.get("gridWidth", DEFAULT_GRID)
+    grid_height = payload.get("gridHeight")
+
+    if not image_b64:
+        return jsonify({"error": "沒有收到圖片,請重新上傳一次。"}), 400
+
+    if "," in image_b64:
+        image_b64 = image_b64.split(",", 1)[1]
+
+    try:
+        image_bytes = base64.b64decode(image_b64)
+    except Exception:  # noqa: BLE001
+        return jsonify({"error": "圖片格式無法解析,請換一張圖片試試。"}), 400
+
+    try:
+        grid_width = int(grid_width)
+    except (TypeError, ValueError):
+        grid_width = DEFAULT_GRID
+    grid_width = max(MIN_GRID, min(MAX_GRID, grid_width))
+
+    if grid_height is not None:
+        try:
+            grid_height = int(grid_height)
+        except (TypeError, ValueError):
+            grid_height = None
+
+    try:
+        result = generate_pattern(image_bytes, grid_width=grid_width, grid_height=grid_height)
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": f"圖片處理失敗,請換一張圖片試試。({e})"}), 500
+
+    output_b64 = base64.b64encode(result.png_bytes).decode("ascii")
+    color_table = [
+        {"code": code, "name": name, "rgb": list(rgb), "count": count}
+        for code, name, rgb, count in result.color_counts
+    ]
+
+    return jsonify({
+        "image": f"data:image/png;base64,{output_b64}",
+        "gridWidth": result.grid_width,
+        "gridHeight": result.grid_height,
+        "colors": color_table,
+        "totalBeads": sum(c["count"] for c in color_table),
+    })
 
 
 if __name__ == "__main__":

@@ -3,6 +3,9 @@
   "functions": {
     "api/generate.py": {
       "maxDuration": 60
+    },
+    "api/bead_pattern.py": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

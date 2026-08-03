@@ -508,6 +508,113 @@
   .add-btn:hover,
   .mic-btn:hover { opacity: 0.75; }
 
+  /* 附件圖片預覽小卡:點「新增附件」選好圖片後,顯示在輸入框上方,
+     讓使用者送出前能確認選對圖、也能點 x 取消。 */
+  .attachment-preview {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 22px 0;
+    padding: 6px 10px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 12px;
+    width: fit-content;
+  }
+
+  .attachment-preview.visible { display: flex; }
+
+  .attachment-preview img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .attachment-preview .attachment-name {
+    font-size: 12px;
+    color: var(--ink-dim);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .attachment-preview .attachment-remove {
+    border: none;
+    background: transparent;
+    color: var(--ink-dim);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 4px;
+  }
+
+  .attachment-preview .attachment-remove:hover { color: #FFFFFF; }
+
+  /* 拼豆對照圖的回覆結果:圖片本身 + 下方色號用量表 + 調整格數重新產生。 */
+  .bead-result {
+    align-self: flex-start;
+    max-width: 82%;
+    margin-left: -24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bead-result img {
+    max-width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--pill-border);
+    background: #f8f8f8;
+  }
+
+  .bead-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+
+  .bead-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .bead-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  .bead-controls input[type="number"] {
+    width: 56px;
+    padding: 4px 6px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 6px;
+    color: #FFFFFF;
+  }
+
+  .bead-controls button {
+    padding: 4px 12px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 12px;
+    color: #FFFFFF;
+    cursor: pointer;
+  }
+
+  .bead-controls button:hover { background: rgba(113, 112, 112, 0.35); }
+
   .send-btn:hover { opacity: 0.85; }
   .send-btn:active { transform: scale(0.95); }
 
@@ -552,6 +659,13 @@
     <form class="composer" id="composer">
       <p class="composer-heading" id="composerHeading">想好怎麼準備了嗎 ? 我們都很期待呢 !</p>
 
+      <!-- 附件圖片預覽:選好圖片後顯示在輸入框上方,送出前可確認或點 x 取消。 -->
+      <div class="attachment-preview" id="attachmentPreview">
+        <img id="attachmentThumb" alt="附件預覽">
+        <span class="attachment-name" id="attachmentName"></span>
+        <button type="button" class="attachment-remove" id="attachmentRemove" aria-label="移除附件">×</button>
+      </div>
+
       <div class="composer-pill">
         <textarea
           id="prompt"
@@ -562,8 +676,10 @@
         ></textarea>
 
         <div class="composer-toolbar">
+          <!-- 隱藏的檔案選擇器,點「新增附件」觸發,目前只接受圖片。 -->
+          <input type="file" id="imageInput" accept="image/*" style="display:none">
           <!-- add:24x24,內縮20.83%/20.83%,實心白色「+」 -->
-          <button type="button" class="add-btn" aria-label="新增附件" tabindex="-1">
+          <button type="button" class="add-btn" aria-label="新增附件" id="addBtn">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M11 13H5V11H11V5H13V11H19V13H13V19H11V13Z" fill="white"/>
             </svg>
@@ -621,6 +737,10 @@
     // 能看到之前聊過什麼(例如「我叫小明」->「我叫什麼?」),重新整理頁面就會清空。
     const conversationHistory = [];
 
+    // 拼豆對照圖第一次產生時預設的格數(單片拼豆板常見尺寸),
+    // 產生後使用者可以在結果下方自己調整重新產生。
+    const DEFAULT_BEAD_GRID = 29;
+
     // 生成中時,送出按鈕會變成停止圖示,再按一次會中止目前的生成
     // (透過 AbortController 取消 fetch),已經吐出來的文字會保留不會消失。
     let activeAbortController = null;
@@ -632,6 +752,12 @@
     const providerSelect = document.getElementById("providerSelect");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
+    const addBtn = document.getElementById("addBtn");
+    const imageInput = document.getElementById("imageInput");
+    const attachmentPreview = document.getElementById("attachmentPreview");
+    const attachmentThumb = document.getElementById("attachmentThumb");
+    const attachmentName = document.getElementById("attachmentName");
+    const attachmentRemove = document.getElementById("attachmentRemove");
 
     // 點快速提示按鈕,直接把範例文字填進輸入框並聚焦,不自動送出
     quickActions.addEventListener("click", (e) => {
@@ -640,6 +766,116 @@
       textarea.value = btn.dataset.prompt;
       textarea.focus();
     });
+
+    // ---- 附件圖片(目前唯一用途:拼豆對照圖) ----
+    // 選好的圖片先轉成 data URL 存在記憶體裡,送出訊息時才一起打包送出,
+    // 不會在選圖的當下就先發請求。
+    let attachedImageDataUrl = null;
+
+    addBtn.addEventListener("click", () => imageInput.click());
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        attachedImageDataUrl = reader.result;
+        attachmentThumb.src = attachedImageDataUrl;
+        attachmentName.textContent = file.name;
+        attachmentPreview.classList.add("visible");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function clearAttachment() {
+      attachedImageDataUrl = null;
+      imageInput.value = "";
+      attachmentPreview.classList.remove("visible");
+      attachmentThumb.src = "";
+      attachmentName.textContent = "";
+    }
+
+    attachmentRemove.addEventListener("click", clearAttachment);
+
+    // 判斷這次送出是不是「拼豆對照圖」請求:必須同時有附件圖片,
+    // 而且文字裡有提到「拼豆」,兩個條件都符合才會走這條路,
+    // 避免使用者只是隨口附了張圖聊天,卻被誤判成要生成拼豆圖。
+    function isBeadPatternRequest(promptText) {
+      return Boolean(attachedImageDataUrl) && promptText.includes("拼豆");
+    }
+
+    // 把色號用量表渲染成一排排小色塊 + 文字,由多到少排序(後端已經排好序)。
+    function renderBeadLegend(colors) {
+      const legend = document.createElement("div");
+      legend.className = "bead-legend";
+      colors.forEach((c) => {
+        const item = document.createElement("span");
+        const [r, g, b] = c.rgb;
+        item.innerHTML =
+          `<span class="swatch" style="background: rgb(${r},${g},${b})"></span>` +
+          `${c.code} ${c.name} × ${c.count}`;
+        legend.appendChild(item);
+      });
+      return legend;
+    }
+
+    // 拼豆結果訊息:圖片 + 色號表 + 一個可以調整格數重新產生的小工具。
+    // sourceImageDataUrl 是原始上傳的圖片,調整格數時要用同一張圖重打一次。
+    function renderBeadResult(data, sourceImageDataUrl) {
+      const wrap = document.createElement("div");
+      wrap.className = "bead-result";
+
+      const img = document.createElement("img");
+      img.src = data.image;
+      img.alt = "拼豆對照圖";
+      wrap.appendChild(img);
+
+      const summary = document.createElement("div");
+      summary.className = "bead-legend";
+      summary.style.color = "#FFFFFF";
+      summary.textContent = `${data.gridWidth} × ${data.gridHeight} 格,共 ${data.totalBeads} 顆珠子`;
+      wrap.appendChild(summary);
+
+      wrap.appendChild(renderBeadLegend(data.colors));
+
+      const controls = document.createElement("div");
+      controls.className = "bead-controls";
+      controls.innerHTML =
+        '<span>調整寬度(格數):</span>' +
+        `<input type="number" min="5" max="60" value="${data.gridWidth}">` +
+        '<button type="button">重新產生</button>';
+      const input = controls.querySelector("input");
+      const regenBtn = controls.querySelector("button");
+      regenBtn.addEventListener("click", async () => {
+        regenBtn.disabled = true;
+        regenBtn.textContent = "產生中...";
+        try {
+          const newData = await requestBeadPattern(sourceImageDataUrl, Number(input.value));
+          const newResult = renderBeadResult(newData, sourceImageDataUrl);
+          wrap.replaceWith(newResult);
+        } catch (err) {
+          regenBtn.disabled = false;
+          regenBtn.textContent = "重新產生";
+          addMessage("拼豆對照圖產生失敗,請稍後再試一次。", "error");
+        }
+      });
+      wrap.appendChild(controls);
+
+      return wrap;
+    }
+
+    async function requestBeadPattern(imageDataUrl, gridWidth) {
+      const res = await fetch("/api/bead_pattern", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageDataUrl, gridWidth }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "拼豆對照圖產生失敗");
+      }
+      return data;
+    }
 
     function addMessage(text, role) {
       const el = document.createElement("div");
@@ -850,15 +1086,40 @@
       // 這樣後端才能分清楚「已經聊過的內容」跟「這次的新問題」。
       const historyForRequest = conversationHistory.slice();
 
+      // 判斷要不要走拼豆對照圖這條路,要在附件被 clearAttachment() 清掉
+      // 之前先記錄下來,不然送出後圖片就沒了。
+      const beadRequest = isBeadPatternRequest(prompt);
+      const sourceImageForBead = attachedImageDataUrl;
+
       addMessage(prompt, "user");
       conversationHistory.push({ role: "user", text: prompt });
       textarea.value = "";
+      clearAttachment();
       sendBtn.classList.add("generating");
       sendBtn.setAttribute("aria-label", "停止生成");
       activeAbortController = new AbortController();
 
       if (isFirstMessage) {
         slideComposerToBottom();
+      }
+
+      // 拼豆對照圖是完全獨立的一條路:打 /api/bead_pattern,不經過
+      // /api/generate、不用語言模型,回覆也是圖片+色號表而不是文字。
+      if (beadRequest) {
+        try {
+          const data = await requestBeadPattern(sourceImageForBead, DEFAULT_BEAD_GRID);
+          messagesEl.appendChild(renderBeadResult(data, sourceImageForBead));
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+          conversationHistory.push({ role: "assistant", text: "(已產生拼豆對照圖)" });
+        } catch (err) {
+          addMessage(err.message || "拼豆對照圖產生失敗,請稍後再試一次。", "error");
+        } finally {
+          sendBtn.classList.remove("generating");
+          sendBtn.setAttribute("aria-label", "送出");
+          activeAbortController = null;
+          textarea.focus();
+        }
+        return;
       }
 
       try {
