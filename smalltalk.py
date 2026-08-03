@@ -51,12 +51,44 @@ _HOWAREYOU_KEYWORDS = _expand(
     ["如何", "好嗎", "怎樣", "如何呢", "好不好", "還好嗎", "還好嘛"],
 ) + ["你好嗎", "你還好嗎", "你還好嘛"]
 
-# 「你好啊」「你好呀」這種問候變化,結尾的「啊/呀/唷/喔」剛好也是
+# 「你好啊」「您好呀」這種問候變化,結尾的「啊/呀/唷/喔」剛好也是
 # affirmative 分類的關鍵字「好啊」的一部分,如果照原本順序比對,
 # 「你好啊」會被 affirmative 的「好啊」搶先攔截,誤判成回答「好啊」
 # 而不是打招呼。所以另外獨立成一個分類,排在 affirmative 前面,
-# 用完整的「你好+語氣詞」比對,不會誤傷單獨的「好啊」。
-_GREETING_CASUAL_KEYWORDS = _expand([""], "你好", ["啊", "呀", "唷", "喔"])
+# 用完整的「你好/您好+語氣詞」比對,不會誤傷單獨的「好啊」。
+_GREETING_CASUAL_KEYWORDS = _expand(
+    ["你好", "您好"], "", ["啊", "呀", "唷", "喔", "呢", "啦"]
+)
+
+# 各種「哈囉/嗨/嘿/喂」這類問候詞根,加上語氣詞、疊字、注音選字容易打出來的
+# 諧音變體,自動展開成完整關鍵字清單(這批是使用者實測整理出來、真的會被
+# 打進聊天室的問候寫法)。
+_GREETING_INTERJECTIONS = [
+    "哈囉", "哈嘍", "哈樓", "哈摟",  # 「哈囉」的常見諧音/選字變體
+    "嗨", "嗨囉", "嗨嘍", "嗨摟", "嗨樓",
+    "嘿", "喂",
+]
+_GREETING_PARTICLES = ["", "呀", "喔", "啊", "欸", "呢", "唷", "啦", "ㄚ", "阿"]
+_GREETING_INTERJECTION_VARIANTS = [
+    word + particle for word in _GREETING_INTERJECTIONS for particle in _GREETING_PARTICLES
+]
+
+# 疊字、複合、加人稱的講法,不是單純「詞根+語氣詞」的組合,直接列出來。
+_GREETING_COMPOUND_VARIANTS = [
+    "哈囉哈囉", "哈囉嘿", "哈囉你好", "哈嘍你好",
+    "嗨嗨", "嗨你好", "嗨嘿",
+    "你哈囉", "來哈囉",
+    "嘿你好", "嘿嘿",
+    "喂你好", "喂喂",
+    "哈", "哈哈", "哈哈哈",
+]
+
+# 英文問候詞,同時列出常見打字選字容易誤打出來的變體(halo、hallo、helo...)。
+# 比對時會不分大小寫(見 _match_single_category),所以這裡不用重複列大小寫。
+_GREETING_ENGLISH_VARIANTS = [
+    "halo", "hello", "hi", "hey", "yo", "sup",
+    "helo", "heloo", "helllo", "hellooo", "hallo", "haloo", "hillo",
+]
 
 _CATEGORIES: list[tuple[str, list[str]]] = [
     ("time", ["幾點"]),
@@ -82,7 +114,7 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("its_okay", ["沒關係", "沒事", "不用在意"]),
     ("please", ["麻煩你", "拜託你", "拜託了", "麻煩了"]),
     ("take_care", ["保重", "路上小心", "慢走", "小心點"]),
-    ("are_you_there", ["在嗎", "在不在", "你在嗎"]),
+    ("are_you_there", ["在嗎", "在不在", "你在嗎", "有人嗎", "有人在嗎"]),
     ("hot", ["好熱", "太熱了", "天氣好熱"]),
     ("cold", ["好冷", "變冷了", "天氣好冷"]),
     ("rain", ["下雨了", "在下雨", "外面下雨"]),
@@ -138,7 +170,13 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     # howareyou 的關鍵字「你好嗎」包含 greeting 的「你好」,
     # 必須排在 greeting 前面,不然會被 greeting 搶先攔截。
     ("howareyou", _HOWAREYOU_KEYWORDS),
-    ("greeting", ["哈囉", "嗨", "你好", "hi", "hello"]),
+    (
+        "greeting",
+        ["哈囉", "嗨", "你好", "您好", "晚上好"]
+        + _GREETING_INTERJECTION_VARIANTS
+        + _GREETING_COMPOUND_VARIANTS
+        + _GREETING_ENGLISH_VARIANTS,
+    ),
 ]
 
 _REPLIES: dict[str, list[str]] = {
@@ -271,8 +309,11 @@ def _previous_turn_expects_followup(history: list[dict] | None) -> bool:
 
 def _match_single_category(text: str) -> tuple[str, str] | None:
     """只判斷單一片段(裡面沒有逗號、句號分隔的一小句)符合哪個類別。"""
+    # 不分大小寫比對:英文問候詞(hello/Hello/HELLO...)使用者常常隨手大寫,
+    # 中文字不受 .lower() 影響,所以這裡統一轉小寫比對對中文分類沒有副作用。
+    text_lower = text.lower()
     for category, keywords in _CATEGORIES:
-        if any(kw in text for kw in keywords):
+        if any(kw.lower() in text_lower for kw in keywords):
             if category == "time":
                 return _current_time_reply(), category
             return random.choice(_REPLIES[category]), category
