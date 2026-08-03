@@ -1,1 +1,1 @@
-{"config": {"vocab_size": 2545, "n_embd": 384, "n_head": 12, "n_layer": 10, "block_size": 192}, "sft_applied": true}
+{"config": {"vocab_size": 2567, "n_embd": 384, "n_head": 12, "n_layer": 10, "block_size": 192}, "sft_applied": true}

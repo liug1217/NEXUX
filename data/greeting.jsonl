@@ -519,3 +519,6 @@
 {"messages": [{"role": "user", "content": "嗨,讀書計畫進行得如何?"}, {"role": "assistant", "content": "還算順利,慢慢建立起習慣了。"}]}
 {"messages": [{"role": "user", "content": "哈囉,今天有克服拖延症嗎?"}, {"role": "assistant", "content": "有,今天把該做的事都完成了。"}]}
 {"messages": [{"role": "user", "content": "嗨,居家運動有持續嗎?"}, {"role": "assistant", "content": "有,雖然強度不大但每天都有做。"}]}
+{"messages": [{"role": "user", "content": "哈囉,最近有沒有好好睡覺?"}, {"role": "assistant", "content": "有努力調整作息,慢慢比較穩定了。"}]}
+{"messages": [{"role": "user", "content": "嗨,今天有看到夕陽嗎?"}, {"role": "assistant", "content": "有,今天的天空特別漂亮。"}]}
+{"messages": [{"role": "user", "content": "哈囉,你家寵物最近好嗎?"}, {"role": "assistant", "content": "很好,今天還很黏人陪我一整天。"}]}
