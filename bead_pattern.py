@@ -116,10 +116,12 @@ def generate_pattern(
         grid_colors.append(row)
 
     # 畫輸出圖:每一格畫一顆圓珠(色塊 + 深色描邊 + 小字色號),
-    # 方便使用者一格一格照著拼。
+    # 方便使用者一格一格照著拼。背景用透明(RGBA alpha=0),不要用實心
+    # 白底——聊天介面是深色主題,整塊白底方塊疊在深色背景上會很突兀,
+    # 透明背景讓圓珠直接貼合在聊天背景上,只看得到珠子本身。
     out_w = grid_width * CELL_PX + PADDING_PX * 2
     out_h = grid_height * CELL_PX + PADDING_PX * 2
-    out_img = Image.new("RGB", (out_w, out_h), (250, 250, 250))
+    out_img = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(out_img)
 
     try:
