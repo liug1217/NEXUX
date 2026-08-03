@@ -567,6 +567,28 @@
     border-radius: 12px;
     border: 1px solid var(--pill-border);
     background: #f8f8f8;
+    cursor: zoom-in;
+  }
+
+  /* 點拼豆對照圖後的全螢幕放大檢視,點任何地方(圖片或背景)關閉。 */
+  .image-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.85);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    cursor: zoom-out;
+  }
+
+  .image-lightbox.visible { display: flex; }
+
+  .image-lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
   }
 
   .bead-legend {
@@ -733,6 +755,11 @@
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。</p>
   </div>
 
+  <!-- 點拼豆對照圖放大用的全螢幕燈箱,平常隱藏,點圖片時才顯示。 -->
+  <div class="image-lightbox" id="imageLightbox">
+    <img id="lightboxImg" alt="放大檢視">
+  </div>
+
   <script>
     // 對話記憶:記錄目前這個分頁裡聊過的每一輪對話,讓後端組 context 時
     // 能看到之前聊過什麼(例如「我叫小明」->「我叫什麼?」),重新整理頁面就會清空。
@@ -828,7 +855,8 @@
 
       const img = document.createElement("img");
       img.src = data.image;
-      img.alt = "拼豆對照圖";
+      img.alt = "拼豆對照圖(點擊放大)";
+      img.addEventListener("click", () => openLightbox(data.image));
       wrap.appendChild(img);
 
       const summary = document.createElement("div");
@@ -864,6 +892,23 @@
 
       return wrap;
     }
+
+    // ---- 圖片放大燈箱:目前只有拼豆對照圖會用到,但寫成通用函式,
+    // 之後如果有其他地方要顯示圖片也能直接複用。 ----
+    const imageLightbox = document.getElementById("imageLightbox");
+    const lightboxImg = document.getElementById("lightboxImg");
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      imageLightbox.classList.add("visible");
+    }
+
+    function closeLightbox() {
+      imageLightbox.classList.remove("visible");
+      lightboxImg.src = "";
+    }
+
+    imageLightbox.addEventListener("click", closeLightbox);
 
     async function requestBeadPattern(imageDataUrl, gridWidth) {
       const res = await fetch("/api/bead_pattern", {
