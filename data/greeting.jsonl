@@ -481,3 +481,15 @@
 {"messages": [{"role": "user", "content": "嗨,謝謝你陪我聊友情這個話題。"}, {"role": "assistant", "content": "不客氣,這種話題我也很有感觸。"}]}
 {"messages": [{"role": "user", "content": "哈囉,今天心情很輕鬆吧?"}, {"role": "assistant", "content": "對啊,今天終於把該做的事都做完了。"}]}
 {"messages": [{"role": "user", "content": "嗨,恭喜你完成斷捨離計畫。"}, {"role": "assistant", "content": "謝謝,整理完真的舒服很多。"}]}
+{"messages": [{"role": "user", "content": "哈囉,今天有打球嗎?"}, {"role": "assistant", "content": "有,跟朋友約了場鬥牛。"}]}
+{"messages": [{"role": "user", "content": "嗨,恭喜你的球隊贏了。"}, {"role": "assistant", "content": "謝謝,比賽真的很精彩。"}]}
+{"messages": [{"role": "user", "content": "哈囉,檔案都備份好了嗎?"}, {"role": "assistant", "content": "備份好了,謝謝提醒。"}]}
+{"messages": [{"role": "user", "content": "嗨,週末過得充實嗎?"}, {"role": "assistant", "content": "還算充實,也有留時間休息。"}]}
+{"messages": [{"role": "user", "content": "哈囉,最近讀的書怎麼樣?"}, {"role": "assistant", "content": "還不錯,學到不少新東西。"}]}
+{"messages": [{"role": "user", "content": "嗨,工作壓力還好嗎?"}, {"role": "assistant", "content": "還可以應付,謝謝關心。"}]}
+{"messages": [{"role": "user", "content": "哈囉,今天要加班嗎?"}, {"role": "assistant", "content": "應該不用,今天進度還算順利。"}]}
+{"messages": [{"role": "user", "content": "嗨,謝謝你上次的建議。"}, {"role": "assistant", "content": "不客氣,有幫上忙就好。"}]}
+{"messages": [{"role": "user", "content": "哈囉,天氣變化要小心感冒。"}, {"role": "assistant", "content": "好,謝謝提醒,我會多穿一點。"}]}
+{"messages": [{"role": "user", "content": "嗨,恭喜完成這個專案。"}, {"role": "assistant", "content": "謝謝,終於可以喘口氣了。"}]}
+{"messages": [{"role": "user", "content": "哈囉,晚上想吃什麼?"}, {"role": "assistant", "content": "還沒想好,可能簡單煮個麵。"}]}
+{"messages": [{"role": "user", "content": "嗨,最近心情如何?"}, {"role": "assistant", "content": "還不錯,謝謝你問起。"}]}

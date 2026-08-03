@@ -833,8 +833,11 @@
     // 判斷這次送出是不是「拼豆對照圖」請求:必須同時有附件圖片,
     // 而且文字裡有提到「拼豆」,兩個條件都符合才會走這條路,
     // 避免使用者只是隨口附了張圖聊天,卻被誤判成要生成拼豆圖。
+    // 「拚豆」是實際觀察到的常見打字/選字變體(拚 vs 拼,注音打字容易
+    // 選錯同音字),一併認得。
     function isBeadPatternRequest(promptText) {
-      return Boolean(attachedImageDataUrl) && promptText.includes("拼豆");
+      return Boolean(attachedImageDataUrl) &&
+        (promptText.includes("拼豆") || promptText.includes("拚豆"));
     }
 
     // 把色號用量表渲染成一排排小色塊 + 文字,由多到少排序(後端已經排好序)。
