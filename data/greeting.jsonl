@@ -515,3 +515,7 @@
 {"messages": [{"role": "user", "content": "嗨,週末有去爬山嗎?"}, {"role": "assistant", "content": "有,順便做了森林浴放鬆一下。"}]}
 {"messages": [{"role": "user", "content": "哈囉,今天心情被音樂療癒到了嗎?"}, {"role": "assistant", "content": "有,聽了喜歡的歌整個人放鬆不少。"}]}
 {"messages": [{"role": "user", "content": "嗨,恭喜你完成手作作品。"}, {"role": "assistant", "content": "謝謝,做的過程真的很療癒。"}]}
+{"messages": [{"role": "user", "content": "哈囉,週末過得放鬆嗎?"}, {"role": "assistant", "content": "很放鬆,照著自己的步調過了兩天。"}]}
+{"messages": [{"role": "user", "content": "嗨,讀書計畫進行得如何?"}, {"role": "assistant", "content": "還算順利,慢慢建立起習慣了。"}]}
+{"messages": [{"role": "user", "content": "哈囉,今天有克服拖延症嗎?"}, {"role": "assistant", "content": "有,今天把該做的事都完成了。"}]}
+{"messages": [{"role": "user", "content": "嗨,居家運動有持續嗎?"}, {"role": "assistant", "content": "有,雖然強度不大但每天都有做。"}]}
