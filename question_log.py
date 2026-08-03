@@ -55,7 +55,12 @@ def log_question(prompt: str, provider: str) -> None:
     try:
         req = urllib.request.Request(
             f"{url.rstrip('/')}/rpush/{_REDIS_KEY}",
-            data=json.dumps([json.dumps(record, ensure_ascii=False)]).encode("utf-8"),
+            # 注意:body 要直接是這筆記錄的 JSON 字串本身,不能再包一層陣列
+            # (例如 json.dumps([...])) ——Upstash 的這個 REST 端點會把整個
+            # request body 原封不動當成要 push 的值存起來,包了陣列就會把
+            # 「陣列的文字表示」存成值,讀出來要多解一層 JSON 才能還原,
+            # 這裡是實際打 API 測過兩種寫法比對後才確認的行為。
+            data=json.dumps(record, ensure_ascii=False).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
