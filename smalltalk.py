@@ -51,6 +51,13 @@ _HOWAREYOU_KEYWORDS = _expand(
     ["如何", "好嗎", "怎樣", "如何呢", "好不好", "還好嗎", "還好嘛"],
 ) + ["你好嗎", "你還好嗎", "你還好嘛"]
 
+# 「你好啊」「你好呀」這種問候變化,結尾的「啊/呀/唷/喔」剛好也是
+# affirmative 分類的關鍵字「好啊」的一部分,如果照原本順序比對,
+# 「你好啊」會被 affirmative 的「好啊」搶先攔截,誤判成回答「好啊」
+# 而不是打招呼。所以另外獨立成一個分類,排在 affirmative 前面,
+# 用完整的「你好+語氣詞」比對,不會誤傷單獨的「好啊」。
+_GREETING_CASUAL_KEYWORDS = _expand([""], "你好", ["啊", "呀", "唷", "喔"])
+
 _CATEGORIES: list[tuple[str, list[str]]] = [
     ("time", ["幾點"]),
     ("farewell", ["掰掰", "再見", "拜拜", "先走了", "先這樣"]),
@@ -59,6 +66,7 @@ _CATEGORIES: list[tuple[str, list[str]]] = [
     ("morning", ["早安", "早上好", "早,"]),
     ("night", ["晚安"]),
     ("noon", ["午安"]),
+    ("greeting_casual", _GREETING_CASUAL_KEYWORDS),
     ("affirmative", ["好的", "好啊", "沒問題", "了解", "知道了", "OK", "ok"]),
     ("negative", ["不要", "不行", "不用了", "不可以"]),
     ("agreement", ["對啊", "是啊", "沒錯", "確實"]),
@@ -206,6 +214,9 @@ _REPLIES: dict[str, list[str]] = {
         "很高興見到你,有什麼想聊的都可以說喔。",
     ],
 }
+# greeting_casual 是「你好啊/呀/唷/喔」這種帶語氣詞的打招呼,語意上就是
+# greeting,直接沿用同一組回覆,不用另外再寫一份。
+_REPLIES["greeting_casual"] = _REPLIES["greeting"]
 
 
 def _current_time_reply() -> str:
