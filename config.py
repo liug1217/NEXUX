@@ -21,23 +21,29 @@ class Config:
     block_size: int = 192      # 模型一次看多長的文字(context length)。96->192,能記住更長的多輪對話上下文
 
     # ------- 模型架構 -------
-    # 語料量還是只有 17 萬字元沒有跟著變大,單純放大架構容易更快背答案(過擬合),
-    # 所以這次架構放大的同時,也把 dropout / weight_decay 一起調高一點來抵銷。
-    n_embd: int = 256       # embedding 維度(128->256)
-    n_head: int = 8        # attention head 數量(head 維度隨 n_embd 從16->32)
-    n_layer: int = 8        # transformer block 層數(6->8)
-    dropout: float = 0.2    # 0.1->0.2,模型變大後提高一點正則化力道
+    # 語料量目前約36萬字元,還是遠小於架構放大後理論上該搭配的資料量,
+    # 放大架構的同時把 dropout / weight_decay 一起調高一點來抵銷過擬合。
+    n_embd: int = 384       # embedding 維度(256->384)
+    n_head: int = 12       # attention head 數量(head 維度隨 n_embd 維持32)
+    n_layer: int = 10        # transformer block 層數(8->10)
+    dropout: float = 0.25    # 0.2->0.25,模型變大後提高一點正則化力道
 
     # ------- 訓練超參數 -------
     batch_size: int = 32
     learning_rate: float = 3e-4
     min_learning_rate: float = 3e-5   # cosine 衰減後的最低學習率
     warmup_iters: int = 300           # 前 N 步線性 warmup,避免一開始梯度過大
-    max_iters: int = 6000      # 模型變大,步數跟著略增(5000->6000)
-    weight_decay: float = 0.02        # AdamW 的權重衰減,抑制過擬合(0.01->0.02)
+    max_iters: int = 6000      # 訓練迴圈的步數上限,實際通常會被下面的 early_stop_patience 提早中止
+    weight_decay: float = 0.025        # AdamW 的權重衰減,抑制過擬合(0.02->0.025)
     grad_clip: float = 1.0            # 梯度裁剪上限,避免梯度爆炸(0 表示不裁剪)
     eval_interval: int = 200   # 每多少步驟評估一次
     eval_iters: int = 10       # 評估時取多少個 batch 平均
+    early_stop_patience: int = 5   # 連續這麼多次評估(patience * eval_interval 步)val loss
+                                     # 都沒創新低,就提早結束訓練,不用跑完全部 max_iters。
+                                     # 過去每一輪的最佳點幾乎都落在第800~1800步,後面幾千步
+                                     # 都是浪費運算時間,加這個能顯著縮短訓練時間。
+    use_amp: bool = True   # 混合精度訓練(自動用float16算矩陣乘法),GPU上能有效加速,
+                             # 不使用GPU時會自動略過不影響正確性。
 
     # ------- Checkpoint / 續訓練 -------
     resume: bool = False   # 這次新增語料引入了253個原本詞表沒有的新字,詞表必須重建,

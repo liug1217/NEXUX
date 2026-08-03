@@ -2,7 +2,9 @@
 export_weights.py
 ------------------
 這支程式只在「你自己的電腦」上執行,目的是把 train.py 訓練出來的
-checkpoint.pt(torch 格式)轉換成一份單純的 JSON 檔案(weights.json)。
+checkpoint.pt(torch 格式)轉換成 Vercel 上的 numpy 推理引擎(numpy_gpt.py)
+看得懂、體積又夠小的格式:weights_meta.json(架構等中繼資料,檔案很小)
++ weights.npz(實際權重數字,壓縮二進位格式)。
 
 為什麼要多這一步?
 因為 PyTorch(torch)這個套件本身非常大,直接把它整個裝進 Vercel 的
@@ -12,10 +14,16 @@ Serverless Function 會超過大小限制(目前實測整包超過 700MB,上限�
 但「部署到網路上」的推理部分改用 numpy 重新實作一次前向運算,
 numpy 比 torch 小很多,才塞得進 Vercel 的限制裡。
 
+原本是輸出成單一的 weights.json(數字用文字格式,5位有效數字),
+但架構放大後(19.76M參數)文字格式膨脹到 184MB,超過 GitHub 單檔
+100MB 的硬性推送上限(不是警告,是直接拒絕)。改成 numpy 原生的
+.npz(壓縮二進位)格式儲存 float16 數字,同樣參數量下檔案大小只有
+文字格式的四分之一到五分之一左右,才能繼續留在 100MB 以內推送。
+
 使用方式:
     python train.py            # 先訓練出 checkpoint.pt
-    python export_weights.py   # 再執行這支,會產生 weights.json
-    把 weights.json 一起 commit 上傳到 GitHub(取代原本的 checkpoint.pt)
+    python export_weights.py   # 再執行這支,會產生 weights_meta.json + weights.npz
+    把這兩個檔案一起跟 tokenizer.json commit 上傳到 GitHub
 """
 
 import json
@@ -26,25 +34,18 @@ import torch
 from config import Config
 from tokenizer import CharTokenizer
 
-
-def _array_to_json(arr: np.ndarray) -> str:
-    """
-    把 numpy 陣列轉成 JSON 陣列文字,數字只保留5位有效數字。
-
-    json.dump() 預設會用 Python float 的完整雙精度表示法印出每個數字
-    (動輒十幾位小數),但權重本來就是 float32 訓練出來的,只有大約7位
-    有效數字才有意義,而且單純对 tensor 做四捨五入沒有用——四捨五入後的
-    值一樣是個二進位浮點數,repr() 出來還是一樣長。真正能縮小檔案的方式
-    是直接用字串格式化控制輸出的位數,而不是仰賴 Python 自動選出的
-    「最短能還原原值」表示法。這樣可以讓 weights.json 縮小到原本的
-    三分之一以下,留在 GitHub 單檔 100MB 的推送上限之內。
-    """
-    if arr.ndim == 1:
-        return "[" + ",".join(np.char.mod("%.5g", arr)) + "]"
-    return "[" + ",".join(_array_to_json(sub) for sub in arr) + "]"
+# npz 的 key 不能用 numpy.savez 的關鍵字引數語法帶點號(容易誤解成語法限制,
+# 這裡直接用明確的字典介面繞開疑慮),統一用 "__" 取代原本 state_dict 名稱裡
+# 的 ".",讀取時再換回來,避免任何因為特殊字元造成的相容性疑慮。
+_KEY_SEP_ORIGINAL = "."
+_KEY_SEP_NPZ = "__"
 
 
-def export_weights(config: Config | None = None, output_path: str = "weights.json"):
+def export_weights(
+    config: Config | None = None,
+    meta_path: str = "weights_meta.json",
+    npz_path: str = "weights.npz",
+):
     config = config or Config()
 
     if not os.path.exists(config.checkpoint_path):
@@ -84,7 +85,7 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
     if is_sft:
         print("[export_weights] 偵測到這是經過 SFT 微調的模型,會標記為問答模式")
 
-    header = {
+    meta = {
         "config": {
             "vocab_size": vocab_size,
             "n_embd": arch["n_embd"],
@@ -94,22 +95,23 @@ def export_weights(config: Config | None = None, output_path: str = "weights.jso
         },
         "sft_applied": is_sft,
     }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f)
 
-    # weights 這部分刻意不透過 json.dump(),改用 _array_to_json() 手動控制
-    # 每個數字的輸出精度(見該函式的說明),其餘結構(config、sft_applied)
-    # 資料量很小,直接用標準 json.dumps() 沒有影響。
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(header)[:-1])  # 去掉結尾的 "}",接著手動補上 weights
-        f.write(',"weights":{')
-        f.write(",".join(
-            f'{json.dumps(name)}:{_array_to_json(tensor.numpy())}'
-            for name, tensor in state_dict.items()
-        ))
-        f.write("}}")
+    # float16 儲存:原本文字格式保留5位有效數字,float16 大約只有3~4位
+    # 有效數字,精度略降,但對這種小型字元級模型的生成效果影響不到能察覺
+    # 的程度(推論時計算過程還是會轉回 float64,只有「存檔的精度」變粗)。
+    arrays = {
+        name.replace(_KEY_SEP_ORIGINAL, _KEY_SEP_NPZ): tensor.numpy().astype(np.float16)
+        for name, tensor in state_dict.items()
+    }
+    np.savez_compressed(npz_path, **arrays)
 
-    size_mb = os.path.getsize(output_path) / (1024 * 1024)
-    print(f"[export_weights] 已匯出至 {output_path}({size_mb:.2f} MB)")
-    print("[export_weights] 接下來把這個檔案跟 tokenizer.json 一起 commit 上傳即可。")
+    meta_size_kb = os.path.getsize(meta_path) / 1024
+    npz_size_mb = os.path.getsize(npz_path) / (1024 * 1024)
+    print(f"[export_weights] 已匯出 {meta_path}({meta_size_kb:.1f} KB)"
+          f" 與 {npz_path}({npz_size_mb:.2f} MB)")
+    print("[export_weights] 接下來把這兩個檔案跟 tokenizer.json 一起 commit 上傳即可。")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,12 @@ Serverless Function 大小限制裡,而 numpy 小很多,適合拿來部署。
 """
 
 import json
+import os
 import numpy as np
+
+# 對應 export_weights.py:npz 的 key 用 "__" 取代原本 state_dict 名稱裡的 "."。
+_KEY_SEP_ORIGINAL = "."
+_KEY_SEP_NPZ = "__"
 
 
 def layer_norm(x: np.ndarray, weight: np.ndarray, bias: np.ndarray, eps: float = 1e-5) -> np.ndarray:
@@ -44,8 +49,12 @@ class NumpyGPT:
     只支援 batch_size = 1 的生成(對聊天網頁來說已經足夠)。
     """
 
-    def __init__(self, weights_path: str):
-        with open(weights_path, "r", encoding="utf-8") as f:
+    def __init__(self, meta_path: str):
+        """
+        meta_path: weights_meta.json 的路徑,實際權重數字則從同一個資料夾底下
+        的 weights.npz 讀取(export_weights.py 會把兩個檔案輸出在一起)。
+        """
+        with open(meta_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         cfg = data["config"]
@@ -57,8 +66,14 @@ class NumpyGPT:
         self.head_size = self.n_embd // self.n_head
         self.is_sft = data.get("sft_applied", False)
 
-        # 把所有權重轉成 numpy array,方便後續矩陣運算
-        self.w = {name: np.array(value, dtype=np.float64) for name, value in data["weights"].items()}
+        # 權重數字存在跟 meta_path 同一個資料夾底下的 weights.npz(壓縮二進位
+        # 格式,比純文字 JSON 小很多),讀進來後轉回 float64 供後續矩陣運算。
+        npz_path = os.path.join(os.path.dirname(meta_path), "weights.npz")
+        npz = np.load(npz_path)
+        self.w = {
+            key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL): npz[key].astype(np.float64)
+            for key in npz.files
+        }
 
     def _linear(self, x: np.ndarray, weight: np.ndarray, bias: np.ndarray | None = None) -> np.ndarray:
         """對應 torch 的 nn.Linear:y = x @ weight.T + bias"""

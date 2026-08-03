@@ -78,19 +78,29 @@ def train_sft(config: Config | None = None):
         weight_decay=config.weight_decay,
     )
 
+    # 跟 train.py 一樣開混合精度訓練加速 GPU 運算。
+    use_amp = config.use_amp and config.device == "cuda"
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    if use_amp:
+        print("[train_sft] 已啟用混合精度訓練(AMP)")
+
     # ---- 5. SFT 訓練迴圈 ----
     model.train()
     for step in range(config.sft_max_iters):
         x, y = dataset.get_batch("train")
-        _, loss = model(x, y)
+
+        with torch.amp.autocast("cuda", enabled=use_amp):
+            _, loss = model(x, y)
 
         optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        scaler.scale(loss).backward()
 
         if config.grad_clip > 0:
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
 
-        optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
         if step % config.sft_eval_interval == 0 or step == config.sft_max_iters - 1:
             print(f"[SFT step {step:4d}] loss {loss.item():.4f}")

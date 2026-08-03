@@ -99,6 +99,14 @@ def train(config: Config | None = None):
         weight_decay=config.weight_decay,
     )
 
+    # 混合精度訓練:矩陣乘法用 float16 算,能有效加速 GPU 運算,
+    # loss 計算等數值敏感的部分 autocast 會自動保留在 float32。
+    # GradScaler 負責放大/縮小梯度避免 float16 動態範圍不足造成梯度變成 0。
+    use_amp = config.use_amp and config.device == "cuda"
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+    if use_amp:
+        print("[train] 已啟用混合精度訓練(AMP)")
+
     start_step = 0
 
     # ---- 續訓練:如果 config.resume=True 且已有 checkpoint,就接續之前的進度 ----
@@ -149,6 +157,8 @@ def train(config: Config | None = None):
     # 訓練跑越久、實際泛化能力反而越差的問題。
     best_val_loss = float("inf")
     best_step = start_step
+    evals_without_improvement = 0
+    stopped_early = False
     for step in range(start_step, config.max_iters):
         # 動態調整學習率(warmup + cosine decay)
         lr = get_lr(step, config)
@@ -164,21 +174,40 @@ def train(config: Config | None = None):
             if is_best:
                 best_val_loss = losses["val"]
                 best_step = step
+                evals_without_improvement = 0
                 save_checkpoint(step, best_val_loss)
+            else:
+                evals_without_improvement += 1
+                # 早停:連續好幾次評估都沒有創新低,代表已經開始過擬合,
+                # 再跑下去只是浪費時間,checkpoint.pt 已經保留最佳版本,
+                # 直接結束訓練迴圈即可。
+                if evals_without_improvement >= config.early_stop_patience:
+                    print(
+                        f"[train] 連續 {config.early_stop_patience} 次評估都沒有創新低,"
+                        f"提早結束訓練(第 {step} 步)"
+                    )
+                    stopped_early = True
+                    break
 
         x, y = dataset.get_batch("train")
-        _, loss = model(x, y)
+
+        with torch.amp.autocast("cuda", enabled=use_amp):
+            _, loss = model(x, y)
 
         optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        scaler.scale(loss).backward()
 
-        # 梯度裁剪:避免某一步梯度過大把權重炸壞
+        # 梯度裁剪:避免某一步梯度過大把權重炸壞。用 AMP 時要先 unscale
+        # 梯度才能算出正確的梯度範數,不然裁剪的門檻會被 scaler 的縮放係數打亂。
         if config.grad_clip > 0:
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
 
-        optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
 
-    print(f"[train] 訓練完成,最佳 checkpoint 在第 {best_step} 步"
+    print(f"[train] 訓練完成{'(提早結束)' if stopped_early else ''},"
+          f"最佳 checkpoint 在第 {best_step} 步"
           f"(val loss {best_val_loss:.4f}),已儲存至: {config.checkpoint_path}")
 
 

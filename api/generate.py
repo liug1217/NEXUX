@@ -47,17 +47,23 @@ _cache = {"model": None, "tokenizer": None}
 
 def get_model_and_tokenizer():
     if _cache["model"] is None:
-        weights_path = os.path.join(BASE_DIR, "weights.json")
+        weights_meta_path = os.path.join(BASE_DIR, "weights_meta.json")
+        weights_npz_path = os.path.join(BASE_DIR, "weights.npz")
         tokenizer_path = os.path.join(BASE_DIR, "tokenizer.json")
 
-        if not os.path.exists(weights_path) or not os.path.exists(tokenizer_path):
+        if (
+            not os.path.exists(weights_meta_path)
+            or not os.path.exists(weights_npz_path)
+            or not os.path.exists(tokenizer_path)
+        ):
             raise FileNotFoundError(
-                "找不到 weights.json 或 tokenizer.json。請先在本機執行「python train.py」"
-                "訓練模型,再執行「python export_weights.py」匯出權重,"
-                "最後把 weights.json 和 tokenizer.json 一起 commit 上傳。"
+                "找不到 weights_meta.json / weights.npz 或 tokenizer.json。"
+                "請先在本機執行「python train.py」訓練模型,"
+                "再執行「python export_weights.py」匯出權重,"
+                "最後把 weights_meta.json、weights.npz 和 tokenizer.json 一起 commit 上傳。"
             )
 
-        _cache["model"] = NumpyGPT(weights_path)
+        _cache["model"] = NumpyGPT(weights_meta_path)
         _cache["tokenizer"] = CharTokenizer.load(tokenizer_path)
 
     return _cache["model"], _cache["tokenizer"]
