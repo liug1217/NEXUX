@@ -54,7 +54,7 @@ BEAD_PALETTE: list[tuple[str, str, tuple[int, int, int]]] = [
 ]
 
 DEFAULT_GRID = 29  # 最常見的單片拼豆板尺寸(29x29 pegs)
-MAX_GRID = 60       # 避免使用者亂輸入超大格數,拖垮運算或圖片大小
+MAX_GRID = 100      # 避免使用者亂輸入超大格數,拖垮運算或圖片大小
 MIN_GRID = 5
 
 CELL_PX = 24         # 輸出圖裡每一顆珠子畫多少像素大小
