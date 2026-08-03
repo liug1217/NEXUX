@@ -277,7 +277,12 @@
     flex-wrap: wrap;
     gap: 15px;
     margin-top: 20px;
-    max-height: 60px;
+    /* 桌機版寬度夠,5個按鈕排成一行,60px 剛好夠高;但手機版螢幕窄,
+       會自動換成兩行甚至更多行,原本寫死 60px 會把超出的行硬生生用
+       overflow:hidden 切掉,看起來像一塊被裁切的怪東西。改成夠大的
+       高度(200px,兩三行都放得下),送出第一則訊息收合時一樣會動畫
+       過渡到 0,不影響原本的收合效果。 */
+    max-height: 200px;
     overflow: hidden;
     transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
   }
