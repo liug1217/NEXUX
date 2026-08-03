@@ -849,6 +849,28 @@
 
     // 拼豆結果訊息:圖片 + 色號表 + 一個可以調整格數重新產生的小工具。
     // sourceImageDataUrl 是原始上傳的圖片,調整格數時要用同一張圖重打一次。
+    // 圖片(data URI)是非同步解碼的,appendChild 當下瀏覽器還不知道
+    // 圖片實際撐開後的高度,這時候捲到底其實捲得不夠,會讓圖片下半部
+    // (色號表、調整格數的控制項)被輸入框擋住看不到。除了等 img 的
+    // load 事件,再加兩層 requestAnimationFrame 確保瀏覽器真的完成
+    // 這次 reflow/paint 之後才捲動,比只聽 load 事件更保險。
+    function scrollMessagesToBottomAfterImage(containerEl) {
+      const scrollToBottom = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+          });
+        });
+      };
+      scrollToBottom();
+      const img = containerEl.querySelector("img");
+      if (img && !img.complete) {
+        img.addEventListener("load", scrollToBottom, { once: true });
+      } else {
+        scrollToBottom();
+      }
+    }
+
     function renderBeadResult(data, sourceImageDataUrl) {
       const wrap = document.createElement("div");
       wrap.className = "bead-result";
@@ -882,6 +904,7 @@
           const newData = await requestBeadPattern(sourceImageDataUrl, Number(input.value));
           const newResult = renderBeadResult(newData, sourceImageDataUrl);
           wrap.replaceWith(newResult);
+          scrollMessagesToBottomAfterImage(newResult);
         } catch (err) {
           regenBtn.disabled = false;
           regenBtn.textContent = "重新產生";
@@ -1157,22 +1180,7 @@
           const resultEl = renderBeadResult(data, sourceImageForBead);
           messagesEl.appendChild(resultEl);
           messagesEl.scrollTop = messagesEl.scrollHeight;
-          // 圖片是非同步解碼的,appendChild 當下瀏覽器還不知道圖片實際
-          // 撐開後的高度,這時候捲到底其實捲得不夠,會讓圖片下半部
-          // (色號表、調整格數的控制項)被輸入框擋住看不到。圖片真的
-          // 載入完成、版面重新排版後,要再捲一次到底才是正確位置。
-          const resultImg = resultEl.querySelector("img");
-          if (resultImg) {
-            if (resultImg.complete) {
-              messagesEl.scrollTop = messagesEl.scrollHeight;
-            } else {
-              resultImg.addEventListener(
-                "load",
-                () => { messagesEl.scrollTop = messagesEl.scrollHeight; },
-                { once: true }
-              );
-            }
-          }
+          scrollMessagesToBottomAfterImage(resultEl);
           conversationHistory.push({ role: "assistant", text: "(已產生拼豆對照圖)" });
         } catch (err) {
           addMessage(err.message || "拼豆對照圖產生失敗,請稍後再試一次。", "error");
