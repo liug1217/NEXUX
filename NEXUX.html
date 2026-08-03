@@ -1154,8 +1154,25 @@
       if (beadRequest) {
         try {
           const data = await requestBeadPattern(sourceImageForBead, DEFAULT_BEAD_GRID);
-          messagesEl.appendChild(renderBeadResult(data, sourceImageForBead));
+          const resultEl = renderBeadResult(data, sourceImageForBead);
+          messagesEl.appendChild(resultEl);
           messagesEl.scrollTop = messagesEl.scrollHeight;
+          // 圖片是非同步解碼的,appendChild 當下瀏覽器還不知道圖片實際
+          // 撐開後的高度,這時候捲到底其實捲得不夠,會讓圖片下半部
+          // (色號表、調整格數的控制項)被輸入框擋住看不到。圖片真的
+          // 載入完成、版面重新排版後,要再捲一次到底才是正確位置。
+          const resultImg = resultEl.querySelector("img");
+          if (resultImg) {
+            if (resultImg.complete) {
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            } else {
+              resultImg.addEventListener(
+                "load",
+                () => { messagesEl.scrollTop = messagesEl.scrollHeight; },
+                { once: true }
+              );
+            }
+          }
           conversationHistory.push({ role: "assistant", text: "(已產生拼豆對照圖)" });
         } catch (err) {
           addMessage(err.message || "拼豆對照圖產生失敗,請稍後再試一次。", "error");
