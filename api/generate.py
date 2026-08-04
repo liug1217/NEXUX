@@ -44,6 +44,7 @@ from conversation import build_context_prompt  # noqa: E402
 from smalltalk import match_smalltalk  # noqa: E402
 from question_log import log_question  # noqa: E402
 from qa_lookup import match_qa  # noqa: E402
+from weather_lookup import match_weather  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -133,6 +134,13 @@ def api_generate():
         qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
         if qa_reply is not None:
             return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+
+        # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
+        # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
+        # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
+        weather_reply = match_weather(prompt)
+        if weather_reply is not None:
+            return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
     try:
         model, tokenizer = get_model_and_tokenizer()

@@ -44,6 +44,7 @@ from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 from conversation import build_context_prompt
 from smalltalk import match_smalltalk
 from qa_lookup import match_qa
+from weather_lookup import match_weather
 from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -142,6 +143,13 @@ def api_generate():
         qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
         if qa_reply is not None:
             return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+
+        # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
+        # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
+        # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
+        weather_reply = match_weather(prompt)
+        if weather_reply is not None:
+            return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
