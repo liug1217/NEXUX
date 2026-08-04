@@ -16,17 +16,26 @@ NEXUX v1.0 實際的重新訓練流程是:
    從 HuggingFace 下載 ckiplab/gpt2-base-chinese,轉成專案的 checkpoint
    格式(輸出 `checkpoint_pretrained.pt` + `vocab_pretrained.txt`,本機
    需要另外 `pip install transformers`,不在 requirements.txt 內)。
-2. `python run_pretrained_sft.py`(可加 `--steps N` 自訂步數,預設讀
+2. **`python prepare_sft_data.py`(絕對不能漏掉這一步!)**
+   把 `data/*.jsonl` 展開成訓練用的中繼檔案 `sft_data.jsonl`。
+   `run_pretrained_sft.py` 實際上讀的是 `sft_data.jsonl`,不是直接讀
+   `data/*.jsonl`——如果新增/修改了語料卻忘記先重新執行這一步,
+   `run_pretrained_sft.py` 會用「舊的、沒有反映最新語料」的
+   `sft_data.jsonl` 去訓練,整次重訓等於白跑,而且不會有任何錯誤訊息
+   提醒你(這個坑已經真實發生過一次,見 `docs/MODEL_MIGRATION.md`
+   「語料沒有真的被訓練到」那一節,浪費了兩次完整 10000 步訓練)。
+3. `python run_pretrained_sft.py`(可加 `--steps N` 自訂步數,預設讀
    `config.py` 的 `sft_max_iters`)
-   接上 `data/*.jsonl` 語料做問答微調,更新 `checkpoint_pretrained.pt`。
-3. `python export_pretrained.py`
+   在預訓練成果上做問答微調,更新 `checkpoint_pretrained.pt`。
+4. `python export_pretrained.py`
    int8 量化匯出成 `weights_meta_pretrained.json` + `weights_pretrained.npz`
    (Vercel 上的 numpy 推理引擎讀這兩個檔案)。
-4. 用 `python eval_open_ended.py --pretrained` 固定種子(seed=1337)跑一次
+5. 用 `python eval_open_ended.py --pretrained` 固定種子(seed=1337)跑一次
    固定 benchmark,確認這次改動是真的進步,不能只憑感覺判斷。
-5. `git add`(只加 `data/*.jsonl` 變更、`weights_meta_pretrained.json`、
-   `weights_pretrained.npz`,**不要**加 `checkpoint_pretrained.pt`,那個
-   檔案很大且已經在 `.gitignore` 排除)、`git commit`、`git push`。
+6. `git add`(只加 `data/*.jsonl` 變更、`weights_meta_pretrained.json`、
+   `weights_pretrained.npz`,**不要**加 `checkpoint_pretrained.pt` 或
+   `sft_data.jsonl`,這兩個都已經在 `.gitignore` 排除)、`git commit`、
+   `git push`。
 
 舊版模型(char-level 從零訓練)已經正式下架、不再部署,對應的
 `weights_meta.json`/`weights.npz`/`tokenizer.json` 已經從 git 追蹤移除

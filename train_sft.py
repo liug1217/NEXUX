@@ -19,6 +19,7 @@ SFT 訓練會直接載入 train.py 產生的 checkpoint.pt,在原本的權重基
 避免破壞掉預訓練階段已經學到的語言能力。
 """
 
+import glob
 import os
 import torch
 
@@ -26,6 +27,37 @@ from config import Config
 from tokenizer import CharTokenizer
 from dataset import SFTDataset
 from model import GPTModel
+
+
+def _ensure_sft_data_up_to_date(config: Config) -> None:
+    """
+    sft_data.jsonl 是 prepare_sft_data.py 從 data/*.jsonl 展開出來的中繼檔案,
+    不是自動同步的——如果語料改了但忘記重新執行 prepare_sft_data.py,
+    train_sft() 會靜靜地用「舊的、沒有反映最新語料」的 sft_data.jsonl 去訓練,
+    不會有任何錯誤訊息,整次訓練等於白跑(這個坑真實發生過,詳見
+    docs/MODEL_MIGRATION.md「語料沒有真的被訓練到」那一節)。
+
+    這裡在每次訓練前自動比對 data/*.jsonl 裡最新的修改時間,跟
+    sft_data.jsonl 的修改時間,只要語料比較新(或 sft_data.jsonl 根本
+    不存在),就自動重新產生一次,不用仰賴使用者自己記得手動執行。
+    """
+    data_files = glob.glob(os.path.join(config.data_dir, "*.jsonl"))
+    if not data_files:
+        return  # 沒有語料檔案,交給後面既有的檔案存在性檢查去報錯
+
+    newest_data_mtime = max(os.path.getmtime(f) for f in data_files)
+    needs_regen = (
+        not os.path.exists(config.sft_data_path)
+        or os.path.getmtime(config.sft_data_path) < newest_data_mtime
+    )
+    if needs_regen:
+        print(
+            f"[train_sft] {config.sft_data_path} 不存在或已過期(比 "
+            f"{config.data_dir}/ 底下最新的語料檔案還舊),自動重新執行 "
+            "prepare_sft_data.py 產生最新版本..."
+        )
+        import prepare_sft_data
+        prepare_sft_data.main()
 
 
 def train_sft(config: Config | None = None, tokenizer=None):
@@ -47,10 +79,7 @@ def train_sft(config: Config | None = None, tokenizer=None):
         raise FileNotFoundError(
             f"找不到 {config.tokenizer_path},請先執行「python train.py」完成預訓練。"
         )
-    if not os.path.exists(config.sft_data_path):
-        raise FileNotFoundError(
-            f"找不到 {config.sft_data_path},請先執行「python prepare_sft_data.py」產生這份檔案。"
-        )
+    _ensure_sft_data_up_to_date(config)
 
     # ---- 1. 載入 tokenizer(沿用預訓練階段的詞表,不能重新建立) ----
     if tokenizer is None:
