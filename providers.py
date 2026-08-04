@@ -17,7 +17,7 @@ import os
 import sys
 import logging
 
-SUPPORTED_PROVIDERS = ["own", "openai", "anthropic", "google", "groq"]
+SUPPORTED_PROVIDERS = ["own", "own_beta", "openai", "anthropic", "google", "groq"]
 
 
 def _ensure_utf8_safe_environment() -> None:

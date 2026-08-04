@@ -132,6 +132,16 @@ class SFTDataset:
 
         input_ids = self.tokenizer.encode(input_text)
         output_ids = self.tokenizer.encode(output_text)
+
+        # 如果 tokenizer 有定義結束符號(例如 BertWordpieceTokenizer 的
+        # [SEP]),把它接在答案後面一起訓練,讓模型學會「答完了就該輸出
+        # 這個記號」,推論時才能自己判斷該停下來,不用再靠外部的字數上限
+        # 硬性截斷。CharTokenizer 沒有 eos_id 屬性,這裡用 getattr 保持
+        # 向下相容,不影響現有 char-level 模型的訓練行為。
+        eos_id = getattr(self.tokenizer, "eos_id", None)
+        if eos_id is not None:
+            output_ids = output_ids + [eos_id]
+
         full_ids = input_ids + output_ids
 
         block_size = self.config.block_size

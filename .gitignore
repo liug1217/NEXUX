@@ -16,6 +16,16 @@ __pycache__/
 # 只有在本機要繼續訓練(resume)時才需要,不commit它,加進這裡忽略掉。
 checkpoint.pt
 
+# 預訓練模型微調(見 docs/MODEL_MIGRATION.md)本機用的中繼檔案,道理跟
+# checkpoint.pt 一樣:很大(含 optimizer 狀態,超過 1GB)、只有本機繼續
+# 微調時才需要,部署用的是 export_pretrained.py 匯出的
+# weights_meta_pretrained.json + weights_pretrained.npz,不需要 commit 這個。
+checkpoint_pretrained.pt
+
+# verify_conversion.py 產生的本機驗證用中繼檔案(未量化的完整精度版本,
+# 檔案很大),只是拿來跟 HuggingFace 原始模型比對數值用,不是部署格式。
+pretrained_test/
+
 # 舊版匯出格式(純文字 JSON),架構放大後檔案會超過 GitHub 100MB 上限,
 # 已經改用 weights_meta.json + weights.npz(見上面說明),不要再 commit 這個。
 weights.json

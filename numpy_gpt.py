@@ -49,10 +49,15 @@ class NumpyGPT:
     只支援 batch_size = 1 的生成(對聊天網頁來說已經足夠)。
     """
 
-    def __init__(self, meta_path: str):
+    def __init__(self, meta_path: str, npz_filename: str = "weights.npz"):
         """
         meta_path: weights_meta.json 的路徑,實際權重數字則從同一個資料夾底下
         的 weights.npz 讀取(export_weights.py 會把兩個檔案輸出在一起)。
+
+        npz_filename: 權重檔案名稱,預設 "weights.npz"(現有 char-level 模型
+        用的檔名)。export_pretrained.py(預訓練/微調模型的匯出流程,體積
+        較大)會用 int8 量化過的權重,檔名不同,呼叫端可以指定不同檔名,
+        避免跟正式站現有的 weights.npz 互相覆蓋。
         """
         with open(meta_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -68,12 +73,26 @@ class NumpyGPT:
 
         # 權重數字存在跟 meta_path 同一個資料夾底下的 weights.npz(壓縮二進位
         # 格式,比純文字 JSON 小很多),讀進來後轉回 float64 供後續矩陣運算。
-        npz_path = os.path.join(os.path.dirname(meta_path), "weights.npz")
+        npz_path = os.path.join(os.path.dirname(meta_path), npz_filename)
         npz = np.load(npz_path)
-        self.w = {
-            key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL): npz[key].astype(np.float64)
-            for key in npz.files
-        }
+
+        # int8 量化過的權重,每個 tensor 會多存一組「key|qmin」「key|qscale」
+        # (仿射量化的還原參數:實際值 = 量化整數 * qscale + qmin),讀取時
+        # 偵測到就先還原成浮點數再繼續,detect 不到就走原本 float16 直接讀的
+        # 舊邏輯,兩種格式都能吃,不影響現有 char-level 模型的推論。
+        quant_keys = {k for k in npz.files if k.endswith("|qmin") or k.endswith("|qscale")}
+        data_keys = [k for k in npz.files if k not in quant_keys]
+
+        self.w = {}
+        for key in data_keys:
+            qmin_key, qscale_key = f"{key}|qmin", f"{key}|qscale"
+            if qmin_key in npz.files and qscale_key in npz.files:
+                qmin = float(npz[qmin_key])
+                qscale = float(npz[qscale_key])
+                value = npz[key].astype(np.float64) * qscale + qmin
+            else:
+                value = npz[key].astype(np.float64)
+            self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value
 
     def _linear(self, x: np.ndarray, weight: np.ndarray, bias: np.ndarray | None = None) -> np.ndarray:
         """對應 torch 的 nn.Linear:y = x @ weight.T + bias"""
@@ -82,7 +101,14 @@ class NumpyGPT:
             out = out + bias
         return out
 
-    def _attention(self, x: np.ndarray, layer: int) -> np.ndarray:
+    def _attention(self, x: np.ndarray, layer: int, cache_entry: dict | None = None) -> np.ndarray:
+        """
+        cache_entry: 選填。如果有傳,算完這批位置的 k/v 後會存進
+        cache_entry["k"]/["v"](形狀 (n_head, T, head_size)),之後
+        generate() 產生新 token 時,_attention_step() 才能接續使用這份
+        快取,不用每次都從頭重算整段 prompt。只有第一次處理完整 prompt
+        時才需要傳這個參數。
+        """
         T, C = x.shape
         prefix = f"blocks.{layer}.attn"
 
@@ -94,6 +120,9 @@ class NumpyGPT:
             return t.reshape(T, self.n_head, self.head_size).transpose(1, 0, 2)
 
         q, k, v = split_heads(q), split_heads(k), split_heads(v)
+
+        if cache_entry is not None:
+            cache_entry["k"], cache_entry["v"] = k, v
 
         att = (q @ k.transpose(0, 2, 1)) * (self.head_size ** -0.5)  # (n_head, T, T)
 
@@ -107,15 +136,51 @@ class NumpyGPT:
 
         return self._linear(out, self.w[f"{prefix}.out_proj.weight"], self.w[f"{prefix}.out_proj.bias"])
 
+    def _attention_step(self, x_new: np.ndarray, layer: int, cache_entry: dict) -> np.ndarray:
+        """
+        KV-cache 版的單一新 token 注意力計算。x_new 是 (1, C),只有這一個
+        新位置。跟 _attention() 算出來的結果在數學上完全等價,差別只在於
+        不用重算前面已經算過的位置——cache_entry 存著前面每一層累積下來的
+        k、v(形狀 (n_head, T_so_far, head_size)),這裡只需要算「這個新
+        token 的 q/k/v」,把新的 k/v 接到快取後面,再讓新的 q 對「快取裡
+        全部的 k/v(含這個新 token 自己)」做注意力,不需要因果遮罩
+        (反正這裡只有一個新位置,天生就只看得到自己跟之前的位置)。
+        """
+        prefix = f"blocks.{layer}.attn"
+        qkv = self._linear(x_new, self.w[f"{prefix}.qkv_proj.weight"], self.w[f"{prefix}.qkv_proj.bias"])
+        q, k, v = np.split(qkv, 3, axis=-1)  # 各自 (1, C)
+
+        def split_heads_new(t):
+            return t.reshape(1, self.n_head, self.head_size).transpose(1, 0, 2)  # (n_head, 1, head_size)
+
+        q, k_new, v_new = split_heads_new(q), split_heads_new(k), split_heads_new(v)
+
+        if cache_entry["k"] is None:
+            k_all, v_all = k_new, v_new
+        else:
+            k_all = np.concatenate([cache_entry["k"], k_new], axis=1)  # (n_head, T_so_far+1, head_size)
+            v_all = np.concatenate([cache_entry["v"], v_new], axis=1)
+        cache_entry["k"], cache_entry["v"] = k_all, v_all
+
+        att = (q @ k_all.transpose(0, 2, 1)) * (self.head_size ** -0.5)  # (n_head, 1, T_so_far+1)
+        att = softmax(att, axis=-1)
+        out = att @ v_all  # (n_head, 1, head_size)
+        out = out.transpose(1, 0, 2).reshape(1, self.n_embd)  # 合併多頭 -> (1, C)
+
+        return self._linear(out, self.w[f"{prefix}.out_proj.weight"], self.w[f"{prefix}.out_proj.bias"])
+
     def _feedforward(self, x: np.ndarray, layer: int) -> np.ndarray:
         prefix = f"blocks.{layer}.ff.net"
         h = self._linear(x, self.w[f"{prefix}.0.weight"], self.w[f"{prefix}.0.bias"])
         h = gelu(h)
         return self._linear(h, self.w[f"{prefix}.2.weight"], self.w[f"{prefix}.2.bias"])
 
-    def forward(self, idx: list[int]) -> np.ndarray:
+    def forward(self, idx: list[int], cache: list[dict] | None = None) -> np.ndarray:
         """
         idx: 長度為 T 的 token id 列表(單一序列,不是 batch)。
+        cache: 選填,傳入一個長度 n_layer、每個元素是 {"k": None, "v": None}
+        的 list,呼叫完之後會被填入這批位置算出來的 k/v,供後續
+        forward_step() 累加使用(見 generate() 怎麼用這個機制)。
         回傳: (T, vocab_size) 的 logits。
         """
         T = len(idx)
@@ -127,14 +192,48 @@ class NumpyGPT:
 
         for layer in range(self.n_layer):
             ln1_out = layer_norm(x, self.w[f"blocks.{layer}.ln1.weight"], self.w[f"blocks.{layer}.ln1.bias"])
-            x = x + self._attention(ln1_out, layer)
+            cache_entry = cache[layer] if cache is not None else None
+            x = x + self._attention(ln1_out, layer, cache_entry=cache_entry)
 
             ln2_out = layer_norm(x, self.w[f"blocks.{layer}.ln2.weight"], self.w[f"blocks.{layer}.ln2.bias"])
             x = x + self._feedforward(ln2_out, layer)
 
         x = layer_norm(x, self.w["ln_f.weight"], self.w["ln_f.bias"])
-        logits = x @ self.w["head.weight"].T  # (T, vocab_size),head 沒有 bias
+        # 預訓練模型(如 ckiplab/gpt2-base-chinese)輸出層跟輸入 embedding 是
+        # tied(共用同一份權重),匯出時故意不重複存 head.weight 省空間,
+        # 這裡找不到就退回用 token_emb.weight。
+        head_weight = self.w.get("head.weight", self.w["token_emb.weight"])
+        logits = x @ head_weight.T  # (T, vocab_size),head 沒有 bias
         return logits
+
+    def forward_step(self, token_id: int, pos: int, cache: list[dict]) -> np.ndarray:
+        """
+        KV-cache 版的單步前向運算:只處理「一個新 token」,搭配已經累積好
+        k/v 的 cache(第一次呼叫前,cache 必須先用 forward(idx, cache=...)
+        處理過 prompt),讓 generate() 產生第二個以後的新 token 時,不用
+        每次都把整段已生成的文字重新算一遍,大幅減少重複運算量。
+
+        pos: 這個新 token 在整個序列裡的位置索引(從 0 算起),決定要用
+             哪一個 position embedding。
+        回傳: (vocab_size,) 這一個新位置的 logits。
+        """
+        assert pos < self.block_size, f"位置 {pos} 超過 block_size {self.block_size}"
+
+        tok_emb = self.w["token_emb.weight"][[token_id]]   # (1, C)
+        pos_emb = self.w["pos_emb.weight"][pos:pos + 1]     # (1, C)
+        x = tok_emb + pos_emb
+
+        for layer in range(self.n_layer):
+            ln1_out = layer_norm(x, self.w[f"blocks.{layer}.ln1.weight"], self.w[f"blocks.{layer}.ln1.bias"])
+            x = x + self._attention_step(ln1_out, layer, cache[layer])
+
+            ln2_out = layer_norm(x, self.w[f"blocks.{layer}.ln2.weight"], self.w[f"blocks.{layer}.ln2.bias"])
+            x = x + self._feedforward(ln2_out, layer)
+
+        x = layer_norm(x, self.w["ln_f.weight"], self.w["ln_f.bias"])
+        head_weight = self.w.get("head.weight", self.w["token_emb.weight"])
+        logits = x @ head_weight.T  # (1, vocab_size)
+        return logits[0]
 
     def generate(
         self,
@@ -145,6 +244,7 @@ class NumpyGPT:
         top_p: float | None = None,
         repetition_penalty: float = 1.0,
         seed: int | None = None,
+        eos_id: int | None = None,
     ) -> list[int]:
         """
         自迴歸生成,回傳完整序列(prompt + 新生成的 token)。
@@ -152,33 +252,53 @@ class NumpyGPT:
         top_p: 核採樣(nucleus sampling),只保留累積機率達到 top_p 的最小候選集合。
         repetition_penalty: 大於 1.0 時,會降低「已經出現過的 token」被再次選中的
                              機率,減少連續重複同一個字或符號的情況。
+        eos_id: 結束符號的 token id,生成到這個 id 就提早停止,不用生成滿
+                max_new_tokens。預設 None(不啟用),char-level 模型沒有
+                這個概念時維持原本行為。
         """
         rng = np.random.default_rng(seed)
         idx = list(idx)
 
-        for _ in range(max_new_tokens):
-            idx_cond = idx[-self.block_size:]
-            logits = self.forward(idx_cond)
-            last_logits = logits[-1] / max(temperature, 1e-5)
+        # KV-cache:prompt 這段用完整的 forward() 算一次、順便把每一層的
+        # k/v 存進 cache,之後每多生成一個新 token,只需要呼叫
+        # forward_step() 算「這一個新位置」,不用把已經生成的內容重新算
+        # 一遍。這個模型有 12 層、768 維,沒有這個機制的話,生成速度會隨著
+        # 已生成長度增加而越來越慢(每個字都要重算整段歷史),實測一個字
+        # 要 2 秒以上,加了快取後單步只需算「新增的這一小段」,能大幅縮短
+        # 生成時間,是能不能部署上線的關鍵。
+        idx_cond = idx[-self.block_size:]
+        cache = [{"k": None, "v": None} for _ in range(self.n_layer)]
+        logits = self.forward(idx_cond, cache=cache)
+        last_logits = logits[-1]
+        next_pos = len(idx_cond)  # 下一個要生成的 token,在整個序列裡的位置索引
+
+        for step in range(max_new_tokens):
+            if step > 0:
+                # 第一輪的 logits 已經在迴圈外、處理 prompt 時順便算好了;
+                # 第二輪開始,每輪都要先用「上一輪選出的 token」算出這一輪
+                # 的 logits(只算這一個新位置,靠 cache 避免重算歷史)。
+                last_logits = self.forward_step(idx[-1], next_pos - 1, cache)
+
+            scaled_logits = last_logits / max(temperature, 1e-5)
 
             # ---- 重複懲罰 ----
             if repetition_penalty != 1.0:
                 for token_id in set(idx):
-                    if last_logits[token_id] > 0:
-                        last_logits[token_id] /= repetition_penalty
+                    if scaled_logits[token_id] > 0:
+                        scaled_logits[token_id] /= repetition_penalty
                     else:
-                        last_logits[token_id] *= repetition_penalty
+                        scaled_logits[token_id] *= repetition_penalty
 
             # ---- top_k ----
             if top_k is not None:
-                k = min(top_k, last_logits.shape[-1])
-                threshold = np.sort(last_logits)[-k]
-                last_logits = np.where(last_logits < threshold, -np.inf, last_logits)
+                k = min(top_k, scaled_logits.shape[-1])
+                threshold = np.sort(scaled_logits)[-k]
+                scaled_logits = np.where(scaled_logits < threshold, -np.inf, scaled_logits)
 
             # ---- top_p(核採樣) ----
             if top_p is not None:
-                sorted_idx = np.argsort(last_logits)[::-1]
-                sorted_logits = last_logits[sorted_idx]
+                sorted_idx = np.argsort(scaled_logits)[::-1]
+                sorted_logits = scaled_logits[sorted_idx]
                 sorted_probs = softmax(sorted_logits)
                 cumulative_probs = np.cumsum(sorted_probs)
 
@@ -189,11 +309,15 @@ class NumpyGPT:
                 remove_mask[0] = False
 
                 indices_to_remove = sorted_idx[remove_mask]
-                last_logits[indices_to_remove] = -np.inf
+                scaled_logits[indices_to_remove] = -np.inf
 
-            probs = softmax(last_logits)
+            probs = softmax(scaled_logits)
             next_id = rng.choice(len(probs), p=probs)
             idx.append(int(next_id))
+            next_pos += 1
+
+            if eos_id is not None and int(next_id) == eos_id:
+                break
 
         return idx
     

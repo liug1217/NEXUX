@@ -152,6 +152,7 @@ class GPTModel(nn.Module):
         top_k=None,
         top_p=None,
         repetition_penalty=1.0,
+        eos_id=None,
     ):
         """
         自迴歸生成文字。
@@ -160,7 +161,12 @@ class GPTModel(nn.Module):
                通常比單純 top_k 更能兼顧多樣性與合理性。
         repetition_penalty: 重複懲罰,大於 1.0 時,會降低「已經出現過的 token」
                被再次選中的機率,可以有效減少像連續重複同一個字或符號的情況。
-        回傳: (B, T + max_new_tokens) 的完整序列
+        eos_id: 結束符號的 token id(見 bert_wordpiece_tokenizer.py 的
+               eos_id),生成到這個 id 就提早停止,不用一定要生成滿
+               max_new_tokens。預設 None 代表不啟用(維持舊行為,
+               char-level 的 CharTokenizer 沒有這個概念)。目前只支援
+               batch_size = 1 時提早停止(這個專案的推論一律是單一序列)。
+        回傳: (B, T + max_new_tokens) 的完整序列(若提早停止則較短)
         """
         self.eval()
         for _ in range(max_new_tokens):
@@ -204,6 +210,9 @@ class GPTModel(nn.Module):
             next_id = torch.multinomial(probs, num_samples=1)  # (B, 1)
             idx = torch.cat([idx, next_id], dim=1)
 
+            if eos_id is not None and idx.size(0) == 1 and next_id.item() == eos_id:
+                break
+
         self.train()
         return idx
 
@@ -216,11 +225,14 @@ class GPTModel(nn.Module):
         top_k=None,
         top_p=None,
         repetition_penalty=1.0,
+        eos_id=None,
     ):
         """
         跟 generate() 邏輯完全一樣,差別只在於用 yield 把「每一個新產生的 token id」
         逐一吐出來,而不是等全部生成完才一次回傳完整序列,讓呼叫端(server.py)
         可以邊生成邊把文字傳給前端,做出真正的串流效果。
+
+        eos_id: 見 generate() 的說明,生成到這個 id 就吐出它之後直接停止。
         """
         self.eval()
         for _ in range(max_new_tokens):
@@ -259,6 +271,9 @@ class GPTModel(nn.Module):
             idx = torch.cat([idx, next_id], dim=1)
 
             yield next_id[0].tolist()
+
+            if eos_id is not None and idx.size(0) == 1 and next_id.item() == eos_id:
+                break
 
         self.train()
     

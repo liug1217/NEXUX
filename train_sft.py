@@ -28,7 +28,14 @@ from dataset import SFTDataset
 from model import GPTModel
 
 
-def train_sft(config: Config | None = None):
+def train_sft(config: Config | None = None, tokenizer=None):
+    """
+    tokenizer: 可選,傳入的話會直接使用這個 tokenizer 實例,不去讀
+    config.tokenizer_path、也不限定一定要是 CharTokenizer(只要有
+    encode()/vocab_size 介面即可)。這是為了讓「微調預訓練模型」
+    (使用 BertWordpieceTokenizer,見 bert_wordpiece_tokenizer.py)
+    能重用同一套訓練迴圈,不用另外複製一份程式碼。
+    """
     config = config or Config()
     torch.manual_seed(config.seed)
 
@@ -36,7 +43,7 @@ def train_sft(config: Config | None = None):
         raise FileNotFoundError(
             f"找不到 {config.checkpoint_path},請先執行「python train.py」完成預訓練。"
         )
-    if not os.path.exists(config.tokenizer_path):
+    if tokenizer is None and not os.path.exists(config.tokenizer_path):
         raise FileNotFoundError(
             f"找不到 {config.tokenizer_path},請先執行「python train.py」完成預訓練。"
         )
@@ -46,7 +53,8 @@ def train_sft(config: Config | None = None):
         )
 
     # ---- 1. 載入 tokenizer(沿用預訓練階段的詞表,不能重新建立) ----
-    tokenizer = CharTokenizer.load(config.tokenizer_path)
+    if tokenizer is None:
+        tokenizer = CharTokenizer.load(config.tokenizer_path)
     print(f"[train_sft] 已載入 tokenizer,詞表大小: {tokenizer.vocab_size}")
 
     # ---- 2. 載入 SFT 訓練資料 ----
@@ -68,7 +76,12 @@ def train_sft(config: Config | None = None):
         print("[train_sft] 警告:這是舊版 checkpoint,沒有記錄架構參數,改用 config.py 目前的設定。")
 
     model = GPTModel(model_config, vocab_size=checkpoint["vocab_size"]).to(config.device)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    # strict=False:checkpoint 裡可能不包含 attn.mask 這種因果遮罩 buffer
+    # (根據 config 自動生成、不是訓練出來的權重,本來就不需要存/載入),
+    # 這裡明確檢查「缺的只能是 attn.mask」,避免真正的權重被漏掉卻沒發現。
+    missing, unexpected = model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+    assert not unexpected, f"checkpoint 有架構對不上的多餘權重: {unexpected}"
+    assert all("attn.mask" in k for k in missing), f"checkpoint 缺少非 buffer 的權重: {missing}"
     print(f"[train_sft] 已載入預訓練權重,起始 loss 應該會比從零訓練低很多")
 
     # ---- 4. Optimizer(用比預訓練小很多的學習率,避免破壞已學到的能力) ----
