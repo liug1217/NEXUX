@@ -10,8 +10,10 @@ run_pretrained_sft.py
   checkpoint.pt / tokenizer.json,微調測試不會影響現有 char-level 模型正常運作。
 
 用法:
-    python run_pretrained_sft.py            # 完整跑 sft_max_iters 步
-    python run_pretrained_sft.py --smoke     # 只跑 20 步,快速確認不會出錯
+    python run_pretrained_sft.py                # 完整跑 sft_max_iters 步(預設 1500)
+    python run_pretrained_sft.py --smoke         # 只跑 20 步,快速確認不會出錯
+    python run_pretrained_sft.py --steps 10000   # 自訂步數(例如拉長訓練量測試是否
+                                                   # 是「訓練不夠」導致內容答非所問)
 """
 
 import sys
@@ -24,10 +26,16 @@ from train_sft import train_sft
 def main():
     smoke = "--smoke" in sys.argv
 
+    custom_steps = None
+    if "--steps" in sys.argv:
+        idx = sys.argv.index("--steps")
+        custom_steps = int(sys.argv[idx + 1])
+
     tokenizer = BertWordpieceTokenizer.load_from_vocab_txt("vocab_pretrained.txt")
     print(f"[run_pretrained_sft] 已載入 BertWordpieceTokenizer,詞表大小: {tokenizer.vocab_size}")
 
     base = Config()
+    sft_max_iters = 20 if smoke else (custom_steps or base.sft_max_iters)
     config = Config(
         **{
             **base.__dict__,
@@ -37,8 +45,8 @@ def main():
             "n_head": 12,
             "n_layer": 12,
             "dropout": 0.1,  # 沿用 HF 模型原本的 dropout 設定,微調階段不用刻意加大正則化
-            "sft_max_iters": 20 if smoke else base.sft_max_iters,
-            "sft_eval_interval": 5 if smoke else base.sft_eval_interval,
+            "sft_max_iters": sft_max_iters,
+            "sft_eval_interval": 5 if smoke else 300,
         }
     )
 

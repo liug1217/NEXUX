@@ -450,6 +450,26 @@
     color: #FFFFFF;
   }
 
+  .skip-rules-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    font-family: 'Inter', var(--sans);
+    font-size: 11px;
+    color: #B6B6B6;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .skip-rules-toggle input {
+    cursor: pointer;
+    accent-color: #FFFFFF;
+    width: 12px;
+    height: 12px;
+  }
+
   /* Mic:16x16,內縮 20.83%(左右)/ 4.17%(上下),1.6px白色線條 */
   .mic-btn {
     position: relative;
@@ -723,6 +743,14 @@
               <option value="groq">Groq</option>
             </select>
 
+            <!-- 略過規則:勾選後 smalltalk/qa_lookup 這兩層規則保底機制不會攔截,
+                 直接讓選定的模型自己生成,方便實際測試模型本身(尤其是 Beta)
+                 面對簡單問候這類平常會被規則接手的輸入時,自己的表現如何。 -->
+            <label class="skip-rules-toggle" id="skipRulesLabel" title="勾選後不經過規則比對,直接讓模型生成">
+              <input type="checkbox" id="skipRulesToggle" />
+              略過規則
+            </label>
+
             <!-- Mic:16x16,內縮20.83%(左右)/4.17%(上下),1.6px白色線條 -->
             <button type="button" class="mic-btn" aria-label="語音輸入" tabindex="-1">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -784,6 +812,7 @@
     const textarea = document.getElementById("prompt");
     const sendBtn = document.getElementById("sendBtn");
     const providerSelect = document.getElementById("providerSelect");
+    const skipRulesToggle = document.getElementById("skipRulesToggle");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
     const addBtn = document.getElementById("addBtn");
@@ -1210,6 +1239,7 @@
             prompt,
             provider: providerSelect.value,
             history: historyForRequest,
+            skipRules: skipRulesToggle.checked,
           }),
           signal: activeAbortController.signal,
         });
