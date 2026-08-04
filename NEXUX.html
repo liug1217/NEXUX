@@ -323,11 +323,10 @@
   /* Rectangle 12:圓角膠囊容器,寬度用100%取代原本固定771px,
      內部改成「上方文字區 / 下方工具列」的直向排列,
      這樣工具列才能像設計稿一樣貼齊底部,文字區則可以向上長高 */
-  /* 液態玻璃效果:數值完全比照使用者提供的參考稿(圓形圖示按鈕的玻璃效果),
-     不额外調低透明度,只把 SCSS 巢狀寫法攤平成一般 CSS、把固定的
-     width/height 換算改成 inset(因為這裡是會隨內容變高的長方形膠囊,
-     不是參考稿裡固定尺寸的圓形按鈕,尺寸邏輯必須跟著形狀調整,但顏色/
-     透明度數值不動)。 */
+  /* 液態玻璃效果:原本完全比照參考稿數值,但使用者實際看過後反應太亮,
+     這裡把高光相關的透明度(不是陰影,陰影維持原數值)調低,其餘視覺
+     邏輯(backdrop-filter 霧化 + inset 高光模擬玻璃邊緣反光 + 對角線
+     光澤疊層)不變。 */
   .composer-pill {
     position: relative;
     box-sizing: border-box;
@@ -338,10 +337,10 @@
     padding: 0;
     border-radius: 29px;
     box-shadow:
-      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
-      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
-      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
-      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.5),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.5),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.3),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.3),
       inset 0 0 2px rgba(0, 0, 0, 0.8),
       0 4px 8px rgba(0, 0, 0, 0.2);
     background: rgba(255, 255, 255, 0.04);
@@ -377,10 +376,10 @@
     pointer-events: none;
     background: linear-gradient(
       45deg,
-      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.35) 0%,
       transparent 25%,
       transparent 75%,
-      rgba(255, 255, 255, 0.8) 100%
+      rgba(255, 255, 255, 0.35) 100%
     );
     filter: blur(3px);
   }
@@ -390,7 +389,7 @@
     position: absolute;
     z-index: 3;
     inset: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 25px;
     filter: blur(1px);
     pointer-events: none;
@@ -399,13 +398,13 @@
   /* 參考稿是純裝飾用的按鈕圖示,沒有考慮鍵盤focus提示;這裡是輸入框,
      底下 textarea:focus 有另外關掉瀏覽器預設外框(outline: none),
      所以在原本 6 層 box-shadow 之外,額外疊加一圈外框當作 focus 提示,
-     不動到參考稿原本那 6 層的數值。 */
+     不動到基礎高光數值。 */
   .composer-pill:focus-within {
     box-shadow:
-      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
-      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
-      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
-      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.5),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.5),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.3),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.3),
       inset 0 0 2px rgba(0, 0, 0, 0.8),
       0 4px 8px rgba(0, 0, 0, 0.2),
       0 0 0 2px rgba(255, 255, 255, 0.25);
