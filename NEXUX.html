@@ -323,12 +323,11 @@
   /* Rectangle 12:圓角膠囊容器,寬度用100%取代原本固定771px,
      內部改成「上方文字區 / 下方工具列」的直向排列,
      這樣工具列才能像設計稿一樣貼齊底部,文字區則可以向上長高 */
-  /* 液態玻璃效果:改編自使用者提供的參考稿(圓形圖示按鈕的玻璃效果),
-     原始版本是設計給淺色背景用的,直接套用 0.9 透明度的白色高光在這裡
-     的深色背景(--bg: #212121)上會變成一圈刺眼的白邊,不是玻璃感,
-     所以把高光/陰影的透明度都調低、改成扁平 CSS(拿掉原本的 SCSS 巢狀
-     寫法),其餘視覺邏輯(backdrop-filter 霧化 + inset 高光模擬玻璃邊緣
-     反光 + 對角線光澤疊層)保留。 */
+  /* 液態玻璃效果:數值完全比照使用者提供的參考稿(圓形圖示按鈕的玻璃效果),
+     不额外調低透明度,只把 SCSS 巢狀寫法攤平成一般 CSS、把固定的
+     width/height 換算改成 inset(因為這裡是會隨內容變高的長方形膠囊,
+     不是參考稿裡固定尺寸的圓形按鈕,尺寸邏輯必須跟著形狀調整,但顏色/
+     透明度數值不動)。 */
   .composer-pill {
     position: relative;
     box-sizing: border-box;
@@ -337,43 +336,80 @@
     min-height: 130px;
     width: 100%;
     padding: 0;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 29px;
+    border: 1px double rgba(51, 51, 51, 0.08);
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset 0 0 2px rgba(0, 0, 0, 0.8),
+      0 4px 8px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
-    box-shadow:
-      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.12),
-      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.12),
-      inset 0 0 2px rgba(0, 0, 0, 0.5),
-      0px 4px 8px rgba(0, 0, 0, 0.25);
+    filter: brightness(0.9);
     overflow: hidden;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: box-shadow 0.15s ease;
   }
 
-  /* 對角線玻璃光澤,z-index 疊在內容之上但 pointer-events: none,
-     不會擋到底下 textarea 的點擊/輸入或工具列按鈕。 */
+  /* 對應參考稿的 :before,模糊的內圈暗邊,製造玻璃邊緣的深度感。 */
+  .composer-pill::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 8px;
+    border-radius: 25px;
+    border: 1px solid rgba(0, 0, 0, 0.9);
+    filter: blur(8px);
+    pointer-events: none;
+  }
+
+  /* 對應參考稿的 :after,45度對角線玻璃光澤。跟參考稿一樣疊在內容之上,
+     但加了 pointer-events: none(參考稿是純裝飾用的圓形按鈕圖示,不需要
+     考慮這個;這裡底下是可以輸入文字、按按鈕的互動區域,沒有這行會擋到
+     點擊跟打字)。 */
   .composer-pill::after {
     content: '';
     position: absolute;
-    inset: 0;
     z-index: 2;
+    inset: 0;
     border-radius: inherit;
     pointer-events: none;
     background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.10) 0%,
-      transparent 22%,
-      transparent 78%,
-      rgba(255, 255, 255, 0.10) 100%
+      45deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      transparent 25%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.8) 100%
     );
     filter: blur(3px);
   }
 
+  /* 對應參考稿的 .circle-overlay,內側再疊一圈淡淡的邊框增加層次感。 */
+  .pill-overlay {
+    position: absolute;
+    z-index: 3;
+    inset: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    filter: blur(1px);
+    pointer-events: none;
+  }
+
+  /* 參考稿是純裝飾用的按鈕圖示,沒有考慮鍵盤focus提示;這裡是輸入框,
+     底下 textarea:focus 有另外關掉瀏覽器預設外框(outline: none),
+     所以在原本 6 層 box-shadow 之外,額外疊加一圈外框當作 focus 提示,
+     不動到參考稿原本那 6 層的數值。 */
   .composer-pill:focus-within {
-    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+      inset 0 0 2px rgba(0, 0, 0, 0.8),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 0 0 2px rgba(255, 255, 255, 0.25);
   }
 
   .composer-disclaimer {
@@ -761,6 +797,7 @@
       </div>
 
       <div class="composer-pill">
+        <div class="pill-overlay"></div>
         <textarea
           id="prompt"
           placeholder="想問啥就問啥"
