@@ -157,6 +157,18 @@
     margin-left: -24px;
   }
 
+  /* 串流生成時,即時顯示目前已產生的 token 數量,生成完成後保留最終總數。
+     跟 .msg.assistant 用同樣的負邊距對齊方式,但字體更小、顏色更淡,
+     視覺上是次要資訊,不搶主要回覆文字的焦點。 */
+  .token-counter {
+    align-self: flex-start;
+    margin-top: -8px;
+    margin-left: -24px;
+    font-family: 'Inter', var(--sans);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
   /* Rectangle 7:使用者問「現在幾點」時,回覆文字上方額外顯示的
      大時鐘卡片,寬度固定 329.5px、圓角 15px。 */
   .time-card {
@@ -1318,26 +1330,66 @@
         } else if (!res.ok) {
           addMessage("發生未知錯誤,請稍後再試。", "error");
         } else {
-          // 串流讀取:背景持續收伺服器傳來的字,存進 queue,
-          // 另外用固定節奏把 queue 裡的字吐出來顯示,這樣不管網路/伺服器那邊
-          // 是一次送一大包還是一個字一個字送,畫面上都會是穩定的打字機效果。
+          // 串流讀取:伺服器現在是以 NDJSON(一行一個 JSON 物件)傳回,
+          // 格式 {"delta": "...", "n": 目前token數} 或結尾的
+          // {"done": true, "total_tokens": 總token數}(見 server.py /
+          // api/generate.py 的 stream())。文字部分一樣先存進 queue,
+          // 用固定節奏吐出來做打字機效果;token 數量則是收到就立刻更新,
+          // 讓使用者能看到目前生成到第幾個 token,不受打字機節奏影響。
           const el = document.createElement("div");
           el.className = "msg assistant";
           messagesEl.appendChild(el);
+
+          const tokenCounterEl = document.createElement("div");
+          tokenCounterEl.className = "token-counter";
+          tokenCounterEl.textContent = "正在生成...";
+          messagesEl.appendChild(tokenCounterEl);
+
           messagesEl.scrollTop = messagesEl.scrollHeight;
 
           const reader = res.body.getReader();
           const decoder = new TextDecoder("utf-8");
           const queue = [];
           let streamDone = false;
+          let lineBuffer = "";
+          let finalTokenCount = null;
+
+          function handleStreamLine(line) {
+            line = line.trim();
+            if (!line) return;
+            let msg;
+            try {
+              msg = JSON.parse(line);
+            } catch (err) {
+              // 理論上不該發生(協定固定是一行一個 JSON),萬一真的收到
+              // 不是 JSON 的內容,就當作純文字直接顯示,避免這段內容憑空消失。
+              queue.push(...line);
+              return;
+            }
+            if (msg.done) {
+              finalTokenCount = msg.total_tokens;
+              tokenCounterEl.textContent = `Output tokens: ${finalTokenCount}`;
+            } else if (typeof msg.delta === "string") {
+              queue.push(...msg.delta);
+              if (typeof msg.n === "number") {
+                tokenCounterEl.textContent = `正在生成... Output tokens: ${msg.n}`;
+              }
+            }
+          }
 
           const pump = (async () => {
             try {
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                queue.push(...decoder.decode(value, { stream: true }));
+                lineBuffer += decoder.decode(value, { stream: true });
+                let idx;
+                while ((idx = lineBuffer.indexOf("\n")) !== -1) {
+                  handleStreamLine(lineBuffer.slice(0, idx));
+                  lineBuffer = lineBuffer.slice(idx + 1);
+                }
               }
+              if (lineBuffer) handleStreamLine(lineBuffer);
             } catch (err) {
               // 使用者按下停止中止了 fetch,忽略這個例外,讓下面的迴圈
               // 用 streamDone(在 finally 裡一定會設成 true)自然結束,
@@ -1361,8 +1413,14 @@
 
           if (!received.trim()) {
             el.textContent = "(模型沒有生成任何內容)";
+            tokenCounterEl.remove();
           } else {
             conversationHistory.push({ role: "assistant", text: received.trim() });
+            // 沒收到 done 事件(例如使用者中途按停止、或連線中斷),
+            // 「正在生成...」的字樣留著沒有意義,直接移除,不留下不準確的殘留文字。
+            if (finalTokenCount === null) {
+              tokenCounterEl.remove();
+            }
           }
         }
       } catch (err) {

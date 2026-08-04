@@ -28,16 +28,17 @@ load_model()/train.py/export_weights.py 裡,方便未來回頭比較,但不會�
 這支正式站服務載入。
 """
 
+import json
 import os
 import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from flask import Flask, request, jsonify  # noqa: E402
+from flask import Flask, request, jsonify, Response  # noqa: E402
 from bert_wordpiece_tokenizer import BertWordpieceTokenizer  # noqa: E402
 from numpy_gpt import NumpyGPT  # noqa: E402
-from text_cleanup import truncate_at_next_turn  # noqa: E402
+from text_cleanup import find_next_turn_marker  # noqa: E402
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
 from conversation import build_context_prompt  # noqa: E402
 from smalltalk import match_smalltalk  # noqa: E402
@@ -149,40 +150,72 @@ def api_generate():
             wrapped_prompt = prompt
 
         idx = tokenizer.encode(wrapped_prompt)
-        if len(idx) == 0:
-            return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
-
-        if debug:
-            print(
-                f"[inference-debug] context tokens: {len(idx)}/{model.block_size} "
-                f"| history turns received: {len(history)} "
-                f"| wrapped_prompt:\n{wrapped_prompt!r}"
-            )
-
-        start_time = time.time()
-        out_idx = model.generate(
-            idx,
-            max_new_tokens=MAX_NEW_TOKENS,
-            temperature=TEMPERATURE,
-            top_k=TOP_K,
-            top_p=TOP_P,
-            repetition_penalty=REPETITION_PENALTY,
-            eos_id=getattr(tokenizer, "eos_id", None),
-        )
-        # 用「token 數量」切開新生成的部分,而不是把整段解碼成文字後再用
-        # 字串比對開頭:BertWordpieceTokenizer 的 decode() 會做小寫化、
-        # 標點間距調整等正規化,解碼後的文字不保證跟原始輸入的 wrapped_prompt
-        # 逐字一致(例如英文大小寫),用 token id 切割才是穩固的做法。
-        reply = tokenizer.decode(out_idx[len(idx):])
-        reply = truncate_at_next_turn(reply)
-
-        if debug:
-            print(
-                f"[inference-debug] generated {len(out_idx) - len(idx)} tokens "
-                f"in {time.time() - start_time:.2f}s"
-            )
-
-        return jsonify({"reply": reply})
-
     except Exception as e:  # noqa: BLE001
-        return jsonify({"error": f"生成時發生錯誤: {e}"}), 500
+        return jsonify({"error": f"處理輸入時發生錯誤: {e}"}), 500
+
+    if len(idx) == 0:
+        return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
+
+    if debug:
+        print(
+            f"[inference-debug] context tokens: {len(idx)}/{model.block_size} "
+            f"| history turns received: {len(history)} "
+            f"| wrapped_prompt:\n{wrapped_prompt!r}"
+        )
+
+    def stream():
+        """
+        以 NDJSON(一行一個 JSON 物件)串流回傳生成結果,每一行格式是
+        {"delta": "這次新增的文字", "n": 目前已生成的token數},最後固定
+        以 {"done": true, "total_tokens": 總token數} 結尾。前端(NEXUX.html)
+        靠這個協定即時更新「正在生成... Output tokens: N」的顯示,同時
+        還是能像以前一樣把 delta 逐段接起來組成完整回覆文字,不影響原本
+        的生成速度(仍然靠 numpy_gpt.py 的 KV-cache 加速)。
+        """
+        accumulated = ""
+        sent_len = 0
+        # 尾巴保留幾個字元先不送出,避免剛好把「換行標記」(例如 \n答:)送出一半。
+        HOLD = 3
+        step = 0
+        start_time = time.time()
+
+        try:
+            for token_id in model.generate_stream(
+                idx,
+                max_new_tokens=MAX_NEW_TOKENS,
+                temperature=TEMPERATURE,
+                top_k=TOP_K,
+                top_p=TOP_P,
+                repetition_penalty=REPETITION_PENALTY,
+                eos_id=getattr(tokenizer, "eos_id", None),
+            ):
+                step += 1
+                accumulated += tokenizer.decode([token_id])
+
+                marker = find_next_turn_marker(accumulated)
+                if marker:
+                    final_text = accumulated[:marker.start()].rstrip()
+                    if len(final_text) > sent_len:
+                        yield json.dumps({"delta": final_text[sent_len:], "n": step}, ensure_ascii=False) + "\n"
+                    break
+
+                safe_len = max(0, len(accumulated) - HOLD)
+                if safe_len > sent_len:
+                    yield json.dumps({"delta": accumulated[sent_len:safe_len], "n": step}, ensure_ascii=False) + "\n"
+                    sent_len = safe_len
+            else:
+                # 迴圈正常跑完(沒有被上面 marker 的 break 中斷),把剩餘尾巴吐出來
+                final_text = accumulated.rstrip()
+                if len(final_text) > sent_len:
+                    yield json.dumps({"delta": final_text[sent_len:], "n": step}, ensure_ascii=False) + "\n"
+
+            if debug:
+                print(f"[inference-debug] generated {step} tokens in {time.time()-start_time:.2f}s")
+
+            yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
+
+        except Exception as e:  # noqa: BLE001 - 攔截所有例外,回傳給前端顯示
+            yield json.dumps({"delta": f"\n[生成時發生錯誤: {e}]", "n": step}, ensure_ascii=False) + "\n"
+            yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
+
+    return Response(stream(), mimetype="application/x-ndjson; charset=utf-8")

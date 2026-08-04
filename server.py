@@ -14,6 +14,7 @@ server.py
 啟動後,用瀏覽器打開 http://localhost:5000 即可使用。
 """
 
+import json
 import os
 
 # 跟 train.py 同樣的道理:這台機器上 torch 用多執行緒跑 CPU 運算時偶爾會跟
@@ -174,6 +175,12 @@ def api_generate():
         )
 
     def stream():
+        """
+        以 NDJSON(一行一個 JSON 物件)串流回傳生成結果,每一行格式是
+        {"delta": "這次新增的文字", "n": 目前已生成的token數},最後固定
+        以 {"done": true, "total_tokens": 總token數} 結尾,跟 api/generate.py
+        (Vercel 正式站)用同一套協定,前端(NEXUX.html)可以共用一套解析邏輯。
+        """
         accumulated = ""
         sent_len = 0
         # 尾巴保留幾個字元先不送出,避免剛好把「換行標記」(例如 \nA:)送出一半,
@@ -205,27 +212,30 @@ def api_generate():
                 if marker:
                     final_text = accumulated[:marker.start()].rstrip()
                     if len(final_text) > sent_len:
-                        yield final_text[sent_len:]
+                        yield json.dumps({"delta": final_text[sent_len:], "n": step}, ensure_ascii=False) + "\n"
                     if debug:
                         print(f"[inference-debug] stopped at turn marker, {step} tokens generated in {time.time()-start_time:.2f}s")
-                    return
+                    break
+                else:
+                    safe_len = max(0, len(accumulated) - HOLD)
+                    if safe_len > sent_len:
+                        yield json.dumps({"delta": accumulated[sent_len:safe_len], "n": step}, ensure_ascii=False) + "\n"
+                        sent_len = safe_len
+            else:
+                final_text = accumulated.rstrip()
+                if len(final_text) > sent_len:
+                    yield json.dumps({"delta": final_text[sent_len:], "n": step}, ensure_ascii=False) + "\n"
 
-                safe_len = max(0, len(accumulated) - HOLD)
-                if safe_len > sent_len:
-                    yield accumulated[sent_len:safe_len]
-                    sent_len = safe_len
+                if debug:
+                    print(f"[inference-debug] reached max_new_tokens, {step} tokens generated in {time.time()-start_time:.2f}s")
 
-            final_text = accumulated.rstrip()
-            if len(final_text) > sent_len:
-                yield final_text[sent_len:]
-
-            if debug:
-                print(f"[inference-debug] reached max_new_tokens, {step} tokens generated in {time.time()-start_time:.2f}s")
+            yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
         except Exception as e:  # noqa: BLE001 - 這裡刻意攔截所有例外,回傳給前端顯示
-            yield f"\n[生成時發生錯誤: {e}]"
+            yield json.dumps({"delta": f"\n[生成時發生錯誤: {e}]", "n": step}, ensure_ascii=False) + "\n"
+            yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
-    return Response(stream(), mimetype="text/plain; charset=utf-8")
+    return Response(stream(), mimetype="application/x-ndjson; charset=utf-8")
 
 
 @app.route("/api/bead_pattern", methods=["POST"])

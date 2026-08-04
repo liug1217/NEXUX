@@ -320,4 +320,71 @@ class NumpyGPT:
                 break
 
         return idx
+
+    def generate_stream(
+        self,
+        idx: list[int],
+        max_new_tokens: int,
+        temperature: float = 1.0,
+        top_k: int | None = None,
+        top_p: float | None = None,
+        repetition_penalty: float = 1.0,
+        seed: int | None = None,
+        eos_id: int | None = None,
+    ):
+        """
+        跟 generate() 邏輯完全一樣(同樣靠 KV-cache 加速,不影響生成速度),
+        差別只在於用 yield 把「每一個新產生的 token id」逐一吐出來,而不是
+        等全部生成完才一次回傳完整序列。給 api/generate.py 做串流回應、
+        即時回報目前已生成的 token 數量用。
+        """
+        rng = np.random.default_rng(seed)
+        idx = list(idx)
+
+        idx_cond = idx[-self.block_size:]
+        cache = [{"k": None, "v": None} for _ in range(self.n_layer)]
+        logits = self.forward(idx_cond, cache=cache)
+        last_logits = logits[-1]
+        next_pos = len(idx_cond)
+
+        for step in range(max_new_tokens):
+            if step > 0:
+                last_logits = self.forward_step(idx[-1], next_pos - 1, cache)
+
+            scaled_logits = last_logits / max(temperature, 1e-5)
+
+            if repetition_penalty != 1.0:
+                for token_id in set(idx):
+                    if scaled_logits[token_id] > 0:
+                        scaled_logits[token_id] /= repetition_penalty
+                    else:
+                        scaled_logits[token_id] *= repetition_penalty
+
+            if top_k is not None:
+                k = min(top_k, scaled_logits.shape[-1])
+                threshold = np.sort(scaled_logits)[-k]
+                scaled_logits = np.where(scaled_logits < threshold, -np.inf, scaled_logits)
+
+            if top_p is not None:
+                sorted_idx = np.argsort(scaled_logits)[::-1]
+                sorted_logits = scaled_logits[sorted_idx]
+                sorted_probs = softmax(sorted_logits)
+                cumulative_probs = np.cumsum(sorted_probs)
+
+                remove_mask = cumulative_probs > top_p
+                remove_mask[1:] = remove_mask[:-1].copy()
+                remove_mask[0] = False
+
+                indices_to_remove = sorted_idx[remove_mask]
+                scaled_logits[indices_to_remove] = -np.inf
+
+            probs = softmax(scaled_logits)
+            next_id = int(rng.choice(len(probs), p=probs))
+            idx.append(next_id)
+            next_pos += 1
+
+            yield next_id
+
+            if eos_id is not None and next_id == eos_id:
+                break
     
