@@ -1,5 +1,19 @@
 # CHATBOT 專案筆記
 
+## 目前版本:NEXUX v1.0
+
+正式站(ai.nexuxai.net)現在同時有兩套模型,由前端 `provider` 下拉選單切換:
+
+- **`own`(預設)**:原本從零訓練的 char-level 模型,下面「模型再訓練與更新
+  流程」講的是這一套的完整步驟。
+- **`own_beta`**:微調 ckiplab/gpt2-base-chinese(中研院 CKIP Lab 預訓練繁體
+  中文 GPT2)得到的版本,已正式定案為 **NEXUX Model v1.0**(git tag
+  `v1.0-model`),之後的模型改進都基於這個版本迭代,不再頻繁更換底層架構。
+  完整背景、訓練/匯出流程、開發原則見 **`docs/MODEL_MIGRATION.md`**,新增
+  語料後這一套的重新訓練走的是 `convert_pretrained.py` →
+  `run_pretrained_sft.py` → `export_pretrained.py`,跟下面 char-level 模型
+  的流程是分開的。
+
 ## 語料格式:標準 messages JSONL
 
 `data/` 底下的語料統一存成標準的 `messages` 格式,用 `.jsonl`(一行一筆 JSON,
