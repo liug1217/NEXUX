@@ -882,6 +882,56 @@
     const skipRulesToggle = document.getElementById("skipRulesToggle");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
+
+    // 首頁歡迎文案:集中管理在這裡,之後要新增/刪除文案,只要改
+    // WELCOME_MESSAGE_POOLS.default 這個陣列即可。目前只實作「每次開啟
+    // /重新整理首頁時隨機選一則」,不做輪播動畫或定時切換。
+    //
+    // 預留擴充性:之後如果要依時段(早上/下午/晚上)或節日(聖誕節/新年)
+    // 顯示不同文案,可以在這個物件裡比照 default 的格式加上對應的陣列
+    // (例如 morning: [...]、christmas: [...]),再修改 pickWelcomeMessage()
+    // 內部選取要用哪個陣列的邏輯即可,不用動到下面呼叫的地方。
+    const WELCOME_MESSAGE_POOLS = {
+      default: [
+        "今天想學點什麼?",
+        "有任何問題,直接問吧!",
+        "今天一起打造更聰明的 AI。",
+        "歡迎回來,準備開始了嗎?",
+        "有什麼想探索的嗎?",
+        "把你的想法交給我吧。",
+        "今天想完成什麼目標?",
+        "開始聊天,看看能激發什麼靈感。",
+        "需要幫忙嗎?我在這裡。",
+        "不知道從哪開始?隨便問一個問題吧。",
+        "一起把想法變成成果。",
+        "今天想寫程式、聊天,還是學新東西?",
+        "每個問題,都是新的開始。",
+        "試著問我任何事情。",
+        "你的下一個靈感,也許就從這裡開始。",
+        "今天也一起進步吧!",
+        "準備好了嗎?開始吧!",
+        "歡迎回來,很高興再次見到你。",
+        "有什麼計畫?一起完成它。",
+        "把困難交給我,一起找答案。",
+        "今天想挑戰點什麼?",
+        "聊天、創作、學習,都可以。",
+        "想到什麼,就直接說吧。",
+        "新的對話,新的可能。",
+        "讓我們一起完成今天的任務。",
+        "每一次提問,都值得認真回答。",
+        "開始今天的第一個問題吧。",
+        "需要靈感?我們一起想。",
+        "今天也會是充滿收穫的一天。",
+        "準備好開始了嗎?",
+      ],
+    };
+
+    function pickWelcomeMessage() {
+      const pool = WELCOME_MESSAGE_POOLS.default;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    composerHeading.textContent = pickWelcomeMessage();
     const addBtn = document.getElementById("addBtn");
     const imageInput = document.getElementById("imageInput");
     const attachmentPreview = document.getElementById("attachmentPreview");
