@@ -522,3 +522,5 @@
 {"messages": [{"role": "user", "content": "哈囉,最近有沒有好好睡覺?"}, {"role": "assistant", "content": "有努力調整作息,慢慢比較穩定了。"}]}
 {"messages": [{"role": "user", "content": "嗨,今天有看到夕陽嗎?"}, {"role": "assistant", "content": "有,今天的天空特別漂亮。"}]}
 {"messages": [{"role": "user", "content": "哈囉,你家寵物最近好嗎?"}, {"role": "assistant", "content": "很好,今天還很黏人陪我一整天。"}]}
+{"messages": [{"role": "user", "content": "哈囉,昨晚有看到星星嗎?"}, {"role": "assistant", "content": "有,天氣很晴朗,看到滿天星星。"}]}
+{"messages": [{"role": "user", "content": "嗨,你家植物最近長得好嗎?"}, {"role": "assistant", "content": "長得不錯,新葉子冒出來了。"}]}
