@@ -55,6 +55,31 @@ _STATION_ALIASES = {
 
 _WEATHER_KEYWORDS = ["天氣", "氣溫", "溫度", "濕度", "會不會下雨", "有沒有下雨", "下雨", "氣壓", "風速", "多熱", "多冷"]
 
+# 台灣全部縣市名稱(不只是 _STATION_ALIASES 裡有支援的那些),用來判斷
+# 使用者是不是明確問了某個縣市的天氣,只是剛好那個縣市沒有對應的測站。
+# 這種情況要老實回答「沒有這個縣市的即時資料」,而不是放給模型自己亂編
+# 數字(模型很小,編出來的氣溫、濕度看起來煞有介事但完全是瞎猜的)。
+_ALL_TAIWAN_CITIES = [
+    "台北", "臺北", "新北", "基隆", "桃園", "新竹縣", "新竹市", "新竹",
+    "苗栗", "台中", "臺中", "彰化", "南投", "雲林", "嘉義縣", "嘉義市", "嘉義",
+    "台南", "臺南", "高雄", "屏東", "宜蘭", "花蓮", "台東", "臺東",
+    "澎湖", "金門", "連江", "馬祖",
+]
+
+
+def _mentions_unsupported_city(prompt: str) -> str | None:
+    """
+    如果使用者的問題裡有提到某個台灣縣市,但這個縣市不在
+    _STATION_ALIASES 收錄的範圍內,回傳使用者實際打的那個縣市名稱;
+    否則回傳 None。用比較長的名稱優先比對,避免「新竹市」被短的
+    「新竹」(其實也支援)誤判成不支援。
+    """
+    supported = set(_STATION_ALIASES.keys())
+    for city in sorted(_ALL_TAIWAN_CITIES, key=len, reverse=True):
+        if city in prompt and city not in supported:
+            return city
+    return None
+
 # 「未來預報」性質的字眼,這份資料集回答不了,出現這些字眼時直接放棄、
 # 交給後面的流程處理,避免拿「現在的觀測值」冒充成「對未來的預測」。
 _FORECAST_KEYWORDS = ["明天", "明日", "後天", "這週", "這禮拜", "下週", "未來", "會下雨嗎", "會不會下雨"]
@@ -119,7 +144,15 @@ def match_weather(prompt: str) -> str | None:
 
     station_name = _find_station_name(prompt)
     if station_name is None:
-        return None
+        unsupported_city = _mentions_unsupported_city(prompt)
+        if unsupported_city is not None:
+            # 明確問了某個縣市,但這裡沒有對應測站的真實資料,老實說清楚,
+            # 不要放給模型自己亂編一個看起來很精確、實際上是瞎猜的數字。
+            return (
+                f"抱歉,我目前沒有{unsupported_city}的即時天氣觀測資料,"
+                "建議直接查詢中央氣象署官網(cwa.gov.tw)確認。"
+            )
+        return None  # 完全沒提到城市,交給後面的流程處理(可能是別的話題)
 
     data = _fetch_station_data()
     if data is None:
