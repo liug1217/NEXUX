@@ -5,7 +5,23 @@
 **定案版本**:模型權重來自 commit `35cab73`(git tag `v1.0-model` 標在
 後續補文件的 `5cc0e06`,兩者模型檔案完全相同,tag 只是晚一個commit才
 補上)—— ckiplab/gpt2-base-chinese(102M 參數)微調 10000 步(約 2.5
-epoch)的版本,部署為 `own_beta`。
+epoch)的版本。
+
+**版本管理更新(扶正為唯一正式版本)**:通過測試、確認比舊版穩定後,
+`own_beta` 這個 Beta 標籤已經拿掉,直接扶正成 `provider == "own"` 唯一的
+正式版本(不再有 `own`/`own_beta` 兩套並存)。舊版(從零訓練的
+char-level 模型)不再部署、不再上傳新的權重檔案,對應的
+`weights_meta.json`/`weights.npz`/`tokenizer.json` 已經從 git 追蹤中移除
+(`git rm --cached`,檔案仍留在本機,git 歷史紀錄也完整保留、隨時可以
+從舊 commit checkout 出來比較),舊版程式碼(`inference.py` 的
+`load_model()`、`train.py`、`export_weights.py`)一樣保留在檔案裡不刪除,
+純粹是不再被正式站載入。
+
+版本管理原則:
+- 正式環境只使用目前最佳版本(`own` = NEXUX v1.0)。
+- 舊版本停止部署,但保留 archive 備份(本機檔案 + git 歷史)。
+- 不刪除歷史紀錄,保留模型演進軌跡。
+- 後續更新以 v1.0 為基礎持續迭代,不再頻繁更換底層架構。
 
 **判定理由**:10000 步結果已經驗證訓練不足假說(見下方對照表),模型
 開始展現出理解問題方向的能力(不再是完全隨機的答非所問),生成文字的

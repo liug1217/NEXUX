@@ -2,18 +2,20 @@
 __pycache__/
 *.pyc
 
-# 注意:weights_meta.json、weights.npz 和 tokenizer.json 不要加進這裡!
-# Vercel 上的伺服器是靠這三個檔案載入模型(不需要 torch、不需要 checkpoint.pt),
-# 必須靠你在本機依序執行:
-#   1. python train.py              (預訓練,產生 checkpoint.pt)
-#   2. python prepare_sft_data.py   (把 data/*.jsonl 轉成結構化資料)
-#   3. python train_sft.py          (問答微調,更新 checkpoint.pt)
-#   4. python export_weights.py     (轉出 weights_meta.json + weights.npz)
-# 然後把 weights_meta.json、weights.npz 和 tokenizer.json 一起 commit 上傳,
-# 伺服器才有東西可以載入。
+# NEXUX v1.0 之後(見 docs/MODEL_MIGRATION.md),正式站改用微調過的
+# 預訓練模型(weights_meta_pretrained.json + weights_pretrained.npz +
+# vocab_pretrained.txt,那三個檔案還是要 commit,不要加進這裡)。
 #
+# 舊版(從零訓練的 char-level 模型)已經正式下架、不再部署,
+# weights_meta.json / weights.npz / tokenizer.json 這三個檔案改成只封存在
+# 本機和 git 歷史紀錄裡(舊 commit 仍可以找到、checkout 出來比較),
+# 之後不再需要 commit 新版本,加進這裡忽略掉,避免不小心又推上去。
+weights_meta.json
+weights.npz
+tokenizer.json
+
 # checkpoint.pt 檔案很大(架構放大後常常超過 GitHub 單檔 100MB 上限),
-# 只有在本機要繼續訓練(resume)時才需要,不commit它,加進這裡忽略掉。
+# 只有在本機要繼續訓練(resume)舊版 char-level 模型時才需要,不commit它。
 checkpoint.pt
 
 # 預訓練模型微調(見 docs/MODEL_MIGRATION.md)本機用的中繼檔案,道理跟

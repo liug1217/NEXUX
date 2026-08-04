@@ -1,5 +1,37 @@
 # CHATBOT 專案筆記
 
+## 目前版本:NEXUX v1.0
+
+正式站(ai.nexuxai.net)`provider == "own"` 現在服務的是 **NEXUX Model
+v1.0**——微調 ckiplab/gpt2-base-chinese(中研院 CKIP Lab 預訓練繁體中文
+GPT2)得到的版本,已通過測試、確認比舊版(從零訓練的 char-level 模型)
+穩定,正式扶正為唯一的正式版本(不再有 `own`/`own_beta` 兩套並存)。
+完整背景、開發原則見 **`docs/MODEL_MIGRATION.md`**。
+
+**下面「模型再訓練與更新流程」這一節講的是舊版 char-level 模型的做法,
+已經不是正式站在用的流程,只保留給需要回頭比較兩種做法時參考。**
+NEXUX v1.0 實際的重新訓練流程是:
+
+1. `python convert_pretrained.py`
+   從 HuggingFace 下載 ckiplab/gpt2-base-chinese,轉成專案的 checkpoint
+   格式(輸出 `checkpoint_pretrained.pt` + `vocab_pretrained.txt`,本機
+   需要另外 `pip install transformers`,不在 requirements.txt 內)。
+2. `python run_pretrained_sft.py`(可加 `--steps N` 自訂步數,預設讀
+   `config.py` 的 `sft_max_iters`)
+   接上 `data/*.jsonl` 語料做問答微調,更新 `checkpoint_pretrained.pt`。
+3. `python export_pretrained.py`
+   int8 量化匯出成 `weights_meta_pretrained.json` + `weights_pretrained.npz`
+   (Vercel 上的 numpy 推理引擎讀這兩個檔案)。
+4. 用 `python eval_open_ended.py --pretrained` 固定種子(seed=1337)跑一次
+   固定 benchmark,確認這次改動是真的進步,不能只憑感覺判斷。
+5. `git add`(只加 `data/*.jsonl` 變更、`weights_meta_pretrained.json`、
+   `weights_pretrained.npz`,**不要**加 `checkpoint_pretrained.pt`,那個
+   檔案很大且已經在 `.gitignore` 排除)、`git commit`、`git push`。
+
+舊版模型(char-level 從零訓練)已經正式下架、不再部署,對應的
+`weights_meta.json`/`weights.npz`/`tokenizer.json` 已經從 git 追蹤移除
+(檔案仍在本機、git 歷史紀錄完整保留),不需要再上傳新版本。
+
 ## 語料格式:標準 messages JSONL
 
 `data/` 底下的語料統一存成標準的 `messages` 格式,用 `.jsonl`(一行一筆 JSON,
@@ -17,7 +49,11 @@
 推論時使用、`text_cleanup.py` 判斷生成該不該停止的標記保持一致,所以新增語料時
 只要維持 `messages` 格式,不需要自己組「問:/答:」字串。
 
-## 模型再訓練與更新流程(重要,務必遵守)
+## 〔封存〕舊版 char-level 模型再訓練與更新流程
+
+**這一節是 NEXUX v1.0 之前的做法,正式站已經不再使用,純粹保留給需要
+回頭比較「從零訓練」跟「微調預訓練模型」兩種做法時參考,不要拿來更新
+正式站。** 正式站現在的重新訓練流程見上面「目前版本:NEXUX v1.0」。
 
 每當 `data/` 資料夾底下任何 `.jsonl` 語料檔案有新增或修改,或是進行了重新訓練,
 都必須執行完整的「訓練 → 匯出 → 上傳」流程,讓部署到 Vercel 上的模型與最新語料保持一致:

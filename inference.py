@@ -2,6 +2,12 @@
 inference.py
 ------------
 載入訓練好的模型與 tokenizer,根據使用者輸入的 prompt 生成後續文字。
+
+NEXUX v1.0(見 docs/MODEL_MIGRATION.md)之後,正式環境只用
+load_pretrained_model() 載入的微調預訓練模型。load_model()(char-level
+從零訓練模型)保留在這個檔案裡,是刻意不刪除的封存版本,方便未來需要
+回頭比較「從零訓練」跟「微調預訓練模型」兩種做法的差異時還能直接載入
+使用,但不再是正式站實際服務的路徑。
 """
 
 import os
@@ -14,6 +20,10 @@ from text_cleanup import truncate_at_next_turn
 
 
 def load_model(config: Config):
+    """
+    封存版本:載入 char-level 從零訓練模型(NEXUX v1.0 之前的做法)。
+    正式站已經不再使用這條路徑,保留純粹是為了歷史比較,不會被刪除。
+    """
     if not os.path.exists(config.checkpoint_path):
         raise FileNotFoundError(
             f"找不到模型權重: {config.checkpoint_path},請先執行 train.py 訓練模型。"
@@ -36,6 +46,49 @@ def load_model(config: Config):
 
     model = GPTModel(model_config, vocab_size=checkpoint["vocab_size"]).to(config.device)
     model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
+
+    is_sft = checkpoint.get("sft_applied", False)
+    return model, tokenizer, is_sft
+
+
+def load_pretrained_model(
+    checkpoint_path: str = "checkpoint_pretrained.pt",
+    vocab_path: str = "vocab_pretrained.txt",
+    device: str | None = None,
+):
+    """
+    NEXUX v1.0 正式版本:載入微調過的預訓練模型(ckiplab/gpt2-base-chinese
+    微調結果,見 docs/MODEL_MIGRATION.md)。checkpoint_pretrained.pt 是本機
+    訓練用的中繼檔案(不進 git),只有在本機執行過
+    convert_pretrained.py + run_pretrained_sft.py 之後才會存在,主要給
+    server.py 本機開發測試用;正式站(Vercel)走的是 numpy_gpt.py 讀
+    weights_pretrained.npz 那條路徑,不會用到這支函式。
+    """
+    from bert_wordpiece_tokenizer import BertWordpieceTokenizer
+
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(
+            f"找不到 {checkpoint_path},請先在本機執行"
+            "「python convert_pretrained.py」跟「python run_pretrained_sft.py」。"
+        )
+    if not os.path.exists(vocab_path):
+        raise FileNotFoundError(f"找不到 {vocab_path},請先執行「python convert_pretrained.py」。")
+
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    tokenizer = BertWordpieceTokenizer.load_from_vocab_txt(vocab_path)
+
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    arch = checkpoint["architecture"]
+    base = Config()
+    model_config = Config(**{**base.__dict__, **arch, "dropout": 0.1, "device": device})
+
+    model = GPTModel(model_config, vocab_size=checkpoint["vocab_size"]).to(device)
+    # strict=False:checkpoint 裡不含 attn.mask 這種根據 config 自動生成的
+    # 因果遮罩 buffer(不是訓練出來的權重),本來就不需要載入。
+    missing, unexpected = model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+    assert not unexpected, f"checkpoint 有架構對不上的多餘權重: {unexpected}"
+    assert all("attn.mask" in k for k in missing), f"checkpoint 缺少非 buffer 的權重: {missing}"
     model.eval()
 
     is_sft = checkpoint.get("sft_applied", False)

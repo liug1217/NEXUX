@@ -37,7 +37,7 @@ load_dotenv()
 import time
 
 from config import Config
-from inference import load_model
+from inference import load_pretrained_model
 from text_cleanup import find_next_turn_marker
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 from conversation import build_context_prompt
@@ -54,9 +54,26 @@ _cache = {"model": None, "tokenizer": None, "config": None, "is_sft": False}
 
 
 def get_model_and_tokenizer():
+    """
+    NEXUX v1.0:本機開發伺服器現在載入的是微調過的預訓練模型(見
+    docs/MODEL_MIGRATION.md),跟正式站(Vercel)服務的是同一個版本。
+    需要先在本機執行過 convert_pretrained.py + run_pretrained_sft.py,
+    產生 checkpoint_pretrained.pt 才能載入(這個檔案不會進 git)。
+    """
     if _cache["model"] is None:
-        cfg = Config()
-        model, tokenizer, is_sft = load_model(cfg)  # 找不到 checkpoint 時,這裡會拋出 FileNotFoundError
+        model, tokenizer, is_sft = load_pretrained_model()  # 找不到 checkpoint 時,這裡會拋出 FileNotFoundError
+        base = Config()
+        # 沿用 api/generate.py 的 own_beta 生成參數(見那裡的說明:
+        # repetition_penalty 2.0 是實測解決重複退化問題的結果)。
+        cfg = Config(**{
+            **base.__dict__,
+            "block_size": 1024,
+            "max_new_tokens": 100,
+            "temperature": 0.8,
+            "top_k": 40,
+            "top_p": 0.9,
+            "repetition_penalty": 2.0,
+        })
         _cache["model"] = model
         _cache["tokenizer"] = tokenizer
         _cache["config"] = cfg
@@ -129,7 +146,8 @@ def api_generate():
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
     except FileNotFoundError:
         return jsonify({
-            "error": "還沒有訓練好的模型。請先在終端機執行「python train.py」完成訓練,"
+            "error": "還沒有本機微調好的模型。請先在終端機依序執行"
+                     "「python convert_pretrained.py」「python run_pretrained_sft.py」,"
                      "再重新啟動 server.py。"
         }), 400
 
@@ -172,6 +190,7 @@ def api_generate():
                 top_k=config.top_k,
                 top_p=config.top_p,
                 repetition_penalty=config.repetition_penalty,
+                eos_id=getattr(tokenizer, "eos_id", None),
             ):
                 step += 1
                 accumulated += tokenizer.decode(token_ids)
