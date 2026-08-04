@@ -369,19 +369,6 @@
     filter: blur(3px);
   }
 
-  /* 沒有 border 之後,靠額外疊加一圈外框當作 focus 提示(底下
-     textarea:focus 有另外關掉瀏覽器預設外框),不動到基礎高光數值。 */
-  .composer-pill:focus-within {
-    box-shadow:
-      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.12),
-      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.12),
-      inset 0 0 2px rgba(0, 0, 0, 0.5),
-      0px 4px 8px rgba(0, 0, 0, 0.25),
-      0 0 0 2px rgba(255, 255, 255, 0.22);
-  }
-
   .composer-disclaimer {
     position: absolute;
     left: 0;
