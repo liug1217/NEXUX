@@ -43,10 +43,6 @@ BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 app = Flask(__name__)
 
-# NEXUX v1.0(見 docs/MODEL_MIGRATION.md):ckiplab/gpt2-base-chinese 微調
-# 10000 步的版本正式定案為第一個穩定基準,之後的改進都從這個版本迭代。
-NEXUX_VERSION = "v1.0"
-
 # ---- 推理設定:原本的 char-level 模型 ----
 MAX_NEW_TOKENS = 60
 TEMPERATURE = 0.7
@@ -159,13 +155,13 @@ def api_generate():
         smalltalk_match = match_smalltalk(prompt, history)
         if smalltalk_match is not None:
             smalltalk_reply, smalltalk_category = smalltalk_match
-            return jsonify({"reply": smalltalk_reply, "type": smalltalk_category, "version": NEXUX_VERSION})
+            return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
         # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
         # 直接比對回傳原始答案,不用冒險讓模型生成,同樣不管選哪個模型都適用。
         qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
         if qa_reply is not None:
-            return jsonify({"reply": qa_reply, "type": "qa_lookup", "version": NEXUX_VERSION})
+            return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
     is_beta = provider == "own_beta"
     try:
@@ -227,7 +223,7 @@ def api_generate():
                 f"in {time.time() - start_time:.2f}s"
             )
 
-        return jsonify({"reply": reply, "version": NEXUX_VERSION})
+        return jsonify({"reply": reply})
 
     except Exception as e:  # noqa: BLE001
         return jsonify({"error": f"生成時發生錯誤: {e}"}), 500
