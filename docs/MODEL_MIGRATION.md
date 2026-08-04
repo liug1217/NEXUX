@@ -2,8 +2,10 @@
 
 ## NEXUX Model v1.0(正式起點)
 
-**定案版本**:commit `35cab73`(git tag `v1.0-model`)—— ckiplab/gpt2-base-chinese
-(102M 參數)微調 10000 步(約 2.5 epoch)的版本,部署為 `own_beta`。
+**定案版本**:模型權重來自 commit `35cab73`(git tag `v1.0-model` 標在
+後續補文件的 `5cc0e06`,兩者模型檔案完全相同,tag 只是晚一個commit才
+補上)—— ckiplab/gpt2-base-chinese(102M 參數)微調 10000 步(約 2.5
+epoch)的版本,部署為 `own_beta`。
 
 **判定理由**:10000 步結果已經驗證訓練不足假說(見下方對照表),模型
 開始展現出理解問題方向的能力(不再是完全隨機的答非所問),生成文字的
