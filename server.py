@@ -96,6 +96,12 @@ def favicon():
     return send_from_directory(BASE_DIR, "NEXUX.png")
 
 
+@app.route("/download.html")
+def download_page():
+    """獨立的桌面版下載頁面,只放 NEXUX_desktop.exe 一個下載按鈕。"""
+    return send_from_directory(BASE_DIR, "download.html")
+
+
 @app.route("/local_python_agent.py")
 def local_python_agent_download():
     """
