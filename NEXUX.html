@@ -690,23 +690,36 @@
     text-decoration: underline;
   }
 
-  /* own 模型的額度顯示,樣式刻意跟 .composer-disclaimer 一致(同樣的
-     字級/顏色),不用圓角卡片或動畫,避免搶輸入框的視覺重點。沒設定
-     Upstash(本機開發預設狀態)時 JS 會保持 hidden,不顯示假數字。 */
-  .quota-status {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 26px;
-    margin: 0;
-    text-align: center;
-    font-family: 'Inter', var(--sans);
-    font-size: 12px;
-    line-height: 15px;
-    color: #B6B6B6;
+  /* own 模型的額度顯示:輸入框工具列裡、模型選單左邊的空心圓環,
+     圓環的填充比例代表剩餘額度百分比,不用文字/emoji,滑鼠移上去
+     (title tooltip)才顯示詳細的百分比跟重置時間,平常保持極簡不搶
+     輸入框的視覺重點。沒設定 Upstash(本機開發預設狀態)時 JS 會保持
+     hidden,不顯示假圓環。 */
+  .quota-ring {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: default;
   }
 
-  .quota-status.is-exhausted { color: var(--error); }
+  .quota-ring-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 2;
+  }
+
+  .quota-ring-fill {
+    fill: none;
+    stroke: #5b9bd5;
+    stroke-width: 2;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+  }
+
+  .quota-ring.is-exhausted .quota-ring-fill { stroke: var(--error); }
 
 
   form.composer textarea {
@@ -1102,6 +1115,13 @@
           </button>
 
           <div class="toolbar-right">
+            <div class="quota-ring" id="quotaRing" hidden>
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <circle class="quota-ring-track" cx="9" cy="9" r="7"></circle>
+                <circle class="quota-ring-fill" id="quotaRingFill" cx="9" cy="9" r="7"></circle>
+              </svg>
+            </div>
+
             <select class="model-tag" id="providerSelect" aria-label="選擇模型來源">
               <option value="own">模型</option>
               <option value="openai">GPT</option>
@@ -1153,7 +1173,6 @@
       </div>
     </form>
 
-    <p class="quota-status" id="quotaStatus" hidden></p>
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/download.html">下載桌面版</a></p>
   </div>
 
@@ -1456,7 +1475,9 @@
     const skipRulesToggle = document.getElementById("skipRulesToggle");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
-    const quotaStatusEl = document.getElementById("quotaStatus");
+    const quotaRingEl = document.getElementById("quotaRing");
+    const quotaRingFillEl = document.getElementById("quotaRingFill");
+    const QUOTA_RING_CIRCUMFERENCE = 2 * Math.PI * 7; // r=7,見上面svg
 
     // own 模型的額度系統(見 quota_manager.py):用瀏覽器自己產生、存在
     // localStorage 的 UUID 識別使用者(比單純用來源IP準確,同一個
@@ -1471,28 +1492,35 @@
       return id;
     }
 
+    // 額度顯示用一個空心圓環(輸入框工具列裡、模型選單左邊),圓環填滿
+    // 的比例代表剩餘額度百分比,不用文字/emoji,細節(百分比、重置時間)
+    // 收在滑鼠移上去的 title tooltip 裡,平常保持極簡。
     async function refreshQuotaDisplay() {
       try {
         const res = await fetch(`/api/quota?clientId=${encodeURIComponent(getClientId())}`);
         const status = await res.json();
         if (!status.enabled) {
-          quotaStatusEl.hidden = true;
+          quotaRingEl.hidden = true;
           return;
         }
         const percent = Math.round((status.remaining / status.limit) * 100);
         const exhausted = status.remaining <= 0;
+        const offset = QUOTA_RING_CIRCUMFERENCE * (1 - status.remaining / status.limit);
+        quotaRingFillEl.style.strokeDasharray = String(QUOTA_RING_CIRCUMFERENCE);
+        quotaRingFillEl.style.strokeDashoffset = String(offset);
+
         if (exhausted) {
           const minutes = Math.ceil((status.reset_in_seconds || 0) / 60);
-          quotaStatusEl.textContent = `額度已用完,約 ${minutes} 分鐘後自動恢復`;
+          quotaRingEl.title = `額度已用完,約 ${minutes} 分鐘後自動恢復`;
         } else {
           const resetMinutes = status.reset_in_seconds != null ? Math.ceil(status.reset_in_seconds / 60) : null;
           const resetText = resetMinutes != null
             ? `${Math.floor(resetMinutes / 60)} 小時 ${resetMinutes % 60} 分鐘後重置`
             : "";
-          quotaStatusEl.textContent = `剩餘額度 ${percent}%${resetText ? " · " + resetText : ""}`;
+          quotaRingEl.title = `剩餘額度 ${percent}%${resetText ? " · " + resetText : ""}`;
         }
-        quotaStatusEl.classList.toggle("is-exhausted", exhausted);
-        quotaStatusEl.hidden = false;
+        quotaRingEl.classList.toggle("is-exhausted", exhausted);
+        quotaRingEl.hidden = false;
         sendBtn.disabled = exhausted && providerSelect.value === "own";
       } catch {
         // 額度顯示是錦上添花的功能,查詢失敗就保持原樣,不影響聊天本身。
