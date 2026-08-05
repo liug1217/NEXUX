@@ -499,10 +499,12 @@
     justify-content: center;
   }
 
-  /* Ellipse 6:+ 按鈕背後的黑色圓形背景,用偽元素置中疊在圖示後面,
-     不改變按鈕本身 24x24 的版位,避免影響旁邊元素的間距計算。 */
+  /* Ellipse 6:+ 按鈕背後原本的黑色圓形背景,先隱藏(display: none),
+     跟輸入框的玻璃質感放在一起太突兀。保留規則本身,之後想恢復
+     只要拿掉 display: none 即可。 */
   .add-btn::before {
     content: "";
+    display: none;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -582,10 +584,12 @@
     justify-content: center;
   }
 
-  /* Ellipse 5:麥克風按鈕背後的黑色圓形背景,同樣用偽元素置中疊在
-     圖示後面,不改變按鈕本身 16x16 的版位。 */
+  /* Ellipse 5:麥克風按鈕背後原本的黑色圓形背景,先隱藏(display: none),
+     跟輸入框的玻璃質感放在一起太突兀。保留規則本身,之後想恢復
+     只要拿掉 display: none 即可。 */
   .mic-btn::before {
     content: "";
+    display: none;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -817,7 +821,6 @@
           placeholder="想問啥就問啥"
           maxlength="200"
           rows="1"
-          required
         ></textarea>
 
         <div class="composer-toolbar">
