@@ -690,6 +690,24 @@
     text-decoration: underline;
   }
 
+  /* own 模型的額度顯示,樣式刻意跟 .composer-disclaimer 一致(同樣的
+     字級/顏色),不用圓角卡片或動畫,避免搶輸入框的視覺重點。沒設定
+     Upstash(本機開發預設狀態)時 JS 會保持 hidden,不顯示假數字。 */
+  .quota-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 26px;
+    margin: 0;
+    text-align: center;
+    font-family: 'Inter', var(--sans);
+    font-size: 12px;
+    line-height: 15px;
+    color: #B6B6B6;
+  }
+
+  .quota-status.is-exhausted { color: var(--error); }
+
 
   form.composer textarea {
     width: 100%;
@@ -1135,6 +1153,7 @@
       </div>
     </form>
 
+    <p class="quota-status" id="quotaStatus" hidden></p>
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/download.html">下載桌面版</a></p>
   </div>
 
@@ -1437,6 +1456,51 @@
     const skipRulesToggle = document.getElementById("skipRulesToggle");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
+    const quotaStatusEl = document.getElementById("quotaStatus");
+
+    // own 模型的額度系統(見 quota_manager.py):用瀏覽器自己產生、存在
+    // localStorage 的 UUID 識別使用者(比單純用來源IP準確,同一個
+    // 家庭/公司/學校常常共用一個對外IP),沒有登入系統,純粹是這個
+    // 分頁/瀏覽器自己記得自己是誰,清掉 localStorage 就會變成新的身份。
+    function getClientId() {
+      let id = localStorage.getItem("nexux_client_id");
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("nexux_client_id", id);
+      }
+      return id;
+    }
+
+    async function refreshQuotaDisplay() {
+      try {
+        const res = await fetch(`/api/quota?clientId=${encodeURIComponent(getClientId())}`);
+        const status = await res.json();
+        if (!status.enabled) {
+          quotaStatusEl.hidden = true;
+          return;
+        }
+        const percent = Math.round((status.remaining / status.limit) * 100);
+        const exhausted = status.remaining <= 0;
+        if (exhausted) {
+          const minutes = Math.ceil((status.reset_in_seconds || 0) / 60);
+          quotaStatusEl.textContent = `額度已用完,約 ${minutes} 分鐘後自動恢復`;
+        } else {
+          const resetMinutes = status.reset_in_seconds != null ? Math.ceil(status.reset_in_seconds / 60) : null;
+          const resetText = resetMinutes != null
+            ? `${Math.floor(resetMinutes / 60)} 小時 ${resetMinutes % 60} 分鐘後重置`
+            : "";
+          quotaStatusEl.textContent = `剩餘額度 ${percent}%${resetText ? " · " + resetText : ""}`;
+        }
+        quotaStatusEl.classList.toggle("is-exhausted", exhausted);
+        quotaStatusEl.hidden = false;
+        sendBtn.disabled = exhausted && providerSelect.value === "own";
+      } catch {
+        // 額度顯示是錦上添花的功能,查詢失敗就保持原樣,不影響聊天本身。
+      }
+    }
+
+    refreshQuotaDisplay();
+    setInterval(refreshQuotaDisplay, 60000);
 
     // 首頁歡迎文案:集中管理在這裡,之後要新增/刪除文案,只要改
     // WELCOME_MESSAGE_POOLS.default 這個陣列即可。目前只實作「每次開啟
@@ -1912,6 +1976,7 @@
             provider: providerSelect.value,
             history: historyForRequest,
             skipRules: skipRulesToggle.checked,
+            clientId: getClientId(),
           }),
           signal: activeAbortController.signal,
         });
@@ -1997,6 +2062,7 @@
             if (msg.done) {
               finalTokenCount = msg.total_tokens;
               tokenCounterEl.textContent = `Output tokens: ${finalTokenCount}`;
+              refreshQuotaDisplay();
             } else if (typeof msg.delta === "string") {
               queue.push(...msg.delta);
               if (typeof msg.n === "number") {

@@ -46,6 +46,7 @@ from smalltalk import match_smalltalk
 from qa_lookup import match_qa
 from weather_lookup import match_weather
 from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
+import quota_manager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -208,6 +209,15 @@ def api_generate():
                      "再重新啟動 server.py。"
         }), 400
 
+    # own 模型才做額度限制(見 quota_manager.py)。本機開發預設沒有設定
+    # Upstash 環境變數,quota_manager 會自動回報沒有限制,行為上等於
+    # 跟改動前一樣,不需要另外寫「本機停用」的特殊判斷。
+    client_id = quota_manager.get_client_identifier(request, payload)
+    if quota_manager.is_over_limit(client_id):
+        status = quota_manager.get_status(client_id)
+        minutes = (status["reset_in_seconds"] or 0) // 60
+        return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
+
     # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
     # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
     if is_sft:
@@ -285,13 +295,22 @@ def api_generate():
                 if debug:
                     print(f"[inference-debug] reached max_new_tokens, {step} tokens generated in {time.time()-start_time:.2f}s")
 
+            quota_manager.consume(client_id, idx.shape[1] + step)
             yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
         except Exception as e:  # noqa: BLE001 - 這裡刻意攔截所有例外,回傳給前端顯示
+            quota_manager.consume(client_id, idx.shape[1] + step)
             yield json.dumps({"delta": f"\n[生成時發生錯誤: {e}]", "n": step}, ensure_ascii=False) + "\n"
             yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
     return Response(stream(), mimetype="application/x-ndjson; charset=utf-8")
+
+
+@app.route("/api/quota", methods=["GET"])
+def api_quota():
+    """給前端(composer 旁的額度顯示)輪詢用,見 quota_manager.py 的說明。"""
+    client_id = quota_manager.get_client_identifier(request)
+    return jsonify(quota_manager.get_status(client_id))
 
 
 @app.route("/api/bead_pattern", methods=["POST"])

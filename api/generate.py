@@ -45,6 +45,7 @@ from smalltalk import match_smalltalk  # noqa: E402
 from question_log import log_question  # noqa: E402
 from qa_lookup import match_qa  # noqa: E402
 from weather_lookup import match_weather  # noqa: E402
+import quota_manager  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -147,6 +148,16 @@ def api_generate():
     except FileNotFoundError as e:
         return jsonify({"error": str(e)}), 400
 
+    # own 模型才做額度限制(見 quota_manager.py):跑在自己伺服器上會佔用
+    # 運算資源,防止單一使用者無限制濫用;第三方 provider 不受影響,前面
+    # 已經 return 掉了,不會執行到這裡。沒設定 Upstash 時 quota_manager
+    # 永遠回傳 False,行為等同沒有限制。
+    client_id = quota_manager.get_client_identifier(request, payload)
+    if quota_manager.is_over_limit(client_id):
+        status = quota_manager.get_status(client_id)
+        minutes = (status["reset_in_seconds"] or 0) // 60
+        return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
+
     try:
         # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
         # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
@@ -220,10 +231,22 @@ def api_generate():
             if debug:
                 print(f"[inference-debug] generated {step} tokens in {time.time()-start_time:.2f}s")
 
+            quota_manager.consume(client_id, len(idx) + step)
             yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
         except Exception as e:  # noqa: BLE001 - 攔截所有例外,回傳給前端顯示
+            quota_manager.consume(client_id, len(idx) + step)
             yield json.dumps({"delta": f"\n[生成時發生錯誤: {e}]", "n": step}, ensure_ascii=False) + "\n"
             yield json.dumps({"done": True, "total_tokens": step}, ensure_ascii=False) + "\n"
 
     return Response(stream(), mimetype="application/x-ndjson; charset=utf-8")
+
+
+@app.route("/api/quota", methods=["GET"])
+def api_quota():
+    """
+    給前端(composer 旁的額度顯示)輪詢用,回傳目前的額度使用狀況,
+    不用每次都跟著 /api/generate 一起回傳。見 quota_manager.py 的說明。
+    """
+    client_id = quota_manager.get_client_identifier(request)
+    return jsonify(quota_manager.get_status(client_id))
