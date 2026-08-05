@@ -690,17 +690,47 @@
     text-decoration: underline;
   }
 
-  /* own 模型的額度顯示:輸入框工具列裡、模型選單左邊的空心圓環,
-     圓環的填充比例代表剩餘額度百分比,不用文字/emoji,滑鼠移上去
-     (title tooltip)才顯示詳細的百分比跟重置時間,平常保持極簡不搶
-     輸入框的視覺重點。沒設定 Upstash(本機開發預設狀態)時 JS 會保持
-     hidden,不顯示假圓環。 */
+  /* own 模型的額度顯示:輸入框工具列裡、模型選單左邊的小型玻璃徽章,
+     裡面是空心圓環(填充比例代表剩餘額度百分比)+ 百分比文字,套用跟
+     .composer-pill 同一套玻璃效果。滑鼠移上去(title tooltip)顯示更
+     詳細的重置時間。沒設定 Upstash(本機開發預設狀態)時 JS 會保持
+     hidden,不顯示假徽章。 */
   .quota-ring {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 4px;
     flex-shrink: 0;
+    padding: 3px 8px;
+    border-radius: 12px;
     cursor: default;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    box-shadow:
+      inset 1px -1px 1px -1px rgba(255, 255, 255, 0.25),
+      inset -1px 1px 1px -1px rgba(255, 255, 255, 0.25),
+      inset 0 0 2px rgba(0, 0, 0, 0.5);
+    font-family: 'Inter', var(--sans);
+    font-size: 11px;
+    color: #B6B6B6;
+  }
+
+  .quota-ring::after {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 255, 255, 0.10) 100%
+    );
+    filter: blur(2px);
   }
 
   .quota-ring-track {
@@ -720,6 +750,7 @@
   }
 
   .quota-ring.is-exhausted .quota-ring-fill { stroke: var(--error); }
+  .quota-ring.is-exhausted .quota-percent-text { color: var(--error); }
 
 
   form.composer textarea {
@@ -1116,10 +1147,11 @@
 
           <div class="toolbar-right">
             <div class="quota-ring" id="quotaRing" hidden>
-              <svg width="18" height="18" viewBox="0 0 18 18">
+              <svg width="14" height="14" viewBox="0 0 18 18">
                 <circle class="quota-ring-track" cx="9" cy="9" r="7"></circle>
                 <circle class="quota-ring-fill" id="quotaRingFill" cx="9" cy="9" r="7"></circle>
               </svg>
+              <span class="quota-percent-text" id="quotaPercentText"></span>
             </div>
 
             <select class="model-tag" id="providerSelect" aria-label="選擇模型來源">
@@ -1477,6 +1509,7 @@
     const composerHeading = document.getElementById("composerHeading");
     const quotaRingEl = document.getElementById("quotaRing");
     const quotaRingFillEl = document.getElementById("quotaRingFill");
+    const quotaPercentTextEl = document.getElementById("quotaPercentText");
     const QUOTA_RING_CIRCUMFERENCE = 2 * Math.PI * 7; // r=7,見上面svg
 
     // own 模型的額度系統(見 quota_manager.py):用瀏覽器自己產生、存在
@@ -1511,12 +1544,14 @@
 
         if (exhausted) {
           const minutes = Math.ceil((status.reset_in_seconds || 0) / 60);
+          quotaPercentTextEl.textContent = "已用完";
           quotaRingEl.title = `額度已用完,約 ${minutes} 分鐘後自動恢復`;
         } else {
           const resetMinutes = status.reset_in_seconds != null ? Math.ceil(status.reset_in_seconds / 60) : null;
           const resetText = resetMinutes != null
             ? `${Math.floor(resetMinutes / 60)} 小時 ${resetMinutes % 60} 分鐘後重置`
             : "";
+          quotaPercentTextEl.textContent = `${percent}%`;
           quotaRingEl.title = `剩餘額度 ${percent}%${resetText ? " · " + resetText : ""}`;
         }
         quotaRingEl.classList.toggle("is-exhausted", exhausted);
