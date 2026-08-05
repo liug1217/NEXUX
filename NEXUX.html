@@ -594,6 +594,11 @@
     color: #B6B6B6;
   }
 
+  .composer-disclaimer a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
 
   form.composer textarea {
     width: 100%;
@@ -1039,7 +1044,7 @@
       </div>
     </form>
 
-    <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。</p>
+    <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/NEXUX_desktop.exe">下載桌面版</a></p>
   </div>
 
   <!-- 程式碼編輯器面板:AI回覆裡偵測到```程式碼```區塊時自動開啟
@@ -1281,8 +1286,11 @@
           clearTimeout(timeoutId);
           if (type === "error") outputText += "\n[錯誤]\n" + text;
           const hint = "\n\n(瀏覽器內建 Python,功能較受限。若想使用完整套件/GPU,"
-            + "可下載本機執行器:/local_python_agent.py,"
-            + "下載後執行「python local_python_agent.py」,之後按執行就會自動改用本機 Python)";
+            + "可下載本機執行器:/local_python_agent.exe,下載後雙擊就能啟動"
+            + "(不用先裝 Python、不用開終端機;執行程式碼時還是會用到你電腦上"
+            + "裝好的 Python 環境)。想先看原始碼再執行的話,也可以改用"
+            + "/local_python_agent.py + /start_local_python_agent.bat 這組。"
+            + "下載後之後按執行就會自動改用本機 Python)";
           codeEditorOutput.textContent = (outputText || "(沒有任何輸出)") + hint;
           codeEditorRunBtn.disabled = false;
           pyodideWorkerBusy = false;

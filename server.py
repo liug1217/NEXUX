@@ -106,6 +106,38 @@ def local_python_agent_download():
     return send_from_directory(BASE_DIR, "local_python_agent.py", mimetype="text/x-python")
 
 
+@app.route("/start_local_python_agent.bat")
+def local_python_agent_launcher_download():
+    """
+    跟 local_python_agent.py 放同一個資料夾、雙擊就能啟動的批次檔,
+    讓使用者不用自己打開終端機、手動輸入指令(Windows 專用)。
+    """
+    return send_from_directory(BASE_DIR, "start_local_python_agent.bat", mimetype="application/bat")
+
+
+@app.route("/local_python_agent.exe")
+def local_python_agent_exe_download():
+    """
+    local_python_agent.py 用 PyInstaller 打包成的單一 exe(Windows 專用),
+    雙擊就能直接執行,不用先裝 Python 才能「開啟這個程式本身」——但
+    執行使用者送來的程式碼時,還是會去找電腦上真正安裝的 Python
+    (見 local_python_agent.py 的 _resolve_python_executable() 說明),
+    才能用到使用者自己裝的套件/GPU。想直接看原始碼再自己執行的人,
+    可以改用 local_python_agent.py + start_local_python_agent.bat 這組。
+    """
+    return send_from_directory(BASE_DIR, "local_python_agent.exe", mimetype="application/octet-stream")
+
+
+@app.route("/NEXUX_desktop.exe")
+def nexux_desktop_download():
+    """
+    整個 NEXUX 聊天網站包成的桌面版捷徑(pywebview 原生視窗載入
+    https://ai.nexuxai.net,需要網路連線,裡面沒有內建 AI 模型,
+    見 desktop_app.py 的說明)。
+    """
+    return send_from_directory(BASE_DIR, "NEXUX_desktop.exe", mimetype="application/octet-stream")
+
+
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
     """

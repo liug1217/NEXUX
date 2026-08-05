@@ -45,3 +45,10 @@ sft_data.jsonl
 # Groq 批次生成語料的執行 log,只是本機除錯用,不需要 commit。
 _groq_big.log
 
+# PyInstaller 打包 local_python_agent.py 成 local_python_agent.exe 時
+# 產生的中繼檔案,只有最終的 .exe 需要 commit(給網站訪客下載用),
+# 這些建置過程的暫存目錄/spec檔不需要。
+build_agent/
+dist_agent/
+*.spec
+
