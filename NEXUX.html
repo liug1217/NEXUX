@@ -150,22 +150,49 @@
     word-break: break-word;
   }
 
+  /* 使用者訊息泡泡,跟輸入框/快速按鈕/左側導覽軌同一套液態玻璃數值,
+     不再是原本的半透明灰底+實線邊框。 */
   .msg.user {
+    position: relative;
     align-self: flex-end;
     min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 13px 15px;
-    background: rgba(113, 112, 112, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.12),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.12),
+      inset 0 0 2px rgba(0, 0, 0, 0.5);
     color: #FFFFFF;
     font-family: 'Inter', var(--sans);
     line-height: 18px;
-    border: 1px solid var(--pill-border);
     border-radius: 22px;
+    overflow: hidden;
     /* .messages 容器左右各有 24px padding,但設計稿裡送出的訊息泡泡
        右邊界要跟輸入框右邊界切齊,用負邊距抵銷掉這裡多出來的 24px。 */
     margin-right: -24px;
+  }
+
+  .msg.user::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 255, 255, 0.10) 100%
+    );
+    filter: blur(3px);
   }
 
   .msg.assistant {
