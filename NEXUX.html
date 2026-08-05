@@ -1174,43 +1174,73 @@
       codeEditorOutput.appendChild(iframe);
     }
 
-    // Python「▶ 執行」按鈕用:送到 /api/run_python,用本機真正安裝的
-    // Python 執行。這條路由只存在於本機開發伺服器(server.py),Vercel
-    // 正式站(api/generate.py)刻意沒有實作這條路由——在公開網站上開放
-    // 「把使用者送來的任意程式碼丟給後端執行」是嚴重的遠端程式碼執行
-    // (RCE)風險,絕對不能公開暴露。收到 404 就代表現在不是本機開發
-    // 環境,直接顯示提示文字,不會讓使用者誤以為功能壞掉。
-    async function runPython(code) {
-      codeEditorOutput.textContent = "執行中...";
-      let res;
-      try {
-        res = await fetch("/api/run_python", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
-      } catch (err) {
-        codeEditorOutput.textContent = "連線失敗,請確認本機伺服器(python server.py)是否正在執行。";
-        return;
-      }
+    // Python「▶ 執行」按鈕用:Pyodide(CPython 編譯成 WebAssembly),
+    // 完全在使用者自己瀏覽器裡執行,不會把程式碼送到任何伺服器,不分
+    // 本機或正式站行為一致。放在獨立的 Web Worker 裡跑,使用者寫的
+    // 程式碼就算卡住(無窮迴圈),也只會卡住這個 Worker,不會凍結整個
+    // 聊天頁面——用 setTimeout 逾時直接 terminate() 那個 Worker 解決。
+    //
+    // 這個專案是單一 HTML 檔案、沒有打包工具,沒辦法用外部 .js 檔案當
+    // Worker 來源,改用 Blob URL 技巧:把 Worker 程式碼包成字串、轉成
+    // Blob,再用 URL.createObjectURL() 產生可以丟給 new Worker() 的網址。
+    const PYODIDE_WORKER_SRC = `
+      importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js");
+      let pyodideReadyPromise = loadPyodide();
 
-      if (res.status === 404) {
-        codeEditorOutput.textContent = "這個功能只在本機執行「python server.py」時可用,Vercel 正式站不提供(安全考量,避免任意人在伺服器上執行程式碼)。";
-        return;
-      }
+      self.onmessage = async (event) => {
+        const pyodide = await pyodideReadyPromise;
+        const code = event.data.code;
+        try {
+          pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "stdout", text: msg }) });
+          pyodide.setStderr({ batched: (msg) => self.postMessage({ type: "stderr", text: msg }) });
+          await pyodide.loadPackagesFromImports(code);
+          await pyodide.runPythonAsync(code);
+          self.postMessage({ type: "done" });
+        } catch (err) {
+          self.postMessage({ type: "error", text: String(err) });
+        }
+      };
+    `;
 
-      const data = await res.json().catch(() => null);
-      if (!data) {
-        codeEditorOutput.textContent = "執行失敗,伺服器回應的內容無法解析。";
-        return;
-      }
-      if (data.error) {
-        codeEditorOutput.textContent = data.error;
-        return;
-      }
-      const stdout = data.stdout || "";
-      const stderr = data.stderr ? `\n[錯誤輸出]\n${data.stderr}` : "";
-      codeEditorOutput.textContent = (stdout + stderr) || "(沒有任何輸出)";
+    let pyodideWorker = null;
+    let pyodideWorkerBusy = false;
+
+    function createPyodideWorker() {
+      const blob = new Blob([PYODIDE_WORKER_SRC], { type: "application/javascript" });
+      return new Worker(URL.createObjectURL(blob));
+    }
+
+    function runPython(code) {
+      if (pyodideWorkerBusy) return; // 上一次還在跑,忽略重複點擊(逾時或跑完才會解除)
+      codeEditorOutput.textContent = "載入 Python 執行環境中...(第一次執行需要下載,約幾秒)";
+      codeEditorRunBtn.disabled = true;
+      pyodideWorkerBusy = true;
+
+      if (!pyodideWorker) pyodideWorker = createPyodideWorker();
+
+      let outputText = "";
+      const timeoutId = setTimeout(() => {
+        pyodideWorker.terminate();
+        pyodideWorker = null; // 下次執行會重新建立、重新下載一次Pyodide,這是終止Worker必然的代價
+        codeEditorOutput.textContent = "執行超過15秒逾時,可能是無窮迴圈,已中止。";
+        codeEditorRunBtn.disabled = false;
+        pyodideWorkerBusy = false;
+      }, 15000);
+
+      pyodideWorker.onmessage = (event) => {
+        const { type, text } = event.data;
+        if (type === "stdout" || type === "stderr") {
+          outputText += text + "\n";
+          codeEditorOutput.textContent = outputText;
+        } else if (type === "done" || type === "error") {
+          clearTimeout(timeoutId);
+          if (type === "error") outputText += "\n[錯誤]\n" + text;
+          codeEditorOutput.textContent = outputText || "(沒有任何輸出)";
+          codeEditorRunBtn.disabled = false;
+          pyodideWorkerBusy = false;
+        }
+      };
+      pyodideWorker.postMessage({ code });
     }
 
     // 只在回覆文字「完整收到之後」才判斷要不要開啟面板(不是打字動畫

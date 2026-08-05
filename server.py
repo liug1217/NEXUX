@@ -302,46 +302,6 @@ def api_bead_pattern():
     })
 
 
-@app.route("/api/run_python", methods=["POST"])
-def api_run_python():
-    """
-    程式碼編輯器面板的「執行」按鈕用:真正用本機安裝的 Python 執行使用者
-    編輯過的程式碼,回傳 stdout/stderr。
-
-    刻意只在這個檔案(本機開發伺服器)提供,api/generate.py(Vercel 正式站)
-    完全沒有這條路由——在公開網站上開放「把使用者送來的任意程式碼丟給
-    後端執行」等於讓任何訪客都能在伺服器基礎設施上跑任意程式碼,是嚴重的
-    遠端程式碼執行(RCE)風險,絕對不能公開暴露。只有在本機執行
-    「python server.py」時,才只有使用者自己能連到這個伺服器、在自己的
-    機器上執行自己的程式碼,風險模型等同本機開一個 Jupyter Notebook。
-
-    前端(NEXUX.html)靠請求這條路由回傳 404(正式站沒有這個檔案對應的
-    路由)來判斷「現在是不是本機開發環境」,不需要額外自己判斷 hostname。
-    """
-    import subprocess
-    import sys
-
-    payload = request.get_json(silent=True) or {}
-    code = payload.get("code") or ""
-    if not code.strip():
-        return jsonify({"error": "沒有程式碼可以執行"}), 400
-
-    try:
-        result = subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        return jsonify({
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode,
-        })
-    except subprocess.TimeoutExpired:
-        return jsonify({"error": "執行超過10秒逾時,可能是無窮迴圈,已中止。"}), 408
-
-
 if __name__ == "__main__":
     print("[server] 啟動中,請用瀏覽器開啟 http://localhost:5000")
     app.run(host="0.0.0.0", port=5000, debug=True)
