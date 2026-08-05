@@ -205,6 +205,30 @@
 
   .code-editor-body { flex: 1; min-height: 0; }
 
+  /* Python按「▶ 執行」的文字輸出(stdout/stderr),或HTML/JS/CSS按
+     「👁 預覽」的 iframe,共用這個區塊,平常是空的不佔空間
+     (:empty讓沒有內容時不會留下一條多餘的分隔線)。 */
+  .code-editor-output {
+    flex-shrink: 0;
+    max-height: 40%;
+    overflow: auto;
+    border-top: 1px solid var(--panel-border);
+    padding: 10px 14px;
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 12px;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .code-editor-output:empty { display: none; }
+
+  .code-editor-output iframe {
+    width: 100%;
+    height: 200px;
+    border: none;
+    background: #fff;
+    border-radius: 8px;
+  }
+
   /* CodeMirror 預設是淺色主題,這裡不額外載入主題CSS檔案,直接用
      專案既有的深色變數覆寫,維持風格一致。 */
   .CodeMirror {
@@ -1025,6 +1049,7 @@
     <div class="code-editor-header">
       <span class="code-editor-lang" id="codeEditorLang">code</span>
       <div class="code-editor-actions">
+        <button type="button" id="codeEditorRunBtn">▶ 執行</button>
         <button type="button" id="codeEditorCopyBtn">複製</button>
         <button type="button" id="codeEditorCloseBtn" aria-label="關閉編輯器">×</button>
       </div>
@@ -1032,6 +1057,7 @@
     <div class="code-editor-body">
       <textarea id="codeEditorTextarea"></textarea>
     </div>
+    <div class="code-editor-output" id="codeEditorOutput"></div>
   </div>
   </div>
 
@@ -1064,6 +1090,8 @@
     const codeEditorLangEl = document.getElementById("codeEditorLang");
     const codeEditorCloseBtn = document.getElementById("codeEditorCloseBtn");
     const codeEditorCopyBtn = document.getElementById("codeEditorCopyBtn");
+    const codeEditorRunBtn = document.getElementById("codeEditorRunBtn");
+    const codeEditorOutput = document.getElementById("codeEditorOutput");
     const codeEditorTextarea = document.getElementById("codeEditorTextarea");
 
     const FENCE_LANG_TO_MODE = {
@@ -1099,9 +1127,90 @@
       cm.setOption("mode", FENCE_LANG_TO_MODE[lang] || "python");
       cm.setValue(code);
       codeEditorLangEl.textContent = lang || "code";
+      // 每次重新開啟面板(或換一段新程式碼)都要清掉上一次的執行結果/
+      // 預覽,不然使用者可能會誤以為是這次程式碼跑出來的東西。
+      codeEditorOutput.textContent = "";
+      codeEditorPanel.dataset.lang = (lang || "").toLowerCase();
+      codeEditorRunBtn.textContent = isPythonLang(lang) ? "▶ 執行" : "👁 預覽";
       // 面板開啟前是 display:none,CodeMirror 算出來的尺寸會是錯的,
       // 要等瀏覽器畫出正確版位後再重新整理一次。
       requestAnimationFrame(() => cm.refresh());
+    }
+
+    function isPythonLang(lang) {
+      return lang === "python" || lang === "py";
+    }
+
+    // HTML/JavaScript/CSS「👁 預覽」按鈕用:把程式碼包成一份完整的 HTML,
+    // 放進下面 showPreview() 建立的 sandboxed iframe 裡渲染。JavaScript/CSS
+    // 本身不是完整網頁,包一個最小的殼(CSS 額外補幾個通用示範元素,不然
+    // 光有樣式規則、沒有套用的對象,使用者什麼都看不到)。
+    function buildPreviewHtml(lang, code) {
+      if (lang === "html" || lang === "htm") return code;
+      if (lang === "javascript" || lang === "js") {
+        return `<!DOCTYPE html><html><body><script>${code}<\/script></body></html>`;
+      }
+      if (lang === "css") {
+        return `<!DOCTYPE html><html><head><style>${code}</style></head>
+          <body><h1>標題示範</h1><p>這是一段示範文字,用來預覽這段 CSS 套用後的樣子。</p>
+          <button>按鈕示範</button><ul><li>清單項目一</li><li>清單項目二</li></ul></body></html>`;
+      }
+      return null;
+    }
+
+    function showPreview(lang, code) {
+      const html = buildPreviewHtml(lang, code);
+      codeEditorOutput.innerHTML = "";
+      if (html === null) {
+        codeEditorOutput.textContent = `不支援預覽「${lang || "這個"}」語言。`;
+        return;
+      }
+      const iframe = document.createElement("iframe");
+      // 只開放allow-scripts、不開放allow-same-origin:讓JS/CSS/HTML預覽
+      // 裡的程式碼還是能正常執行,但存取不到外層頁面的cookie/localStorage/
+      // DOM,是瀏覽器原生提供的隔離機制,不是自己刻意做的安全檢查。
+      iframe.setAttribute("sandbox", "allow-scripts");
+      iframe.srcdoc = html;
+      codeEditorOutput.appendChild(iframe);
+    }
+
+    // Python「▶ 執行」按鈕用:送到 /api/run_python,用本機真正安裝的
+    // Python 執行。這條路由只存在於本機開發伺服器(server.py),Vercel
+    // 正式站(api/generate.py)刻意沒有實作這條路由——在公開網站上開放
+    // 「把使用者送來的任意程式碼丟給後端執行」是嚴重的遠端程式碼執行
+    // (RCE)風險,絕對不能公開暴露。收到 404 就代表現在不是本機開發
+    // 環境,直接顯示提示文字,不會讓使用者誤以為功能壞掉。
+    async function runPython(code) {
+      codeEditorOutput.textContent = "執行中...";
+      let res;
+      try {
+        res = await fetch("/api/run_python", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+      } catch (err) {
+        codeEditorOutput.textContent = "連線失敗,請確認本機伺服器(python server.py)是否正在執行。";
+        return;
+      }
+
+      if (res.status === 404) {
+        codeEditorOutput.textContent = "這個功能只在本機執行「python server.py」時可用,Vercel 正式站不提供(安全考量,避免任意人在伺服器上執行程式碼)。";
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!data) {
+        codeEditorOutput.textContent = "執行失敗,伺服器回應的內容無法解析。";
+        return;
+      }
+      if (data.error) {
+        codeEditorOutput.textContent = data.error;
+        return;
+      }
+      const stdout = data.stdout || "";
+      const stderr = data.stderr ? `\n[錯誤輸出]\n${data.stderr}` : "";
+      codeEditorOutput.textContent = (stdout + stderr) || "(沒有任何輸出)";
     }
 
     // 只在回覆文字「完整收到之後」才判斷要不要開啟面板(不是打字動畫
@@ -1122,6 +1231,16 @@
         await navigator.clipboard.writeText(codeEditorCM.getValue());
       } catch (err) {
         // 剪貼簿權限被拒或不支援時靜默失敗,不影響其他功能。
+      }
+    });
+    codeEditorRunBtn.addEventListener("click", () => {
+      if (!codeEditorCM) return;
+      const code = codeEditorCM.getValue();
+      const lang = codeEditorPanel.dataset.lang || "";
+      if (isPythonLang(lang)) {
+        runPython(code);
+      } else {
+        showPreview(lang, code);
       }
     });
 
