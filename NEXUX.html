@@ -6,6 +6,10 @@
 <link rel="icon" type="image/png" href="/NEXUX.png">
 <link rel="apple-touch-icon" href="/NEXUX.png">
 <title>NEXUX</title>
+<!-- 程式碼編輯器面板用:CodeMirror 5(classic UMD 版本,不需要ESM/打包工具,
+     跟這個檔案「單一inline script」的寫法相容)。不額外載入主題CSS,
+     改用專案自己的 --bg/--ink/--panel 變數覆寫樣式(見下面 .CodeMirror 相關規則)。 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <style>
   :root {
     --bg: #212121;
@@ -106,15 +110,105 @@
     background: #212121;
   }
 
+  /* 包住 .app 跟新的程式碼編輯器面板,取代原本 body 對 .app 的置中職責
+     (body 本身的 align-items:center 保持不動,只是現在置中的對象是
+     .main-row 而不是 .app 直接的父層)。單欄(沒開編輯器)時靠
+     justify-content:center 維持原本置中的樣子;body.editor-open 時
+     改成靠左貼齊、讓編輯器面板佔右邊剩餘空間。 */
+  .main-row {
+    width: 100%;
+    height: calc(100vh - 80px);
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    overflow: hidden;
+  }
+
   .app {
     width: 100%;
     max-width: 771.5px;
-    height: calc(100vh - 80px);
+    height: 100%;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     position: relative;
     z-index: 1;
+    transition: max-width 0.3s ease;
   }
+
+  /* 程式碼編輯器面板:預設隱藏,只有偵測到 AI 回覆裡有 ```程式碼``` 區塊
+     才會自動開啟(見 script 裡的 maybeOpenCodeEditorFromReply)。純瀏覽器端
+     本地編輯,不會執行程式碼、也不會把編輯後的內容存回對話紀錄或後端,
+     只有「複製」這個匯出動作。 */
+  .code-editor-panel {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    margin: 12px 24px 12px 0;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  body.editor-open .main-row { justify-content: flex-start; }
+  body.editor-open .app { max-width: 460px; }
+  body.editor-open .code-editor-panel { display: flex; }
+
+  /* 手機螢幕太窄,雙欄擠壓聊天區沒有意義,改成比照 .image-lightbox 的
+     做法:面板變成蓋滿全螢幕的疊層,聊天欄位維持原本寬度不縮小(反正
+     被蓋住看不到)。z-index 選在 .app(1)/.messages(2)之上、
+     .image-lightbox(100)之下。這個媒體查詢刻意寫在上面兩條
+     body.editor-open 規則「之後」——同一個選擇器,優先權(specificity)
+     完全相同時,CSS 靠原始碼順序決定誰贏,寫在前面反而會被後面的桌機版
+     規則蓋掉(這個坑真的踩過一次)。 */
+  @media (max-width: 720px) {
+    .code-editor-panel { position: fixed; inset: 0; margin: 0; border-radius: 0; z-index: 60; }
+    body.editor-open .main-row { justify-content: center; }
+    body.editor-open .app { max-width: 771.5px; }
+  }
+
+  .code-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  .code-editor-actions { display: flex; gap: 8px; }
+
+  .code-editor-actions button {
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 12px;
+    color: var(--ink);
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .code-editor-actions button:hover { background: rgba(113, 112, 112, 0.35); }
+
+  .code-editor-body { flex: 1; min-height: 0; }
+
+  /* CodeMirror 預設是淺色主題,這裡不額外載入主題CSS檔案,直接用
+     專案既有的深色變數覆寫,維持風格一致。 */
+  .CodeMirror {
+    height: 100%;
+    background: transparent;
+    color: var(--ink);
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size: 13px;
+  }
+  .CodeMirror-gutters { background: transparent; border-right: 1px solid var(--panel-border); }
+  .CodeMirror-linenumber { color: var(--ink-dim); }
+  .CodeMirror-selected { background: rgba(255, 255, 255, 0.15); }
 
   .messages {
     position: relative;
@@ -829,6 +923,7 @@
 <body>
   <div class="side-rail"><img class="side-rail-logo" src="/NEXUX.png" alt="NEXUX"></div>
   <div class="top-bar"></div>
+  <div class="main-row" id="mainRow">
   <div class="app">
     <div class="messages" id="messages"></div>
 
@@ -915,15 +1010,112 @@
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。</p>
   </div>
 
+  <!-- 程式碼編輯器面板:AI回覆裡偵測到```程式碼```區塊時自動開啟
+       (見 script 裡的 maybeOpenCodeEditorFromReply),平常隱藏。
+       純瀏覽器端本地編輯,不會執行程式碼或存回對話紀錄。 -->
+  <div class="code-editor-panel" id="codeEditorPanel">
+    <div class="code-editor-header">
+      <span class="code-editor-lang" id="codeEditorLang">code</span>
+      <div class="code-editor-actions">
+        <button type="button" id="codeEditorCopyBtn">複製</button>
+        <button type="button" id="codeEditorCloseBtn" aria-label="關閉編輯器">×</button>
+      </div>
+    </div>
+    <div class="code-editor-body">
+      <textarea id="codeEditorTextarea"></textarea>
+    </div>
+  </div>
+  </div>
+
   <!-- 點拼豆對照圖放大用的全螢幕燈箱,平常隱藏,點圖片時才顯示。 -->
   <div class="image-lightbox" id="imageLightbox">
     <img id="lightboxImg" alt="放大檢視">
   </div>
 
+  <!-- 程式碼編輯器面板用:CodeMirror 5,語言模式對應網站現有的
+       聊天/故事/Python/HTML/問答分類(python/javascript/css/htmlmixed)。 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+
   <script>
     // 對話記憶:記錄目前這個分頁裡聊過的每一輪對話,讓後端組 context 時
     // 能看到之前聊過什麼(例如「我叫小明」->「我叫什麼?」),重新整理頁面就會清空。
     const conversationHistory = [];
+
+    // 程式碼編輯器面板:AI回覆裡偵測到 ```語言\n程式碼\n``` 這種格式時
+    // 自動開啟(見下面 maybeOpenCodeEditorFromReply),純瀏覽器端本地
+    // 編輯,不會執行程式碼、也不會存回對話紀錄或後端,只有「複製」這個
+    // 匯出動作。目前 data/*.jsonl 語料裡的程式碼回答都沒有用```包起來,
+    // 所以現在的模型幾乎不會自動觸發這個面板,這是預期中的行為——這裡
+    // 先把偵測機制做好,之後如果要讓它更常觸發,需要另外調整語料格式。
+    const codeEditorPanel = document.getElementById("codeEditorPanel");
+    const codeEditorLangEl = document.getElementById("codeEditorLang");
+    const codeEditorCloseBtn = document.getElementById("codeEditorCloseBtn");
+    const codeEditorCopyBtn = document.getElementById("codeEditorCopyBtn");
+    const codeEditorTextarea = document.getElementById("codeEditorTextarea");
+
+    const FENCE_LANG_TO_MODE = {
+      python: "python", py: "python",
+      html: "htmlmixed", htm: "htmlmixed",
+      javascript: "javascript", js: "javascript",
+      css: "css",
+    };
+    const CODE_FENCE_RE = /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/;
+
+    function extractFirstCodeBlock(text) {
+      const m = CODE_FENCE_RE.exec(text);
+      if (!m) return null;
+      const code = m[2].replace(/\n$/, "");
+      if (!code.trim()) return null;
+      return { lang: (m[1] || "").toLowerCase().trim(), code };
+    }
+
+    let codeEditorCM = null;
+    function ensureCodeEditorInstance() {
+      if (codeEditorCM) return codeEditorCM;
+      codeEditorCM = CodeMirror.fromTextArea(codeEditorTextarea, {
+        lineNumbers: true,
+        mode: "python",
+        viewportMargin: Infinity,
+      });
+      return codeEditorCM;
+    }
+
+    function openCodeEditorPanel(lang, code) {
+      document.body.classList.add("editor-open");
+      const cm = ensureCodeEditorInstance();
+      cm.setOption("mode", FENCE_LANG_TO_MODE[lang] || "python");
+      cm.setValue(code);
+      codeEditorLangEl.textContent = lang || "code";
+      // 面板開啟前是 display:none,CodeMirror 算出來的尺寸會是錯的,
+      // 要等瀏覽器畫出正確版位後再重新整理一次。
+      requestAnimationFrame(() => cm.refresh());
+    }
+
+    // 只在回覆文字「完整收到之後」才判斷要不要開啟面板(不是打字動畫
+    // 過程中),因為```的結尾要等整段回覆到齊才判斷得準。沒有偵測到
+    // ```的回覆,不會關掉已經開啟的面板,避免多輪對話中面板一直閃爍;
+    // 使用者按 × 手動關閉後,下一則有程式碼的回覆還是會自動重新打開。
+    function maybeOpenCodeEditorFromReply(replyText) {
+      const block = extractFirstCodeBlock(replyText);
+      if (block) openCodeEditorPanel(block.lang, block.code);
+    }
+
+    codeEditorCloseBtn.addEventListener("click", () => {
+      document.body.classList.remove("editor-open");
+    });
+    codeEditorCopyBtn.addEventListener("click", async () => {
+      if (!codeEditorCM) return;
+      try {
+        await navigator.clipboard.writeText(codeEditorCM.getValue());
+      } catch (err) {
+        // 剪貼簿權限被拒或不支援時靜默失敗,不影響其他功能。
+      }
+    });
 
     // 拼豆對照圖第一次產生時預設的格數(單片拼豆板常見尺寸),
     // 產生後使用者可以在結果下方自己調整重新產生。
@@ -1440,6 +1632,7 @@
             const replyText = data.reply || "(模型沒有生成任何內容)";
             await typeOutText(el, replyText, 12, activeAbortController.signal);
             conversationHistory.push({ role: "assistant", text: replyText });
+            maybeOpenCodeEditorFromReply(replyText);
 
             // 時間類回覆也預設12小時制文字(伺服器已經是這樣寫的),
             // 點一下切換成24小時制,句子風格要跟12小時制版本一致
@@ -1547,6 +1740,7 @@
             tokenCounterEl.remove();
           } else {
             conversationHistory.push({ role: "assistant", text: received.trim() });
+            maybeOpenCodeEditorFromReply(received.trim());
             // 沒收到 done 事件(例如使用者中途按停止、或連線中斷),
             // 「正在生成...」的字樣留著沒有意義,直接移除,不留下不準確的殘留文字。
             if (finalTokenCount === null) {
