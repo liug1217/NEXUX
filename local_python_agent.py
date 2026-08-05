@@ -185,13 +185,23 @@ class AgentRequestHandler(BaseHTTPRequestHandler):
         pass
 
 
-def main():
-    port = DEFAULT_PORT
-    if "--port" in sys.argv:
-        idx = sys.argv.index("--port")
-        port = int(sys.argv[idx + 1])
+def run_server(port=DEFAULT_PORT):
+    """
+    啟動服務並卡住(serve_forever)。抽成獨立函式,除了給 main() 自己
+    呼叫,desktop_app.py(桌面版捷徑)也會 import 這個函式,在背景執行緒
+    啟動,讓桌面版開啟時自動一起帶有本機 Python 執行能力,不用使用者
+    另外再雙擊一次 local_python_agent.exe。
 
-    server = HTTPServer(("127.0.0.1", port), AgentRequestHandler)
+    如果這個 port 已經被佔用(例如使用者自己也另外開著一份
+    local_python_agent.exe),不會讓整個程式崩潰,直接跳過、印出訊息
+    就好——多半代表已經有一份相容的服務在跑了。
+    """
+    try:
+        server = HTTPServer(("127.0.0.1", port), AgentRequestHandler)
+    except OSError:
+        print(f"[local_python_agent] port {port} 已經被占用,可能已經有一份在跑,略過啟動。")
+        return
+
     print(f"[local_python_agent] 監聽中: http://127.0.0.1:{port}")
     print("[local_python_agent] 只接受來自 ai.nexuxai.net / 本機開發站的請求(已驗證 Origin)。")
     print("[local_python_agent] 這個程式會執行網頁送過來的任意程式碼,只在信任該網站時保持開啟。")
@@ -200,6 +210,14 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n[local_python_agent] 已關閉。")
+
+
+def main():
+    port = DEFAULT_PORT
+    if "--port" in sys.argv:
+        idx = sys.argv.index("--port")
+        port = int(sys.argv[idx + 1])
+    run_server(port)
 
 
 if __name__ == "__main__":
