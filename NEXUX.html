@@ -1210,7 +1210,52 @@
       return new Worker(URL.createObjectURL(blob));
     }
 
-    function runPython(code) {
+    // 本機執行代理程式(local_python_agent.py):如果使用者自己電腦有裝
+    // 真正的 Python 並且執行了這個代理程式,就改用它執行(有完整套件、
+    // 可以用 GPU),不再受限於 Pyodide 的純 CPU WASM 沙盒。只監聽
+    // 127.0.0.1,前端每次執行都先探測一次是否存在,沒有就直接 fallback
+    // 回 Pyodide,使用者不用手動切換。詳見 local_python_agent.py 開頭的
+    // 安全性說明(Origin 白名單機制)。
+    const LOCAL_AGENT_URL = "http://127.0.0.1:8799";
+
+    async function tryRunViaLocalAgent(code) {
+      try {
+        const health = await fetch(LOCAL_AGENT_URL + "/health", { signal: AbortSignal.timeout(800) });
+        if (!health.ok) return null; // 代理程式沒在跑,或被 Origin 檢查擋下
+      } catch {
+        return null; // 連不到,一律視為「沒有本機代理程式」,不特別報錯,直接fallback
+      }
+
+      const res = await fetch(LOCAL_AGENT_URL + "/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!data) return "執行失敗,本機執行器回應的內容無法解析。";
+      if (data.error) return data.error;
+      const stdout = data.stdout || "";
+      const stderr = data.stderr ? `\n[錯誤輸出]\n${data.stderr}` : "";
+      return (stdout + stderr) || "(沒有任何輸出)";
+    }
+
+    async function runPython(code) {
+      if (pyodideWorkerBusy) return;
+      codeEditorRunBtn.disabled = true;
+      codeEditorOutput.textContent = "檢查本機執行器...";
+
+      const localResult = await tryRunViaLocalAgent(code);
+      if (localResult !== null) {
+        codeEditorOutput.textContent = localResult + "\n\n(本機 Python 執行)";
+        codeEditorRunBtn.disabled = false;
+        return;
+      }
+
+      codeEditorOutput.textContent = "未偵測到本機執行器,改用瀏覽器內建 Python 執行...";
+      runPythonViaPyodide(code);
+    }
+
+    function runPythonViaPyodide(code) {
       if (pyodideWorkerBusy) return; // 上一次還在跑,忽略重複點擊(逾時或跑完才會解除)
       codeEditorOutput.textContent = "載入 Python 執行環境中...(第一次執行需要下載,約幾秒)";
       codeEditorRunBtn.disabled = true;
@@ -1235,7 +1280,10 @@
         } else if (type === "done" || type === "error") {
           clearTimeout(timeoutId);
           if (type === "error") outputText += "\n[錯誤]\n" + text;
-          codeEditorOutput.textContent = outputText || "(沒有任何輸出)";
+          const hint = "\n\n(瀏覽器內建 Python,功能較受限。若想使用完整套件/GPU,"
+            + "可下載本機執行器:/local_python_agent.py,"
+            + "下載後執行「python local_python_agent.py」,之後按執行就會自動改用本機 Python)";
+          codeEditorOutput.textContent = (outputText || "(沒有任何輸出)") + hint;
           codeEditorRunBtn.disabled = false;
           pyodideWorkerBusy = false;
         }

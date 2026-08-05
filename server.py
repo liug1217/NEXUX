@@ -96,6 +96,16 @@ def favicon():
     return send_from_directory(BASE_DIR, "NEXUX.png")
 
 
+@app.route("/local_python_agent.py")
+def local_python_agent_download():
+    """
+    提供本機執行代理程式(local_python_agent.py)下載,讓使用者的電腦
+    有真正的 Python 時,程式碼編輯器面板可以改用它執行,而不是只能用
+    Pyodide(瀏覽器端 WASM,功能較受限)。詳見該檔案開頭的說明。
+    """
+    return send_from_directory(BASE_DIR, "local_python_agent.py", mimetype="text/x-python")
+
+
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
     """
