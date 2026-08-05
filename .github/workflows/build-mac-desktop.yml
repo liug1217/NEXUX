@@ -1,0 +1,30 @@
+name: Build macOS desktop app
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "desktop_app.py"
+      - "local_python_agent.py"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: pip install pywebview pyinstaller
+
+      - name: Build .app bundle
+        run: pyinstaller --onefile --windowed --name NEXUX_desktop desktop_app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXUX_desktop-mac
+          path: dist/NEXUX_desktop.app
