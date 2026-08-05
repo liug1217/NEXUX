@@ -142,17 +142,47 @@
      本地編輯,不會執行程式碼、也不會把編輯後的內容存回對話紀錄或後端,
      只有「複製」這個匯出動作。 */
   .code-editor-panel {
+    position: relative;
     display: none;
     flex-direction: column;
     flex: 1;
     min-width: 0;
     height: 100%;
     margin: 12px 15px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     border-radius: 15px;
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset 6px -6px 1px -6px rgba(255, 255, 255, 0.12),
+      inset -6px 6px 1px -6px rgba(255, 255, 255, 0.12),
+      inset 0 0 2px rgba(0, 0, 0, 0.5),
+      0px 4px 8px rgba(0, 0, 0, 0.25);
     overflow: hidden;
   }
+
+  /* 跟 .composer-pill 同一套玻璃效果,對角線光澤,pointer-events: none
+     不擋工具列按鈕/CodeMirror 的點擊。 */
+  .code-editor-panel::after {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 255, 255, 0.10) 100%
+    );
+    filter: blur(3px);
+  }
+
+  .CodeMirror-cursor { border-left-color: var(--accent); }
 
   body.editor-open .main-row { justify-content: flex-start; }
   /* Figma Frame 3(node 2008:8)裡,輸入框(Rectangle 21)是 x=67, width=400,

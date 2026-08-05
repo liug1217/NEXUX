@@ -18,6 +18,8 @@ NEXUX 聊天網站的桌面版捷徑,單純省去「自己開瀏覽器、自己�
 另外再下載、雙擊一次 local_python_agent.exe。這個背景服務只在桌面版
 這個視窗開著的時候存在,關掉視窗它也會跟著結束(daemon thread)。
 
+**F11 切換全螢幕**,跟一般瀏覽器習慣一致。
+
 **第一次執行會自動在桌面建捷徑**:只有打包成 exe 執行時才會做這件事
 (一般用 `python desktop_app.py` 開發測試不會),讓使用者下載後第一次
 雙擊(通常在下載資料夾裡)之後,不用自己手動搬到桌面,之後可以直接
@@ -112,6 +114,37 @@ def _ensure_desktop_shortcut():
         pass
 
 
+class _Api:
+    """
+    暴露給網頁 JS 呼叫的橋接物件(pywebview 的 js_api 機制),目前只有
+    切換全螢幕這一個用途。`window` 要等 create_window() 執行完才拿得到,
+    所以先建立空殼,建好視窗後再補上參照。
+    """
+
+    def __init__(self):
+        self.window = None
+
+    def toggle_fullscreen(self):
+        if self.window:
+            self.window.toggle_fullscreen()
+
+
+def _bind_fullscreen_shortcut(window):
+    """
+    F11 切換全螢幕,跟一般瀏覽器的習慣一致。pywebview 本身沒有內建的
+    跨平台快捷鍵綁定,用 evaluate_js 注入一段監聽 keydown 的 JS,
+    按下 F11 時呼叫上面 _Api.toggle_fullscreen()。
+    """
+    window.evaluate_js(
+        "document.addEventListener('keydown', function(e) {"
+        "  if (e.key === 'F11') {"
+        "    e.preventDefault();"
+        "    window.pywebview.api.toggle_fullscreen();"
+        "  }"
+        "});"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default=DEFAULT_URL)
@@ -120,7 +153,13 @@ def main():
     threading.Thread(target=_ensure_desktop_shortcut, daemon=True).start()
     threading.Thread(target=local_python_agent.run_server, daemon=True).start()
 
-    webview.create_window("NEXUX", args.url, width=900, height=750, resizable=True)
+    api = _Api()
+    window = webview.create_window(
+        "NEXUX", args.url, width=900, height=750, resizable=True, js_api=api
+    )
+    api.window = window
+    window.events.loaded += lambda *args: _bind_fullscreen_shortcut(window)
+
     webview.start()
 
 
