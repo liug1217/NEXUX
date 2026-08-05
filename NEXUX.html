@@ -156,9 +156,14 @@
 
   body.editor-open .main-row { justify-content: flex-start; }
   /* Figma Frame 3(node 2008:8)裡,輸入框(Rectangle 21)是 x=67, width=400,
-     跟側邊欄右緣(x=52)之間剛好留 15px,推算右邊也對稱留 15px,所以
-     .app 收窄後的寬度是 400 + 15(左) + 15(右) = 430px,不是隨便抓的數字。 */
-  body.editor-open .app { max-width: 430px; }
+     跟側邊欄右緣(x=52)之間留 15px,右邊的15px則是靠 .code-editor-panel
+     自己的 margin-left(見下面)撐出來,不需要 .app 自己也留右邊padding。
+     所以 .app 收窄後只需要左邊15px內距:400(輸入框內容寬度) + 15(左) = 415px。
+     (box-sizing: border-box,max-width 已經包含 padding。) */
+  body.editor-open .app {
+    max-width: 415px;
+    padding-left: 15px;
+  }
   body.editor-open .code-editor-panel { display: flex; }
 
   /* 手機螢幕太窄,雙欄擠壓聊天區沒有意義,改成比照 .image-lightbox 的
