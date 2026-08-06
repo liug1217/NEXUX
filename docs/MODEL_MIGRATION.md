@@ -404,6 +404,27 @@ RNG,例如dropout);整個程式碼庫裡沒有任何地方呼叫過 `random.seed
 
 **判定:EOS停止率沒有退步,予以部署。**
 
+## 語料多樣性擴充(css/js/python/html/logic/troubleshooting)+ 修復 python.jsonl 殘缺答案
+
+這次不是單純新增語料,而是先做了一次資料品質檢查,發現
+`python.jsonl` 裡有 **54 筆(佔原本269筆的18%)答案只有單行 `import xxx`
+語句、完全沒有實際實作**的殘缺項目(例如問「使用 pathlib 處理路徑」
+答案只有 `from pathlib import Path` 就結束了),另外還有python 2筆、
+html 4筆完全重複的題目(其中重複的版本裡,也有像「倒數計時器答案
+沒有倒數邏輯」「天氣卡片答案只有CSS沒有HTML標籤」這種殘缺版本)。
+全部修復/清掉之後,才新增新語料:css +48、javascript +36、
+python +37(淨值)、html +35(淨值)、logic +35、troubleshooting +32,
+新增主題都先跟既有題目比對過,確認不重疊。
+
+**固定benchmark:EOS自行停下比率維持8/8**,跟基準持平沒有退步。
+開放式問答的內容品質(天空為什麼是藍色、太空旅行故事開頭這類創意/
+知識型問題)沒有明顯改善,這是預期中的結果——這次擴充的語料是
+結構化的程式碼/邏輯/除錯問答,不是這次benchmark測的閒聊/知識類
+題目,兩者本來就不是同一個能力面向,不能用這次benchmark判斷程式碼
+理解能力有沒有進步,需要另外設計程式碼相關的固定測試題才能驗證。
+
+**判定:EOS停止率沒有退步,語料品質問題已修復,予以部署。**
+
 - [x] 下載並轉換 ckiplab/gpt2-base-chinese 權重(`convert_pretrained.py`)
 - [x] 驗證轉換正確性(`verify_conversion.py`)
 - [x] 初步生成品質對比(本文件)
