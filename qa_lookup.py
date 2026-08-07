@@ -1,9 +1,11 @@
 """
 qa_lookup.py
 ------------
-針對「已經有標準答案」的內容(qa.jsonl / html.jsonl / python.jsonl 這三類
-單輪問答語料),在丟給模型生成之前,先比對使用者的輸入跟語料庫裡的問題
-像不像。像的話直接回傳訓練資料裡的答案,完全不經過模型生成。
+針對「已經有標準答案」的內容(見 _LOOKUP_FILES:qa.jsonl / html.jsonl /
+python.jsonl / css.jsonl / javascript.jsonl / logic.jsonl /
+troubleshooting.jsonl 這幾類單輪問答語料),在丟給模型生成之前,先比對
+使用者的輸入跟語料庫裡的問題像不像。像的話直接回傳訓練資料裡的答案,
+完全不經過模型生成。
 
 背景:
 現在的模型規模很小(char-level、7.49M參數、語料量對這個規模來說還遠遠
@@ -20,9 +22,11 @@ qa_lookup.py
 回覆變化:
 單純查表回傳一模一樣的句子,會讓人覺得很像機械式罐頭回覆(不像
 smalltalk.py 那樣每個類別都準備多種講法、隨機挑一種回)。核心事實內容
-不能亂改(改了可能就不準確了),所以做法是:只在 qa.jsonl 這類自然語言
-問答(不包含 html/python 的程式碼答案)前面,隨機加一句不影響原意的
-開場白,讓同一題不會每次都一字不差,同時保留答案本身的正確性。
+不能亂改(改了可能就不準確了),所以做法是:只在自然語言問答類的答案
+(qa.jsonl、以及css/javascript/logic/troubleshooting這幾類「說明文字
++ 內嵌程式碼片段」的散文格式答案,不包含html/python的純程式碼答案)
+前面,隨機加一句不影響原意的開場白,讓同一題不會每次都一字不差,
+同時保留答案本身的正確性。
 
 程式碼答案包 ```:
 html.jsonl / python.jsonl 的答案本來就是程式碼,回傳前用 ```html /
@@ -37,10 +41,21 @@ import os
 import random
 
 _THRESHOLD = 0.5
-_LOOKUP_FILES = ("qa.jsonl", "html.jsonl", "python.jsonl")
+_LOOKUP_FILES = (
+    "qa.jsonl",
+    "html.jsonl",
+    "python.jsonl",
+    "css.jsonl",
+    "javascript.jsonl",
+    "logic.jsonl",
+    "troubleshooting.jsonl",
+)
 
-# 只套用在 qa.jsonl(自然語言問答),html/python 的答案是程式碼,
-# 加開場白會很突兀,所以那兩類不套用。
+# 只套用在自然語言問答(qa.jsonl 以及新加入的 css/javascript/logic/
+# troubleshooting),這幾類答案本身是「說明文字 + 內嵌程式碼片段」的
+# 散文格式,不是像 html/python 那樣整個答案都是純程式碼,所以不放進
+# _FENCE_LANG、允許加開場白 —— 如果硬把整段散文包進```程式碼區塊```,
+# 反而會讓說明文字跟程式碼片段混在一起變得很奇怪。
 _VARIABLE_OPENERS = [
     "",  # 保留原樣不加開場白,佔比較高的權重(見下方 weights)
     "簡單來說,",
