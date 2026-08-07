@@ -944,6 +944,18 @@
   .add-btn:hover,
   .mic-btn:hover { opacity: 0.75; }
 
+  /* 錄音中的視覺狀態:圖示變紅色 + 淡淡的脈動動畫,讓使用者清楚知道
+     現在正在聽、還沒結束錄音。 */
+  .mic-btn.is-recording #micIconPath {
+    stroke: #e74c3c;
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
   /* 附件圖片預覽小卡:點「新增附件」選好圖片後,顯示在輸入框上方,
      讓使用者送出前能確認選對圖、也能點 x 取消。 */
   .attachment-preview {
@@ -1170,11 +1182,14 @@
               略過規則
             </label>
 
-            <!-- Mic:16x16,內縮20.83%(左右)/4.17%(上下),1.6px白色線條 -->
-            <button type="button" class="mic-btn" aria-label="語音輸入" tabindex="-1">
+            <!-- Mic:16x16,內縮20.83%(左右)/4.17%(上下),1.6px白色線條。
+                 用瀏覽器內建的 Web Speech API(SpeechRecognition)做語音
+                 輸入,不需要任何後端服務或第三方API,錄到的文字直接填進
+                 輸入框(見下面script區塊的語音輸入邏輯)。 -->
+            <button type="button" class="mic-btn" id="micBtn" aria-label="語音輸入">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_78_23)">
-                  <path d="M3.33337 6.66669V8.00002C3.33337 9.2377 3.82504 10.4247 4.70021 11.2999C5.57538 12.175 6.76236 12.6667 8.00004 12.6667C9.23772 12.6667 10.4247 12.175 11.2999 11.2999C12.175 10.4247 12.6667 9.2377 12.6667 8.00002V6.66669M8.00004 12.6667V15.3334M5.33337 15.3334H10.6667M8.00004 0.666687C7.46961 0.666687 6.9609 0.877401 6.58583 1.25247C6.21075 1.62755 6.00004 2.13625 6.00004 2.66669V8.00002C6.00004 8.53045 6.21075 9.03916 6.58583 9.41423C6.9609 9.78931 7.46961 10 8.00004 10C8.53047 10 9.03918 9.78931 9.41425 9.41423C9.78933 9.03916 10 8.53045 10 8.00002V2.66669C10 2.13625 9.78933 1.62755 9.41425 1.25247C9.03918 0.877401 8.53047 0.666687 8.00004 0.666687Z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path id="micIconPath" d="M3.33337 6.66669V8.00002C3.33337 9.2377 3.82504 10.4247 4.70021 11.2999C5.57538 12.175 6.76236 12.6667 8.00004 12.6667C9.23772 12.6667 10.4247 12.175 11.2999 11.2999C12.175 10.4247 12.6667 9.2377 12.6667 8.00002V6.66669M8.00004 12.6667V15.3334M5.33337 15.3334H10.6667M8.00004 0.666687C7.46961 0.666687 6.9609 0.877401 6.58583 1.25247C6.21075 1.62755 6.00004 2.13625 6.00004 2.66669V8.00002C6.00004 8.53045 6.21075 9.03916 6.58583 9.41423C6.9609 9.78931 7.46961 10 8.00004 10C8.53047 10 9.03918 9.78931 9.41425 9.41423C9.78933 9.03916 10 8.53045 10 8.00002V2.66669C10 2.13625 9.78933 1.62755 9.41425 1.25247C9.03918 0.877401 8.53047 0.666687 8.00004 0.666687Z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                 </g>
                 <defs>
                   <clipPath id="clip0_78_23">
@@ -1505,6 +1520,7 @@
     const sendBtn = document.getElementById("sendBtn");
     const providerSelect = document.getElementById("providerSelect");
     const skipRulesToggle = document.getElementById("skipRulesToggle");
+    const micBtn = document.getElementById("micBtn");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
     const quotaRingEl = document.getElementById("quotaRing");
@@ -1564,6 +1580,68 @@
 
     refreshQuotaDisplay();
     setInterval(refreshQuotaDisplay, 60000);
+
+    // 語音輸入:用瀏覽器內建的 Web Speech API(SpeechRecognition),不需要
+    // 任何後端服務或第三方API金鑰,錄到的文字直接填進輸入框。點一下開始
+    // 錄音、再點一下(或講完自動偵測到停頓)結束錄音,錄音中圖示會變紅色
+    // 並有脈動動畫提示使用者。
+    //
+    // 瀏覽器支援度:Chrome/Edge 完整支援,Safari 較新版本也支援,Firefox
+    // 目前還沒有預設支援。沒支援的瀏覽器,點擊麥克風按鈕會顯示提示訊息,
+    // 不會讓使用者以為按鈕壞掉、點了卻沒有任何反應。
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let speechRecognition = null;
+    let isRecording = false;
+
+    if (SpeechRecognitionClass) {
+      speechRecognition = new SpeechRecognitionClass();
+      speechRecognition.lang = "zh-TW";
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+
+      speechRecognition.addEventListener("result", (event) => {
+        const transcript = event.results[0][0].transcript;
+        const existing = textarea.value.trim();
+        textarea.value = existing ? `${existing} ${transcript}` : transcript;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      speechRecognition.addEventListener("end", () => {
+        isRecording = false;
+        micBtn.classList.remove("is-recording");
+      });
+
+      speechRecognition.addEventListener("error", (event) => {
+        isRecording = false;
+        micBtn.classList.remove("is-recording");
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          alert("無法使用語音輸入,請確認已允許瀏覽器存取麥克風權限。");
+        } else if (event.error !== "no-speech" && event.error !== "aborted") {
+          alert("語音輸入發生錯誤,請再試一次。");
+        }
+      });
+    }
+
+    micBtn.addEventListener("click", () => {
+      if (!speechRecognition) {
+        alert("這個瀏覽器不支援語音輸入功能,建議改用 Chrome 或 Edge 瀏覽器。");
+        return;
+      }
+      if (isRecording) {
+        speechRecognition.stop();
+        return;
+      }
+      isRecording = true;
+      micBtn.classList.add("is-recording");
+      try {
+        speechRecognition.start();
+      } catch {
+        // 極少數情況下(例如上一次的辨識還沒真的結束)start()會拋出例外,
+        // 靜默還原狀態,讓使用者可以再點一次重試,不要讓整個頁面卡住。
+        isRecording = false;
+        micBtn.classList.remove("is-recording");
+      }
+    });
 
     // 首頁歡迎文案:集中管理在這裡,之後要新增/刪除文案,只要改
     // WELCOME_MESSAGE_POOLS.default 這個陣列即可。目前只實作「每次開啟
