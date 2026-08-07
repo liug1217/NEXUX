@@ -1586,23 +1586,32 @@
     // 錄音、再點一下(或講完自動偵測到停頓)結束錄音,錄音中圖示會變紅色
     // 並有脈動動畫提示使用者。
     //
+    // interimResults 開啟:講話的同時就即時把辨識中的文字顯示出來(逐字/
+    // 逐詞更新),不用等整句話講完才一次填入,體驗上更像「即時聽打」而
+    // 不是「講完才出現結果」。每次 result 事件都會帶回「目前這整句從頭
+    // 到尾累積的辨識結果」(包含還沒定案的暫時結果),所以每次都是重新
+    // 整句覆蓋,而不是逐次疊加,避免文字被重複貼上兩次。
+    //
     // 瀏覽器支援度:Chrome/Edge 完整支援,Safari 較新版本也支援,Firefox
     // 目前還沒有預設支援。沒支援的瀏覽器,點擊麥克風按鈕會顯示提示訊息,
     // 不會讓使用者以為按鈕壞掉、點了卻沒有任何反應。
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     let speechRecognition = null;
     let isRecording = false;
+    let textBeforeRecording = "";
 
     if (SpeechRecognitionClass) {
       speechRecognition = new SpeechRecognitionClass();
       speechRecognition.lang = "zh-TW";
       speechRecognition.continuous = false;
-      speechRecognition.interimResults = false;
+      speechRecognition.interimResults = true;
 
       speechRecognition.addEventListener("result", (event) => {
-        const transcript = event.results[0][0].transcript;
-        const existing = textarea.value.trim();
-        textarea.value = existing ? `${existing} ${transcript}` : transcript;
+        let transcript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        textarea.value = textBeforeRecording ? `${textBeforeRecording} ${transcript}` : transcript;
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
       });
 
@@ -1632,6 +1641,7 @@
         return;
       }
       isRecording = true;
+      textBeforeRecording = textarea.value.trim();
       micBtn.classList.add("is-recording");
       try {
         speechRecognition.start();
