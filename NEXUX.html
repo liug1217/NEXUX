@@ -2410,10 +2410,9 @@
       return `${m}m ${s}s ${tokens} tokens`;
     }
 
-    // NexoraAI 團隊模式(composer 選了角色時):後端一次回傳所有角色的
-    // 回覆+核心AI整合(見 server.py/api/generate.py 的團隊模式分支),
-    // 不是NDJSON串流,這裡一次性渲染成「每個角色一個泡泡 + 整合建議
-    // 卡片」,不用打字機效果(已經是一次到齊的完整文字)。
+    // NexoraAI 團隊模式(composer 選了角色時):後端改成 NDJSON 串流,
+    // 每個角色的文字一生成出來就送過來(見 server.py/api/generate.py 的
+    // team_stream()),不用等所有角色+整合都生成完才第一次看到任何內容。
     // 角色圖示一律用固定SVG(見上面 ROLE_ICON_SVG),角色名稱(不管是預設
     // 4種還是使用者自訂)一律走 textContent,不會被當成HTML解析,避免
     // 使用者自訂角色名稱夾帶標籤造成XSS。
@@ -2427,31 +2426,106 @@
       return label;
     }
 
-    function renderTeamReply(data, elapsedMs) {
-      (data.responses || []).forEach((r) => {
+    // 讀取團隊模式的 NDJSON 串流,逐段把文字打進對應角色的泡泡裡。因為
+    // 後端是依序處理每個角色(不是同時平行生成),同一時間永遠只有一個
+    // 角色在收 delta,這裡用單一佇列 + 固定節奏吐字(跟一般單一問答模式
+    // 的打字機效果同一套手法),就能讓每個角色泡泡看起來依序逐字打出來。
+    async function streamTeamReply(res, elapsedStartTime) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let lineBuffer = "";
+      let streamDone = false;
+      let finalTokenCount = null;
+      const queue = []; // {ch, el}
+      const roleBodyEls = new Map(); // role id -> 該角色回覆文字所在的元素
+
+      function ensureRoleBubble(msg) {
+        if (roleBodyEls.has(msg.role)) return roleBodyEls.get(msg.role);
         const el = document.createElement("div");
-        el.className = "msg assistant team-role-msg";
-        el.appendChild(buildTeamRoleLabel(r.icon, r.label));
+        if (msg.role === "integration") {
+          el.className = "msg assistant team-integration-msg";
+        } else if (msg.role === "error") {
+          el.className = "msg error";
+        } else {
+          el.className = "msg assistant team-role-msg";
+        }
+        if (msg.role !== "error") {
+          el.appendChild(buildTeamRoleLabel(msg.icon, msg.label));
+        }
         const body = document.createElement("div");
-        body.textContent = r.reply || "(模型沒有生成任何內容)";
         el.appendChild(body);
         messagesEl.appendChild(el);
-      });
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        roleBodyEls.set(msg.role, body);
+        return body;
+      }
 
-      const integrationEl = document.createElement("div");
-      integrationEl.className = "msg assistant team-integration-msg";
-      integrationEl.appendChild(buildTeamRoleLabel("integration", "核心AI整合建議"));
-      const integrationBody = document.createElement("div");
-      integrationBody.textContent = data.integration || "(模型沒有生成任何內容)";
-      integrationEl.appendChild(integrationBody);
-      messagesEl.appendChild(integrationEl);
+      function handleLine(line) {
+        line = line.trim();
+        if (!line) return;
+        let msg;
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          return; // 協定固定是一行一個JSON,理論上不該發生
+        }
+        if (msg.done) {
+          finalTokenCount = msg.total_tokens;
+          return;
+        }
+        if (msg.role_start) {
+          ensureRoleBubble(msg);
+          return;
+        }
+        if (typeof msg.delta === "string") {
+          const bodyEl = roleBodyEls.get(msg.role);
+          if (!bodyEl) return; // 保底:理論上role_start一定先送到
+          for (const ch of msg.delta) {
+            queue.push({ ch, el: bodyEl });
+          }
+        }
+        // role_done 只是給後端內部組整合提示語用,文字本身已經透過delta
+        // 進到佇列了,前端不用再另外處理。
+      }
+
+      const pump = (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            lineBuffer += decoder.decode(value, { stream: true });
+            let idx;
+            while ((idx = lineBuffer.indexOf("\n")) !== -1) {
+              handleLine(lineBuffer.slice(0, idx));
+              lineBuffer = lineBuffer.slice(idx + 1);
+            }
+          }
+          if (lineBuffer) handleLine(lineBuffer);
+        } catch (err) {
+          if (err.name !== "AbortError") throw err;
+        } finally {
+          streamDone = true;
+        }
+      })();
+
+      while (!streamDone || queue.length > 0) {
+        if (queue.length > 0) {
+          const { ch, el } = queue.shift();
+          el.textContent += ch;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      await pump;
 
       const tokenCounterEl = document.createElement("div");
       tokenCounterEl.className = "token-counter";
-      tokenCounterEl.textContent = formatElapsedTokens(elapsedMs, data.total_tokens || 0);
+      tokenCounterEl.textContent = formatElapsedTokens(Date.now() - elapsedStartTime, finalTokenCount || 0);
       messagesEl.appendChild(tokenCounterEl);
-
       messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      const integrationBodyEl = roleBodyEls.get("integration");
+      return integrationBodyEl ? integrationBodyEl.textContent : "";
     }
 
     // 把文字一個字一個字打進指定的訊息元素裡,固定節奏顯示,
@@ -2693,9 +2767,9 @@
       }
 
       // NexoraAI 團隊模式:composer 選了角色,改送 roles(預設角色id)+
-      // customRoles(使用者自訂角色名稱)給後端,後端會回傳一次到齊的
-      // type:"team" JSON(不是NDJSON串流),見 server.py/api/generate.py
-      // 的團隊模式分支。只支援own模型(切到其他provider時角色按鈕已經
+      // customRoles(使用者自訂角色名稱)給後端,後端會用 NDJSON 串流
+      // 依序回傳每個角色的文字(見 server.py/api/generate.py 的
+      // team_stream())。只支援own模型(切到其他provider時角色按鈕已經
       // 被停用並清空選取,syncRoleSelectorWithProvider()),這裡不用再
       // 另外判斷 provider。
       if (selectedRoles.size > 0) {
@@ -2722,12 +2796,20 @@
             }),
             signal: activeAbortController.signal,
           });
-          const data = await res.json();
-          if (!res.ok || data.error) {
-            addMessage(data.error || "團隊模式發生未知錯誤,請稍後再試。", "error");
+          const contentType = res.headers.get("content-type") || "";
+          // 額度不足/模型還沒載入這類「生成開始前」就先被擋下的錯誤,
+          // 後端還是走 jsonify()(application/json);真的開始生成的話,
+          // 一定是 NDJSON 串流,兩種情況要分開處理。
+          if (!res.ok || contentType.includes("application/json")) {
+            let errMsg = "團隊模式發生未知錯誤,請稍後再試。";
+            try {
+              const data = await res.json();
+              errMsg = data.error || errMsg;
+            } catch { /* 保底,理論上這個分支一定是JSON */ }
+            addMessage(errMsg, "error");
           } else {
-            renderTeamReply(data, Date.now() - teamStartTime);
-            conversationHistory.push({ role: "assistant", text: data.integration || "" });
+            const integrationText = await streamTeamReply(res, teamStartTime);
+            conversationHistory.push({ role: "assistant", text: integrationText });
             refreshQuotaDisplay();
           }
         } catch (err) {

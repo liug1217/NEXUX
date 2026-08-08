@@ -86,21 +86,26 @@ def get_model_and_tokenizer():
     return _cache["config"], _cache["model"], _cache["tokenizer"], _cache["is_sft"]
 
 
-def _generate_team_reply(text_prompt, config, model, tokenizer):
+def _generate_team_reply_stream(text_prompt, config, model, tokenizer):
     """
-    NexoraAI 團隊模式用:完整生成一次回覆(不像 /api/generate 一般模式那樣
-    邊生成邊串流給前端——團隊模式要等所有角色+整合都生成完才一次回傳,
-    所以這裡直接把 model.generate_stream() 產生的 token 在後端內部收集完,
-    回傳完整文字跟這次呼叫實際用掉的 token 數(給 quota_manager 累加)。
-    停止邏輯(遇到 find_next_turn_marker 就截斷)跟一般模式共用同一套,
-    避免模型生成到下一輪的「問:/答:」標記還繼續往下寫。
+    NexoraAI 團隊模式用:generator版本,逐段yield {"delta": "..."} 讓呼叫端
+    可以邊生成邊往前端送(團隊模式原本是等這個角色生成完才回傳一整段
+    文字,使用者要等好幾次生成都跑完才第一次看到任何內容;改成這個
+    generator 之後,單一角色的文字一樣能像一般問答模式那樣逐字出現)。
+    最後固定yield一個 {"tokens": N} 收尾,呼叫端用有沒有 "tokens" 這個key
+    分辨是不是最後一個chunk。停止邏輯(遇到 find_next_turn_marker 就截斷、
+    HOLD尾巴避免把換行標記送出一半)跟 api_generate() 的 stream() 共用
+    同一套規則。
     """
     wrapped_prompt = build_context_prompt(None, text_prompt, tokenizer, config.block_size, config.max_new_tokens)
     idx = torch.tensor([tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device)
     if idx.shape[1] == 0:
-        return "", 0
+        yield {"tokens": 0}
+        return
 
     accumulated = ""
+    sent_len = 0
+    HOLD = 3
     step = 0
     for token_ids in model.generate_stream(
         idx,
@@ -115,10 +120,20 @@ def _generate_team_reply(text_prompt, config, model, tokenizer):
         accumulated += tokenizer.decode(token_ids)
         marker = find_next_turn_marker(accumulated)
         if marker:
-            accumulated = accumulated[:marker.start()]
+            final_text = accumulated[:marker.start()].rstrip()
+            if len(final_text) > sent_len:
+                yield {"delta": final_text[sent_len:]}
             break
+        safe_len = max(0, len(accumulated) - HOLD)
+        if safe_len > sent_len:
+            yield {"delta": accumulated[sent_len:safe_len]}
+            sent_len = safe_len
+    else:
+        final_text = accumulated.rstrip()
+        if len(final_text) > sent_len:
+            yield {"delta": final_text[sent_len:]}
 
-    return accumulated.rstrip(), idx.shape[1] + step
+    yield {"tokens": idx.shape[1] + step}
 
 
 @app.route("/")
@@ -216,8 +231,10 @@ def api_generate():
     # ——本質上是同一個 own 模型用不同角色提示語各問一次,不是真正各自獨立思考
     # 的智慧體,角色之間也不會互相看到彼此的回覆再討論。跳過 smalltalk/qa_lookup/
     # weather_lookup 這些為單一問答設計的短路機制(團隊模式的意義在於「不同角色
-    # 的觀點」,直接查表回同一句罐頭答案沒有意義),也不用 NDJSON 串流(要等所有
-    # 角色+整合都生成完才一次回傳)。
+    # 的觀點」,直接查表回同一句罐頭答案沒有意義)。跟一般單一問答模式一樣改用
+    # NDJSON 串流:每個角色的文字一生成出來就送給前端,不用等所有角色+整合都
+    # 生成完才一次看到內容(之前的版本是等全部跑完才一次回傳,使用者要空等
+    # 好幾次生成的時間才第一次看到任何文字)。
     roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
     # 自訂角色(composer 角色選單裡的「+ 自訂角色」):使用者自己輸入角色
     # 名稱,沒有預先寫好的專屬提示語,見 ai_roles.build_custom_role_prompt()。
@@ -243,7 +260,9 @@ def api_generate():
         # 團隊模式會呼叫模型 (len(roles)+len(custom_role_labels))+1 次
         # (每個角色一次+核心AI整合一次),用粗略估計值在生成前先擋下明顯
         # 不足的額度,避免生成到一半才因為額度用完而中斷、浪費前面已經
-        # 生成的角色回覆。
+        # 生成的角色回覆。這個檢查必須在開始串流之前做完——一旦
+        # Response(stream(), ...) 開始送出第一個位元組,狀態碼就已經定案
+        # 是200,沒辦法半路改成429錯誤了。
         total_role_count = len(roles) + len(custom_role_labels)
         status = quota_manager.get_status(client_id)
         estimated_tokens = (total_role_count + 1) * 150
@@ -255,38 +274,67 @@ def api_generate():
                          f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
             }), 429
 
-        responses = []
-        role_replies_for_integration = []
-        total_tokens = 0
+        # 把預設角色跟自訂角色統一組成 (role_id, label, icon, 提示語文字)
+        # 的清單,兩種角色用同一套迴圈依序處理,不用寫兩次幾乎一樣的邏輯。
+        role_entries = []
         for role in roles:
-            role_prompt = ai_roles.build_role_prompt(role, prompt)
-            reply_text, tokens_used = _generate_team_reply(role_prompt, config, model, tokenizer)
-            total_tokens += tokens_used
             role_info = ai_roles.ROLES[role]
-            responses.append({
-                "role": role, "label": role_info["label"], "icon": role_info["icon"], "reply": reply_text,
-            })
-            role_replies_for_integration.append((role_info["label"], reply_text))
-
+            role_entries.append((role, role_info["label"], role_info["icon"], ai_roles.build_role_prompt(role, prompt)))
         for label in custom_role_labels:
-            role_prompt = ai_roles.build_custom_role_prompt(label, prompt)
-            reply_text, tokens_used = _generate_team_reply(role_prompt, config, model, tokenizer)
-            total_tokens += tokens_used
-            responses.append({
-                "role": f"custom:{label}", "label": label, "icon": "custom", "reply": reply_text,
-            })
-            role_replies_for_integration.append((label, reply_text))
+            role_entries.append((f"custom:{label}", label, "custom", ai_roles.build_custom_role_prompt(label, prompt)))
 
-        integration_prompt = ai_roles.build_integration_prompt(prompt, role_replies_for_integration)
-        integration_text, integration_tokens = _generate_team_reply(integration_prompt, config, model, tokenizer)
-        total_tokens += integration_tokens
+        def team_stream():
+            """
+            NDJSON,每行一個JSON物件:
+            {"role":id,"label":..,"icon":..,"role_start":true}  這個角色開始生成
+            {"role":id,"delta":"..."}                            這個角色的部分文字
+            {"role":id,"role_done":true,"reply":"完整文字"}       這個角色生成完了
+            (核心AI整合是最後一個角色,role固定是"integration")
+            {"done":true,"total_tokens":N}                        全部結束
+            """
+            total_tokens = 0
+            role_replies_for_integration = []
 
-        quota_manager.consume(client_id, total_tokens)
+            try:
+                for role_id, label, icon, role_prompt in role_entries:
+                    yield json.dumps({"role": role_id, "label": label, "icon": icon, "role_start": True}, ensure_ascii=False) + "\n"
+                    full_text = ""
+                    for chunk in _generate_team_reply_stream(role_prompt, config, model, tokenizer):
+                        if "delta" in chunk:
+                            full_text += chunk["delta"]
+                            yield json.dumps({"role": role_id, "delta": chunk["delta"]}, ensure_ascii=False) + "\n"
+                        else:
+                            total_tokens += chunk["tokens"]
+                    full_text = full_text.rstrip()
+                    yield json.dumps({"role": role_id, "role_done": True, "reply": full_text}, ensure_ascii=False) + "\n"
+                    role_replies_for_integration.append((label, full_text))
 
-        return jsonify({
-            "type": "team", "responses": responses, "integration": integration_text,
-            "total_tokens": total_tokens,
-        })
+                integration_prompt = ai_roles.build_integration_prompt(prompt, role_replies_for_integration)
+                yield json.dumps({"role": "integration", "label": "核心AI整合建議", "icon": "integration", "role_start": True}, ensure_ascii=False) + "\n"
+                integration_text = ""
+                for chunk in _generate_team_reply_stream(integration_prompt, config, model, tokenizer):
+                    if "delta" in chunk:
+                        integration_text += chunk["delta"]
+                        yield json.dumps({"role": "integration", "delta": chunk["delta"]}, ensure_ascii=False) + "\n"
+                    else:
+                        total_tokens += chunk["tokens"]
+                integration_text = integration_text.rstrip()
+                yield json.dumps({"role": "integration", "role_done": True, "reply": integration_text}, ensure_ascii=False) + "\n"
+
+                quota_manager.consume(client_id, total_tokens)
+                yield json.dumps({"done": True, "total_tokens": total_tokens}, ensure_ascii=False) + "\n"
+            except Exception as e:  # noqa: BLE001 - 攔截所有例外,回傳給前端顯示
+                # 不管是在哪個角色生成時出錯,都補一個獨立的"error"角色泡泡
+                # (先送role_start再送delta),前端才一定看得到這個錯誤訊息
+                # ——如果直接對著還沒送過role_start的角色id送delta,前端會
+                # 因為找不到對應的泡泡元素而把這則錯誤靜默丟掉。
+                quota_manager.consume(client_id, total_tokens)
+                yield json.dumps({"role": "error", "label": "錯誤", "icon": "custom", "role_start": True}, ensure_ascii=False) + "\n"
+                yield json.dumps({"role": "error", "delta": f"生成時發生錯誤: {e}"}, ensure_ascii=False) + "\n"
+                yield json.dumps({"role": "error", "role_done": True, "reply": f"生成時發生錯誤: {e}"}, ensure_ascii=False) + "\n"
+                yield json.dumps({"done": True, "total_tokens": total_tokens}, ensure_ascii=False) + "\n"
+
+        return Response(team_stream(), mimetype="application/x-ndjson; charset=utf-8")
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。
