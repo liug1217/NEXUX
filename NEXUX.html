@@ -801,8 +801,8 @@
     white-space: nowrap;
   }
 
-  /* 角色框框右邊的鉛筆圖示:點了開啟編輯提示詞/查看提示語/恢復預設
-     (預設角色)或刪除(我的角色)選單,取代原本的右鍵選單觸發方式。 */
+  /* 角色框框右邊的鉛筆圖示:預設角色點了直接開啟提示語編輯視窗
+     (含恢復預設),我的角色點了開啟名稱/身份/任務/回答風格編輯視窗。 */
   .role-menu-item-edit {
     flex-shrink: 0;
     width: 20px;
@@ -855,58 +855,6 @@
   .role-menu-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
-  }
-
-  /* 角色操作選單:液態玻璃配方跟 .role-menu 一致,同樣搬到 <body>
-     底下用 position:fixed 定位(見script)。 */
-  .role-context-menu {
-    position: fixed;
-    z-index: 1100;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px;
-    min-width: 140px;
-    border-radius: 14px;
-    background: rgba(40, 40, 40, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow:
-      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
-      inset 0 0 2px rgba(0, 0, 0, 0.5),
-      0px 4px 8px rgba(0, 0, 0, 0.35);
-  }
-
-  .role-context-menu[hidden] {
-    display: none;
-  }
-
-  .role-context-menu-item {
-    height: 32px;
-    padding: 0 10px;
-    border: none;
-    border-radius: 9px;
-    background: transparent;
-    color: #FFFFFF;
-    font-family: 'Inter', var(--sans);
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .role-context-menu-item:hover {
-    background: rgba(255, 255, 255, 0.10);
-  }
-
-  .role-context-menu-item:disabled {
-    color: rgba(255, 255, 255, 0.3);
-    cursor: not-allowed;
-    background: transparent;
-  }
-
-  .role-context-menu-item.is-danger {
-    color: #ff8080;
   }
 
   /* 角色提示語視窗、建立/編輯我的角色視窗共用的 modal 樣式。 */
@@ -1554,8 +1502,9 @@
                  顯示角色選單(多選),不佔用輸入框本身版面。選單分兩區:
                  預設角色(系統內建,見 /api/roles)、我的角色(使用者自己
                  建立,存在瀏覽器localStorage)。角色框框右邊有個鉛筆圖示,
-                 點了開啟操作選單(編輯提示詞/查看提示語/預設角色可恢復
-                 預設/我的角色可刪除)。選了角色之後送出訊息會改用 /api/generate 的
+                 點了直接開啟編輯視窗(預設角色是提示語原文+恢復預設,
+                 我的角色是名稱/身份/任務/回答風格4欄位)。選了角色之後
+                 送出訊息會改用 /api/generate 的
                  團隊模式(同一個own模型分別以每個角色的身份各答一次+核心
                  AI整合一次),不是真正各自獨立思考的智慧體。這個「AI人員」
                  選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI
@@ -1619,28 +1568,25 @@
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/download.html">下載桌面版</a></p>
   </div>
 
-  <!-- 角色操作選單:點角色框框右邊的鉛筆圖示彈出,內容依角色種類
-       (預設/我的角色)動態產生,見 script 裡的 openRoleContextMenu()。
-       跟 #roleMenu 一樣搬到 <body> 底下用 position:fixed,避免被
-       .composer-pill 的 overflow:hidden 裁切。 -->
-  <div class="role-context-menu" id="roleContextMenu" hidden></div>
-
-  <!-- 角色提示語視窗:「編輯提示詞」跟「查看提示語」共用同一個視窗,
-       edit模式textarea可編輯+顯示儲存按鈕,view模式textarea唯讀+只有
-       關閉按鈕,見 script 裡的 openRolePromptModal()。 -->
+  <!-- 預設角色的提示語編輯視窗:查看+編輯合併成同一個視窗(不用分兩
+       步),點角色框框右邊的鉛筆圖示直接開啟。「恢復預設」放在視窗裡,
+       點了只是把預設值填回輸入框,還要按「儲存」才會真的存檔,不會
+       不小心就把編輯內容蓋掉。見 script 裡的 openRolePromptModal()。 -->
   <div class="modal-overlay" id="rolePromptModalOverlay" hidden>
     <div class="modal-box">
       <p class="modal-title" id="rolePromptModalTitle">編輯提示詞</p>
       <textarea class="modal-textarea" id="rolePromptModalTextarea" rows="8"></textarea>
       <div class="modal-actions">
-        <button type="button" class="modal-btn-secondary" id="rolePromptModalCancel">關閉</button>
+        <button type="button" class="modal-btn-secondary" id="rolePromptModalRestore">恢復預設</button>
+        <button type="button" class="modal-btn-secondary" id="rolePromptModalCancel">取消</button>
         <button type="button" class="modal-btn-primary" id="rolePromptModalSave">儲存</button>
       </div>
     </div>
   </div>
 
   <!-- 我的角色建立/編輯視窗:名稱+身份+任務+回答風格4個欄位,建立跟
-       編輯共用同一個視窗,見 script 裡的 openRoleFormModal()。 -->
+       編輯(點角色框框右邊的鉛筆圖示)共用同一個視窗,見 script 裡的
+       openRoleFormModal()。 -->
   <div class="modal-overlay" id="roleFormModalOverlay" hidden>
     <div class="modal-box">
       <p class="modal-title" id="roleFormModalTitle">建立我的角色</p>
@@ -2194,16 +2140,17 @@
       return span;
     }
 
-    // .composer-pill 有 overflow:hidden(見CSS說明),浮動選單/選單/視窗
-    // 如果留在裡面用 position:fixed 也還是會被裁切掉一截,乾脆把這些
-    // 元素整個搬到 <body> 底下,徹底脫離 .composer-pill 的裁切範圍。
-    const roleContextMenu = document.getElementById("roleContextMenu");
+    // .composer-pill 有 overflow:hidden(見CSS說明),浮動選單/視窗如果
+    // 留在裡面用 position:fixed 也還是會被裁切掉一截,乾脆把這些元素
+    // 整個搬到 <body> 底下,徹底脫離 .composer-pill 的裁切範圍。
     const rolePromptModalOverlay = document.getElementById("rolePromptModalOverlay");
     const rolePromptModalTitle = document.getElementById("rolePromptModalTitle");
     const rolePromptModalTextarea = document.getElementById("rolePromptModalTextarea");
+    const rolePromptModalRestore = document.getElementById("rolePromptModalRestore");
     const rolePromptModalCancel = document.getElementById("rolePromptModalCancel");
     const rolePromptModalSave = document.getElementById("rolePromptModalSave");
     const roleFormModalOverlay = document.getElementById("roleFormModalOverlay");
+    const roleFormModalTitle = document.getElementById("roleFormModalTitle");
     const roleFormName = document.getElementById("roleFormName");
     const roleFormIdentity = document.getElementById("roleFormIdentity");
     const roleFormTask = document.getElementById("roleFormTask");
@@ -2211,7 +2158,6 @@
     const roleFormCancel = document.getElementById("roleFormCancel");
     const roleFormSave = document.getElementById("roleFormSave");
     document.body.appendChild(roleMenu);
-    document.body.appendChild(roleContextMenu);
     document.body.appendChild(rolePromptModalOverlay);
     document.body.appendChild(roleFormModalOverlay);
 
@@ -2247,25 +2193,20 @@
       }
     });
 
-    // 點選單/操作選單以外的地方自動收合,跟一般下拉選單的慣例行為
-    // 一致。這幾個浮動元素都已經搬到 <body> 底下,不再是
-    // .role-menu-wrap 的子元素,這裡要多判斷 #roleMenu/#roleContextMenu
-    // 本身,不然點裡面的按鈕會被誤判成「點了選單外面」而瞬間關掉。
+    // 點選單以外的地方自動收合,跟一般下拉選單的慣例行為一致。#roleMenu
+    // 已經搬到 <body> 底下,不再是 .role-menu-wrap 的子元素,這裡要多
+    // 判斷 #roleMenu 本身,不然點裡面的按鈕會被誤判成「點了選單外面」
+    // 而瞬間關掉。
     document.addEventListener("click", (e) => {
       const insideRoleMenu = e.target.closest(".role-menu-wrap") || e.target.closest("#roleMenu");
-      const insideContextMenu = e.target.closest("#roleContextMenu");
-      if (!roleMenu.hidden && !insideRoleMenu && !insideContextMenu) {
+      if (!roleMenu.hidden && !insideRoleMenu) {
         closeRoleMenu();
-      }
-      if (!roleContextMenu.hidden && !insideContextMenu) {
-        closeRoleContextMenu();
       }
     });
 
     // ---- 選取/toggle ----
 
     function toggleRoleSelection(id, itemEl) {
-      closeRoleContextMenu();
       if (selectedRoles.has(id)) {
         selectedRoles.delete(id);
         itemEl.classList.remove("is-selected");
@@ -2299,15 +2240,16 @@
         toggleRoleSelection(role.id, item);
       });
 
-      // 角色框框右邊的鉛筆圖示:點了開啟編輯提示詞/查看提示語/恢復預設
-      // (預設角色)或刪除(我的角色)選單,取代原本的右鍵選單觸發方式。
-      // 用 <span role="button"> 而不是 <button>:item 本身已經是
-      // <button>,HTML 規格不允許互動元素互相巢狀。
+      // 角色框框右邊的鉛筆圖示:點了直接開啟「編輯提示詞」視窗(查看跟
+      // 編輯合併成同一個視窗,不用分兩步),預設角色在視窗裡多一顆
+      // 「恢復預設」按鈕。刪除(僅我的角色)維持用旁邊的「×」快速鈕,
+      // 不需要另外做選單。用 <span role="button"> 而不是 <button>:
+      // item 本身已經是 <button>,HTML 規格不允許互動元素互相巢狀。
       const editBtn = document.createElement("span");
       editBtn.className = "role-menu-item-edit";
       editBtn.setAttribute("role", "button");
       editBtn.setAttribute("tabindex", "0");
-      editBtn.setAttribute("aria-label", `${role.label} 的選項`);
+      editBtn.setAttribute("aria-label", `編輯${role.label}的提示詞`);
       editBtn.appendChild(buildRoleIconSpan("edit"));
       editBtn.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -2317,14 +2259,20 @@
       });
       editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const rect = editBtn.getBoundingClientRect();
-        openRoleContextMenu(role, rect.left, rect.bottom + 4);
+        // 預設角色沒有名稱/身份/任務/回答風格的4欄位結構,只能直接編輯
+        // 提示語原文;我的角色是從4個欄位組出來的,編輯要用同一個
+        // 4欄位視窗,不是編輯組合後的原文。
+        if (role.kind === "preset") {
+          openRolePromptModal(role);
+        } else {
+          openRoleFormModal(role);
+        }
       });
       item.appendChild(editBtn);
 
       if (role.kind === "custom") {
-        // 這個快速刪除鈕跟鉛筆選單裡的「刪除」是同一個動作,兩種操作
-        // 方式並存,方便使用者。
+        // 這個快速刪除鈕是「刪除」這個角色,跟鉛筆圖示開的「編輯」是
+        // 不同動作,兩者並存。
         const removeBtn = document.createElement("span");
         removeBtn.className = "role-menu-item-remove";
         removeBtn.setAttribute("role", "button");
@@ -2380,89 +2328,16 @@
       renderRoleMenu();
     }
 
-    function restorePresetRole(id) {
-      const role = presetRoles.find((r) => r.id === id);
-      if (!role) return;
-      role.promptTemplate = role.defaultPromptTemplate;
-      const overrides = loadPresetOverridesFromStorage();
-      delete overrides[id];
-      savePresetOverridesToStorage(overrides);
-      renderRoleMenu();
-    }
-
-    // ---- 角色操作選單(點鉛筆圖示開啟) ----
-
-    function closeRoleContextMenu() {
-      roleContextMenu.hidden = true;
-    }
-
-    function openRoleContextMenu(role, x, y) {
-      roleContextMenu.innerHTML = "";
-
-      const editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "role-context-menu-item";
-      editBtn.textContent = "編輯提示詞";
-      editBtn.addEventListener("click", () => {
-        closeRoleContextMenu();
-        openRolePromptModal(role, "edit");
-      });
-      roleContextMenu.appendChild(editBtn);
-
-      const viewBtn = document.createElement("button");
-      viewBtn.type = "button";
-      viewBtn.className = "role-context-menu-item";
-      viewBtn.textContent = "查看提示語";
-      viewBtn.addEventListener("click", () => {
-        closeRoleContextMenu();
-        openRolePromptModal(role, "view");
-      });
-      roleContextMenu.appendChild(viewBtn);
-
-      if (role.kind === "preset") {
-        const restoreBtn = document.createElement("button");
-        restoreBtn.type = "button";
-        restoreBtn.className = "role-context-menu-item";
-        restoreBtn.textContent = "恢復預設";
-        restoreBtn.disabled = role.promptTemplate === role.defaultPromptTemplate;
-        restoreBtn.addEventListener("click", () => {
-          closeRoleContextMenu();
-          restorePresetRole(role.id);
-        });
-        roleContextMenu.appendChild(restoreBtn);
-      } else {
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.className = "role-context-menu-item is-danger";
-        deleteBtn.textContent = "刪除";
-        deleteBtn.addEventListener("click", () => {
-          closeRoleContextMenu();
-          if (confirm(`確定要刪除「${role.label}」這個角色嗎?`)) {
-            deleteCustomRole(role.id);
-          }
-        });
-        roleContextMenu.appendChild(deleteBtn);
-      }
-
-      roleContextMenu.hidden = false;
-      // 用滑鼠點擊位置定位,並確保選單不會超出視窗邊界。
-      const menuRect = roleContextMenu.getBoundingClientRect();
-      const left = Math.min(x, window.innerWidth - menuRect.width - 8);
-      const top = Math.min(y, window.innerHeight - menuRect.height - 8);
-      roleContextMenu.style.left = `${Math.max(8, left)}px`;
-      roleContextMenu.style.top = `${Math.max(8, top)}px`;
-    }
-
-    // ---- 提示語視窗(編輯提示詞/查看提示語共用) ----
+    // ---- 提示語視窗(僅預設角色用:查看+編輯合併成同一個視窗,
+    // 「恢復預設」直接放在視窗裡,不用再另外點一層選單)。我的角色的
+    // 編輯改用下面的4欄位視窗,不會用到這個。 ----
 
     let rolePromptModalRoleId = null;
 
-    function openRolePromptModal(role, mode) {
+    function openRolePromptModal(role) {
       rolePromptModalRoleId = role.id;
-      rolePromptModalTitle.textContent = (mode === "edit" ? "編輯提示詞 - " : "查看提示語 - ") + role.label;
+      rolePromptModalTitle.textContent = "編輯提示詞 - " + role.label;
       rolePromptModalTextarea.value = role.promptTemplate;
-      rolePromptModalTextarea.disabled = mode !== "edit";
-      rolePromptModalSave.hidden = mode !== "edit";
       rolePromptModalOverlay.hidden = false;
     }
 
@@ -2476,6 +2351,14 @@
       if (e.target === rolePromptModalOverlay) closeRolePromptModal();
     });
 
+    // 只是把預設值填回textarea裡讓使用者看/繼續改,還沒真的存檔,
+    // 要點「儲存」才會真的生效——避免不小心點到「恢復預設」就直接
+    // 沒得反悔地蓋掉原本的編輯內容。
+    rolePromptModalRestore.addEventListener("click", () => {
+      const role = presetRoles.find((r) => r.id === rolePromptModalRoleId);
+      if (role) rolePromptModalTextarea.value = role.defaultPromptTemplate;
+    });
+
     rolePromptModalSave.addEventListener("click", () => {
       const id = rolePromptModalRoleId;
       const newTemplate = rolePromptModalTextarea.value.trim();
@@ -2483,36 +2366,44 @@
         alert("提示詞不能是空的。");
         return;
       }
-      const role = findRoleById(id);
+      const role = presetRoles.find((r) => r.id === id);
       if (!role) {
         closeRolePromptModal();
         return;
       }
       role.promptTemplate = newTemplate;
-      if (role.kind === "preset") {
-        const overrides = loadPresetOverridesFromStorage();
-        overrides[id] = newTemplate;
-        savePresetOverridesToStorage(overrides);
+      const overrides = loadPresetOverridesFromStorage();
+      if (newTemplate === role.defaultPromptTemplate) {
+        delete overrides[id]; // 改回跟預設一樣,不用再當作「有覆寫」存著
       } else {
-        saveCustomRolesToStorage();
+        overrides[id] = newTemplate;
       }
+      savePresetOverridesToStorage(overrides);
       closeRolePromptModal();
       renderRoleMenu();
     });
 
-    // ---- 我的角色建立視窗(名稱+身份+任務+回答風格) ----
+    // ---- 我的角色建立/編輯視窗(名稱+身份+任務+回答風格) ----
+    // 建立跟編輯共用同一個視窗;roleFormEditingId 是null代表現在是
+    // 「建立」,是字串代表正在「編輯」那個id的角色,儲存時依此決定是
+    // push新角色還是更新現有角色。
 
-    function openRoleFormModal() {
-      roleFormName.value = "";
-      roleFormIdentity.value = "";
-      roleFormTask.value = "";
-      roleFormStyle.value = "";
+    let roleFormEditingId = null;
+
+    function openRoleFormModal(existingRole) {
+      roleFormEditingId = existingRole ? existingRole.id : null;
+      roleFormModalTitle.textContent = existingRole ? "編輯我的角色" : "建立我的角色";
+      roleFormName.value = existingRole ? existingRole.label : "";
+      roleFormIdentity.value = existingRole ? existingRole.identity || "" : "";
+      roleFormTask.value = existingRole ? existingRole.task || "" : "";
+      roleFormStyle.value = existingRole ? existingRole.style || "" : "";
       roleFormModalOverlay.hidden = false;
       roleFormName.focus();
     }
 
     function closeRoleFormModal() {
       roleFormModalOverlay.hidden = true;
+      roleFormEditingId = null;
     }
 
     roleFormCancel.addEventListener("click", closeRoleFormModal);
@@ -2526,23 +2417,33 @@
         alert("請輸入角色名稱。");
         return;
       }
-      if (customRoles.length >= MAX_CUSTOM_ROLES) {
-        alert(`最多只能建立 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
-        return;
-      }
       const identity = roleFormIdentity.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const task = roleFormTask.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const style = roleFormStyle.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const promptTemplate = composeCustomRoleTemplate(name, identity, task, style);
 
-      customRoleSeq += 1;
-      const id = `custom_${Date.now()}_${customRoleSeq}`;
-      customRoles.push({ id, kind: "custom", icon: "custom", label: name, promptTemplate, identity, task, style });
-      saveCustomRolesToStorage();
-
-      if (selectedRoles.size < MAX_TEAM_ROLES) {
-        selectedRoles.add(id);
+      if (roleFormEditingId) {
+        const role = customRoles.find((r) => r.id === roleFormEditingId);
+        if (role) {
+          role.label = name;
+          role.identity = identity;
+          role.task = task;
+          role.style = style;
+          role.promptTemplate = promptTemplate;
+        }
+      } else {
+        if (customRoles.length >= MAX_CUSTOM_ROLES) {
+          alert(`最多只能建立 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
+          return;
+        }
+        customRoleSeq += 1;
+        const id = `custom_${Date.now()}_${customRoleSeq}`;
+        customRoles.push({ id, kind: "custom", icon: "custom", label: name, promptTemplate, identity, task, style });
+        if (selectedRoles.size < MAX_TEAM_ROLES) {
+          selectedRoles.add(id);
+        }
       }
+      saveCustomRolesToStorage();
       closeRoleFormModal();
       renderRoleMenu();
     });
