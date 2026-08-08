@@ -283,7 +283,10 @@ def api_generate():
 
         quota_manager.consume(client_id, total_tokens)
 
-        return jsonify({"type": "team", "responses": responses, "integration": integration_text})
+        return jsonify({
+            "type": "team", "responses": responses, "integration": integration_text,
+            "total_tokens": total_tokens,
+        })
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。

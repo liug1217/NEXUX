@@ -218,7 +218,10 @@ def api_generate():
 
         quota_manager.consume(client_id, total_tokens)
 
-        return jsonify({"type": "team", "responses": responses, "integration": integration_text})
+        return jsonify({
+            "type": "team", "responses": responses, "integration": integration_text,
+            "total_tokens": total_tokens,
+        })
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成。
     # skip_rules 開關(NEXUX.html「略過規則」勾選框)讓使用者可以強制跳過

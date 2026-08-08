@@ -436,15 +436,6 @@
     margin-bottom: 6px;
   }
 
-  .team-mode-disclaimer {
-    margin-left: -24px;
-    margin-top: 8px;
-    margin-bottom: 4px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #B6B6B6;
-  }
-
   /* 串流生成時,即時顯示目前已產生的 token 數量,生成完成後保留最終總數。
      跟 .msg.assistant 用同樣的負邊距對齊方式,但字體更小、顏色更淡,
      視覺上是次要資訊,不搶主要回覆文字的焦點。 */
@@ -2410,10 +2401,19 @@
       return el;
     }
 
+    // 統一的 token 計數器文字格式(一般單一回覆的串流模式、NexoraAI團隊
+    // 模式都共用):「{分}m {秒}s {token數} tokens」,例如「2m 56s 312 tokens」。
+    function formatElapsedTokens(elapsedMs, tokens) {
+      const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${m}m ${s}s ${tokens} tokens`;
+    }
+
     // NexoraAI 團隊模式(composer 選了角色時):後端一次回傳所有角色的
     // 回覆+核心AI整合(見 server.py/api/generate.py 的團隊模式分支),
     // 不是NDJSON串流,這裡一次性渲染成「每個角色一個泡泡 + 整合建議
-    // 卡片 + 誠實免責提醒」,不用打字機效果(已經是一次到齊的完整文字)。
+    // 卡片」,不用打字機效果(已經是一次到齊的完整文字)。
     // 角色圖示一律用固定SVG(見上面 ROLE_ICON_SVG),角色名稱(不管是預設
     // 4種還是使用者自訂)一律走 textContent,不會被當成HTML解析,避免
     // 使用者自訂角色名稱夾帶標籤造成XSS。
@@ -2427,7 +2427,7 @@
       return label;
     }
 
-    function renderTeamReply(data) {
+    function renderTeamReply(data, elapsedMs) {
       (data.responses || []).forEach((r) => {
         const el = document.createElement("div");
         el.className = "msg assistant team-role-msg";
@@ -2446,10 +2446,10 @@
       integrationEl.appendChild(integrationBody);
       messagesEl.appendChild(integrationEl);
 
-      const disclaimerEl = document.createElement("div");
-      disclaimerEl.className = "team-mode-disclaimer";
-      disclaimerEl.textContent = "多角色回覆使用同一個AI模型分別以不同角色身份生成,不是各自獨立思考的智慧體,內容僅供參考。";
-      messagesEl.appendChild(disclaimerEl);
+      const tokenCounterEl = document.createElement("div");
+      tokenCounterEl.className = "token-counter";
+      tokenCounterEl.textContent = formatElapsedTokens(elapsedMs, data.total_tokens || 0);
+      messagesEl.appendChild(tokenCounterEl);
 
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -2708,6 +2708,7 @@
             teamCustomRoles.push(customRoleLabels.get(id));
           }
         });
+        const teamStartTime = Date.now();
         try {
           const res = await fetch("/api/generate", {
             method: "POST",
@@ -2725,7 +2726,7 @@
           if (!res.ok || data.error) {
             addMessage(data.error || "團隊模式發生未知錯誤,請稍後再試。", "error");
           } else {
-            renderTeamReply(data);
+            renderTeamReply(data, Date.now() - teamStartTime);
             conversationHistory.push({ role: "assistant", text: data.integration || "" });
             refreshQuotaDisplay();
           }
@@ -2808,9 +2809,10 @@
           el.className = "msg assistant";
           messagesEl.appendChild(el);
 
+          const streamStartTime = Date.now();
           const tokenCounterEl = document.createElement("div");
           tokenCounterEl.className = "token-counter";
-          tokenCounterEl.textContent = "正在生成...";
+          tokenCounterEl.textContent = formatElapsedTokens(0, 0);
           messagesEl.appendChild(tokenCounterEl);
 
           messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -2836,12 +2838,12 @@
             }
             if (msg.done) {
               finalTokenCount = msg.total_tokens;
-              tokenCounterEl.textContent = `Output tokens: ${finalTokenCount}`;
+              tokenCounterEl.textContent = formatElapsedTokens(Date.now() - streamStartTime, finalTokenCount);
               refreshQuotaDisplay();
             } else if (typeof msg.delta === "string") {
               queue.push(...msg.delta);
               if (typeof msg.n === "number") {
-                tokenCounterEl.textContent = `正在生成... Output tokens: ${msg.n}`;
+                tokenCounterEl.textContent = formatElapsedTokens(Date.now() - streamStartTime, msg.n);
               }
             }
           }
