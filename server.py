@@ -46,6 +46,7 @@ from smalltalk import match_smalltalk
 from qa_lookup import match_qa
 from weather_lookup import match_weather
 from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
+import ai_roles
 import quota_manager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -83,6 +84,41 @@ def get_model_and_tokenizer():
         _cache["is_sft"] = is_sft
         print(f"[server] 模型已載入並快取(SFT問答模式: {is_sft})")
     return _cache["config"], _cache["model"], _cache["tokenizer"], _cache["is_sft"]
+
+
+def _generate_team_reply(text_prompt, config, model, tokenizer):
+    """
+    NexoraAI 團隊模式用:完整生成一次回覆(不像 /api/generate 一般模式那樣
+    邊生成邊串流給前端——團隊模式要等所有角色+整合都生成完才一次回傳,
+    所以這裡直接把 model.generate_stream() 產生的 token 在後端內部收集完,
+    回傳完整文字跟這次呼叫實際用掉的 token 數(給 quota_manager 累加)。
+    停止邏輯(遇到 find_next_turn_marker 就截斷)跟一般模式共用同一套,
+    避免模型生成到下一輪的「問:/答:」標記還繼續往下寫。
+    """
+    wrapped_prompt = build_context_prompt(None, text_prompt, tokenizer, config.block_size, config.max_new_tokens)
+    idx = torch.tensor([tokenizer.encode(wrapped_prompt)], dtype=torch.long, device=config.device)
+    if idx.shape[1] == 0:
+        return "", 0
+
+    accumulated = ""
+    step = 0
+    for token_ids in model.generate_stream(
+        idx,
+        max_new_tokens=config.max_new_tokens,
+        temperature=config.temperature,
+        top_k=config.top_k,
+        top_p=config.top_p,
+        repetition_penalty=config.repetition_penalty,
+        eos_id=getattr(tokenizer, "eos_id", None),
+    ):
+        step += 1
+        accumulated += tokenizer.decode(token_ids)
+        marker = find_next_turn_marker(accumulated)
+        if marker:
+            accumulated = accumulated[:marker.start()]
+            break
+
+    return accumulated.rstrip(), idx.shape[1] + step
 
 
 @app.route("/")
@@ -175,6 +211,63 @@ def api_generate():
         except Exception as e:  # noqa: BLE001
             return jsonify({"error": f"呼叫 {provider} 時發生錯誤: {e}"}), 500
         return jsonify({"reply": reply})
+
+    # NexoraAI 第一階段:composer 選了角色時走團隊模式,見 ai_roles.py 開頭的說明
+    # ——本質上是同一個 own 模型用不同角色提示語各問一次,不是真正各自獨立思考
+    # 的智慧體,角色之間也不會互相看到彼此的回覆再討論。跳過 smalltalk/qa_lookup/
+    # weather_lookup 這些為單一問答設計的短路機制(團隊模式的意義在於「不同角色
+    # 的觀點」,直接查表回同一句罐頭答案沒有意義),也不用 NDJSON 串流(要等所有
+    # 角色+整合都生成完才一次回傳)。
+    roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
+    if roles:
+        try:
+            config, model, tokenizer, is_sft = get_model_and_tokenizer()
+        except FileNotFoundError:
+            return jsonify({
+                "error": "還沒有本機微調好的模型。請先在終端機依序執行"
+                         "「python convert_pretrained.py」「python run_pretrained_sft.py」,"
+                         "再重新啟動 server.py。"
+            }), 400
+
+        client_id = quota_manager.get_client_identifier(request, payload)
+        if quota_manager.is_over_limit(client_id):
+            status = quota_manager.get_status(client_id)
+            minutes = (status["reset_in_seconds"] or 0) // 60
+            return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
+
+        # 團隊模式會呼叫模型 len(roles)+1 次(每個角色一次+核心AI整合一次),
+        # 用粗略估計值在生成前先擋下明顯不足的額度,避免生成到一半才因為
+        # 額度用完而中斷、浪費前面已經生成的角色回覆。
+        status = quota_manager.get_status(client_id)
+        estimated_tokens = (len(roles) + 1) * 150
+        if status["enabled"] and status["remaining"] < estimated_tokens:
+            minutes = (status["reset_in_seconds"] or 0) // 60
+            return jsonify({
+                "error": f"團隊模式需要呼叫模型 {len(roles) + 1} 次,預估至少需要 "
+                         f"{estimated_tokens} token,目前剩餘額度只有 {status['remaining']},"
+                         f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
+            }), 429
+
+        responses = []
+        role_replies_for_integration = []
+        total_tokens = 0
+        for role in roles:
+            role_prompt = ai_roles.build_role_prompt(role, prompt)
+            reply_text, tokens_used = _generate_team_reply(role_prompt, config, model, tokenizer)
+            total_tokens += tokens_used
+            role_info = ai_roles.ROLES[role]
+            responses.append({
+                "role": role, "label": role_info["label"], "icon": role_info["icon"], "reply": reply_text,
+            })
+            role_replies_for_integration.append((role_info["label"], reply_text))
+
+        integration_prompt = ai_roles.build_integration_prompt(prompt, role_replies_for_integration)
+        integration_text, integration_tokens = _generate_team_reply(integration_prompt, config, model, tokenizer)
+        total_tokens += integration_tokens
+
+        quota_manager.consume(client_id, total_tokens)
+
+        return jsonify({"type": "team", "responses": responses, "integration": integration_text})
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。

@@ -45,6 +45,7 @@ from smalltalk import match_smalltalk  # noqa: E402
 from question_log import log_question  # noqa: E402
 from qa_lookup import match_qa  # noqa: E402
 from weather_lookup import match_weather  # noqa: E402
+import ai_roles  # noqa: E402
 import quota_manager  # noqa: E402
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -86,6 +87,39 @@ def get_model_and_tokenizer():
     return _cache["model"], _cache["tokenizer"]
 
 
+def _generate_team_reply(text_prompt, model, tokenizer):
+    """
+    NexoraAI 團隊模式用:完整生成一次回覆,邏輯跟 server.py 的
+    _generate_team_reply() 一致(兩邊的推理引擎不同——這裡是
+    numpy_gpt.py,idx/token 是 list[int] 而不是 torch tensor——但停止
+    邏輯、回傳格式刻意保持一樣,方便本機/正式站行為對齊)。
+    """
+    wrapped_prompt = build_context_prompt(None, text_prompt, tokenizer, model.block_size, MAX_NEW_TOKENS)
+    idx = tokenizer.encode(wrapped_prompt)
+    if len(idx) == 0:
+        return "", 0
+
+    accumulated = ""
+    step = 0
+    for token_id in model.generate_stream(
+        idx,
+        max_new_tokens=MAX_NEW_TOKENS,
+        temperature=TEMPERATURE,
+        top_k=TOP_K,
+        top_p=TOP_P,
+        repetition_penalty=REPETITION_PENALTY,
+        eos_id=getattr(tokenizer, "eos_id", None),
+    ):
+        step += 1
+        accumulated += tokenizer.decode([token_id])
+        marker = find_next_turn_marker(accumulated)
+        if marker:
+            accumulated = accumulated[:marker.start()]
+            break
+
+    return accumulated.rstrip(), len(idx) + step
+
+
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
     payload = request.get_json(silent=True) or {}
@@ -120,6 +154,58 @@ def api_generate():
                 "traceback": traceback.format_exc(),
             }), 500
         return jsonify({"reply": reply})
+
+    # NexoraAI 第一階段:composer 選了角色時走團隊模式,見 ai_roles.py 開頭的說明
+    # ——本質上是同一個 own 模型用不同角色提示語各問一次,不是真正各自獨立思考
+    # 的智慧體,角色之間也不會互相看到彼此的回覆再討論。跳過 smalltalk/qa_lookup/
+    # weather_lookup 這些為單一問答設計的短路機制,也不用 NDJSON 串流(要等所有
+    # 角色+整合都生成完才一次回傳)。跟 server.py 的團隊模式分支邏輯保持一致。
+    roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
+    if roles:
+        try:
+            model, tokenizer = get_model_and_tokenizer()
+        except FileNotFoundError as e:
+            return jsonify({"error": str(e)}), 400
+
+        client_id = quota_manager.get_client_identifier(request, payload)
+        if quota_manager.is_over_limit(client_id):
+            status = quota_manager.get_status(client_id)
+            minutes = (status["reset_in_seconds"] or 0) // 60
+            return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
+
+        status = quota_manager.get_status(client_id)
+        estimated_tokens = (len(roles) + 1) * 150
+        if status["enabled"] and status["remaining"] < estimated_tokens:
+            minutes = (status["reset_in_seconds"] or 0) // 60
+            return jsonify({
+                "error": f"團隊模式需要呼叫模型 {len(roles) + 1} 次,預估至少需要 "
+                         f"{estimated_tokens} token,目前剩餘額度只有 {status['remaining']},"
+                         f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
+            }), 429
+
+        try:
+            responses = []
+            role_replies_for_integration = []
+            total_tokens = 0
+            for role in roles:
+                role_prompt = ai_roles.build_role_prompt(role, prompt)
+                reply_text, tokens_used = _generate_team_reply(role_prompt, model, tokenizer)
+                total_tokens += tokens_used
+                role_info = ai_roles.ROLES[role]
+                responses.append({
+                    "role": role, "label": role_info["label"], "icon": role_info["icon"], "reply": reply_text,
+                })
+                role_replies_for_integration.append((role_info["label"], reply_text))
+
+            integration_prompt = ai_roles.build_integration_prompt(prompt, role_replies_for_integration)
+            integration_text, integration_tokens = _generate_team_reply(integration_prompt, model, tokenizer)
+            total_tokens += integration_tokens
+        except Exception as e:  # noqa: BLE001
+            return jsonify({"error": f"團隊模式生成時發生錯誤: {e}"}), 500
+
+        quota_manager.consume(client_id, total_tokens)
+
+        return jsonify({"type": "team", "responses": responses, "integration": integration_text})
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成。
     # skip_rules 開關(NEXUX.html「略過規則」勾選框)讓使用者可以強制跳過
