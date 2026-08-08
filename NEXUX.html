@@ -792,23 +792,41 @@
     color: rgba(255, 255, 255, 0.75);
   }
 
-  /* 使用者新增的自訂角色項目:跟一般角色按鈕一樣可以點選/取消選取,
-     右邊多一個「移除」的×,把這個自訂角色從選單裡整個刪掉(不只是
-     取消選取)。跟右鍵選單裡的「刪除」是同一個動作,兩種操作方式
-     並存,方便使用者。 */
-  .role-menu-custom-item {
-    position: relative;
-    padding-right: 30px;
+  /* 角色名稱撐滿剩餘空間,把鉛筆/移除按鈕推到最右邊。 */
+  .role-menu-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .role-menu-item-remove {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
+  /* 角色框框右邊的鉛筆圖示:點了開啟編輯提示詞/查看提示語/恢復預設
+     (預設角色)或刪除(我的角色)選單,取代原本的右鍵選單觸發方式。 */
+  .role-menu-item-edit {
+    flex-shrink: 0;
     width: 20px;
     height: 20px;
-    border: none;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .role-menu-item-edit:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+  }
+
+  /* 使用者新增的自訂角色項目右邊多一個「移除」的×,把這個自訂角色從
+     選單裡整個刪掉(不只是取消選取)。跟鉛筆選單裡的「刪除」是同一個
+     動作,兩種操作方式並存,方便使用者。 */
+  .role-menu-item-remove {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: transparent;
     color: rgba(255, 255, 255, 0.6);
@@ -839,7 +857,7 @@
     cursor: not-allowed;
   }
 
-  /* 角色右鍵選單:液態玻璃配方跟 .role-menu 一致,同樣搬到 <body>
+  /* 角色操作選單:液態玻璃配方跟 .role-menu 一致,同樣搬到 <body>
      底下用 position:fixed 定位(見script)。 */
   .role-context-menu {
     position: fixed;
@@ -1535,9 +1553,9 @@
                  跟 add-btn/mic-btn 一樣是輸入框工具列裡的圖示按鈕,點開才
                  顯示角色選單(多選),不佔用輸入框本身版面。選單分兩區:
                  預設角色(系統內建,見 /api/roles)、我的角色(使用者自己
-                 建立,存在瀏覽器localStorage)。角色按鈕可以右鍵開啟操作
-                 選單(編輯提示詞/查看提示語/預設角色可恢復預設/我的角色
-                 可刪除)。選了角色之後送出訊息會改用 /api/generate 的
+                 建立,存在瀏覽器localStorage)。角色框框右邊有個鉛筆圖示,
+                 點了開啟操作選單(編輯提示詞/查看提示語/預設角色可恢復
+                 預設/我的角色可刪除)。選了角色之後送出訊息會改用 /api/generate 的
                  團隊模式(同一個own模型分別以每個角色的身份各答一次+核心
                  AI整合一次),不是真正各自獨立思考的智慧體。這個「AI人員」
                  選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI
@@ -1601,10 +1619,10 @@
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/download.html">下載桌面版</a></p>
   </div>
 
-  <!-- 角色右鍵選單:在游標位置彈出,內容依角色種類(預設/我的角色)動態
-       產生,見 script 裡的 openRoleContextMenu()。跟 #roleMenu 一樣搬到
-       <body> 底下用 position:fixed,避免被 .composer-pill 的
-       overflow:hidden 裁切。 -->
+  <!-- 角色操作選單:點角色框框右邊的鉛筆圖示彈出,內容依角色種類
+       (預設/我的角色)動態產生,見 script 裡的 openRoleContextMenu()。
+       跟 #roleMenu 一樣搬到 <body> 底下用 position:fixed,避免被
+       .composer-pill 的 overflow:hidden 裁切。 -->
   <div class="role-context-menu" id="roleContextMenu" hidden></div>
 
   <!-- 角色提示語視窗:「編輯提示詞」跟「查看提示語」共用同一個視窗,
@@ -2078,12 +2096,13 @@
     // 輸入框工具列裡一個小圖示按鈕,點了才彈出角色選單,不佔用輸入框
     // 版面。角色分兩區:
     // - 預設角色(presetRoles):系統內建,從 /api/roles 取得初始值,
-    //   使用者可以右鍵「編輯提示詞」直接改這個角色實際送給模型的文字,
-    //   編輯結果存在瀏覽器 localStorage(不會回寫伺服器,只影響這個
-    //   瀏覽器),也可以右鍵「恢復預設」丟掉編輯、變回伺服器的原始版本。
+    //   角色框框右邊的鉛筆圖示可以「編輯提示詞」直接改這個角色實際送給
+    //   模型的文字,編輯結果存在瀏覽器 localStorage(不會回寫伺服器,
+    //   只影響這個瀏覽器),也可以「恢復預設」丟掉編輯、變回伺服器的
+    //   原始版本。
     // - 我的角色(customRoles):使用者自己建立,名稱/身份/任務/回答風格
-    //   4個欄位組成一個 promptTemplate,一樣存在 localStorage,可以右鍵
-    //   編輯/查看/刪除。
+    //   4個欄位組成一個 promptTemplate,一樣存在 localStorage,可以用
+    //   同一個鉛筆圖示編輯/查看/刪除。
     // 不管哪一種,團隊模式送出的都是同一種格式(見下面 submit handler
     // 的 roleRequests),後端不需要再區分角色出處(見 ai_roles.py)。
     // 這個選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI自動
@@ -2106,6 +2125,7 @@
       custom: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.3" stroke="white" stroke-width="1.3"/><path d="M3 13.5c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>',
       integration: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6l2.5 2L8 4l3.5 4L14 6l-1 6H3L2 6z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       add: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>',
+      edit: '<svg width="11" height="11" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 1.5l3 3-7 7-3.5.5.5-3.5 7-7z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     };
 
     // presetRoles/customRoles:統一的角色資料結構,不管是哪一種都有
@@ -2227,7 +2247,7 @@
       }
     });
 
-    // 點選單/右鍵選單以外的地方自動收合,跟一般下拉選單的慣例行為
+    // 點選單/操作選單以外的地方自動收合,跟一般下拉選單的慣例行為
     // 一致。這幾個浮動元素都已經搬到 <body> 底下,不再是
     // .role-menu-wrap 的子元素,這裡要多判斷 #roleMenu/#roleContextMenu
     // 本身,不然點裡面的按鈕會被誤判成「點了選單外面」而瞬間關掉。
@@ -2266,11 +2286,11 @@
       const item = document.createElement("button");
       item.type = "button";
       item.className = "role-menu-item";
-      if (role.kind === "custom") item.classList.add("role-menu-custom-item");
       if (selectedRoles.has(role.id)) item.classList.add("is-selected");
       item.dataset.role = role.id;
       item.appendChild(buildRoleIconSpan(role.icon));
       const textSpan = document.createElement("span");
+      textSpan.className = "role-menu-item-label";
       textSpan.textContent = role.label; // 使用者輸入的文字,一律走textContent,不經過innerHTML
       item.appendChild(textSpan);
 
@@ -2278,17 +2298,32 @@
         e.stopPropagation();
         toggleRoleSelection(role.id, item);
       });
-      item.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openRoleContextMenu(role, e.clientX, e.clientY);
+
+      // 角色框框右邊的鉛筆圖示:點了開啟編輯提示詞/查看提示語/恢復預設
+      // (預設角色)或刪除(我的角色)選單,取代原本的右鍵選單觸發方式。
+      // 用 <span role="button"> 而不是 <button>:item 本身已經是
+      // <button>,HTML 規格不允許互動元素互相巢狀。
+      const editBtn = document.createElement("span");
+      editBtn.className = "role-menu-item-edit";
+      editBtn.setAttribute("role", "button");
+      editBtn.setAttribute("tabindex", "0");
+      editBtn.setAttribute("aria-label", `${role.label} 的選項`);
+      editBtn.appendChild(buildRoleIconSpan("edit"));
+      editBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          editBtn.click();
+        }
       });
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const rect = editBtn.getBoundingClientRect();
+        openRoleContextMenu(role, rect.left, rect.bottom + 4);
+      });
+      item.appendChild(editBtn);
 
       if (role.kind === "custom") {
-        // 用 <span> 而不是 <button>:item 本身已經是 <button>,HTML 規格
-        // 不允許互動元素(button)互相巢狀,巢狀button在部分瀏覽器下
-        // focus/click行為不可預期,改用有 role="button" 的 span 代替。
-        // 這個快速刪除鈕跟右鍵選單裡的「刪除」是同一個動作,兩種操作
+        // 這個快速刪除鈕跟鉛筆選單裡的「刪除」是同一個動作,兩種操作
         // 方式並存,方便使用者。
         const removeBtn = document.createElement("span");
         removeBtn.className = "role-menu-item-remove";
@@ -2355,7 +2390,7 @@
       renderRoleMenu();
     }
 
-    // ---- 右鍵選單 ----
+    // ---- 角色操作選單(點鉛筆圖示開啟) ----
 
     function closeRoleContextMenu() {
       roleContextMenu.hidden = true;
@@ -3146,7 +3181,7 @@
 
       // NexoraAI 團隊模式:composer 選了角色,改送 roleRequests(每個
       // 角色完整的 id/label/icon/promptTemplate,不管預設還是自訂角色
-      // 都是同一種格式,包含使用者右鍵編輯過的內容)給後端,後端會用
+      // 都是同一種格式,包含使用者編輯過的內容)給後端,後端會用
       // NDJSON 串流依序回傳每個角色的文字(見 server.py/api/generate.py
       // 的 team_stream())。只支援own模型(切到其他provider時角色按鈕
       // 已經被停用並清空選取,syncRoleSelectorWithProvider()),這裡
