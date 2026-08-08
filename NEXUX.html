@@ -1502,8 +1502,10 @@
                  顯示角色選單(多選),不佔用輸入框本身版面。選單分兩區:
                  預設角色(系統內建,見 /api/roles)、我的角色(使用者自己
                  建立,存在瀏覽器localStorage)。角色框框右邊有個鉛筆圖示,
-                 點了直接開啟編輯視窗(預設角色是提示語原文+恢復預設,
-                 我的角色是名稱/身份/任務/回答風格4欄位)。選了角色之後
+                 點了直接開啟提示語編輯視窗,預設角色跟我的角色是同一套
+                 編輯格式(都是直接編輯提示語原文),只有預設角色多一顆
+                 「恢復預設」按鈕;4欄位表單(名稱/身份/任務/回答風格)
+                 只在「建立」我的角色時用來組出初始提示語。選了角色之後
                  送出訊息會改用 /api/generate 的
                  團隊模式(同一個own模型分別以每個角色的身份各答一次+核心
                  AI整合一次),不是真正各自獨立思考的智慧體。這個「AI人員」
@@ -1584,9 +1586,10 @@
     </div>
   </div>
 
-  <!-- 我的角色建立/編輯視窗:名稱+身份+任務+回答風格4個欄位,建立跟
-       編輯(點角色框框右邊的鉛筆圖示)共用同一個視窗,見 script 裡的
-       openRoleFormModal()。 -->
+  <!-- 我的角色建立視窗:名稱+身份+任務+回答風格4個欄位,只用來組出
+       建立時的初始提示語。建立後一律用上面 #rolePromptModalOverlay
+       編輯,跟預設角色是同一套編輯格式,不會因為角色來源不同而有兩套
+       不一樣的編輯方式。見 script 裡的 openRoleFormModal()。 -->
   <div class="modal-overlay" id="roleFormModalOverlay" hidden>
     <div class="modal-box">
       <p class="modal-title" id="roleFormModalTitle">建立我的角色</p>
@@ -2046,9 +2049,12 @@
     //   模型的文字,編輯結果存在瀏覽器 localStorage(不會回寫伺服器,
     //   只影響這個瀏覽器),也可以「恢復預設」丟掉編輯、變回伺服器的
     //   原始版本。
-    // - 我的角色(customRoles):使用者自己建立,名稱/身份/任務/回答風格
-    //   4個欄位組成一個 promptTemplate,一樣存在 localStorage,可以用
-    //   同一個鉛筆圖示編輯/查看/刪除。
+    // - 我的角色(customRoles):使用者自己建立,「建立」時用名稱/身份/
+    //   任務/回答風格4個欄位組出初始的 promptTemplate,一樣存在
+    //   localStorage;建立後點鉛筆圖示編輯,用的是跟預設角色同一個
+    //   「編輯提示詞」視窗(直接改提示語原文,不是重新填4個欄位),
+    //   不會因為角色來源不同而有兩套不一樣的編輯格式。刪除用旁邊的
+    //   「×」快速鈕。
     // 不管哪一種,團隊模式送出的都是同一種格式(見下面 submit handler
     // 的 roleRequests),後端不需要再區分角色出處(見 ai_roles.py)。
     // 這個選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI自動
@@ -2150,7 +2156,6 @@
     const rolePromptModalCancel = document.getElementById("rolePromptModalCancel");
     const rolePromptModalSave = document.getElementById("rolePromptModalSave");
     const roleFormModalOverlay = document.getElementById("roleFormModalOverlay");
-    const roleFormModalTitle = document.getElementById("roleFormModalTitle");
     const roleFormName = document.getElementById("roleFormName");
     const roleFormIdentity = document.getElementById("roleFormIdentity");
     const roleFormTask = document.getElementById("roleFormTask");
@@ -2257,16 +2262,14 @@
           editBtn.click();
         }
       });
+      // 預設角色跟我的角色的編輯用同一個提示語視窗(格式一致,不會
+      // 因為角色來源不同而有兩套不一樣的編輯方式),差別只在預設角色
+      // 才有「恢復預設」按鈕(見 openRolePromptModal)。名稱/身份/任務/
+      // 回答風格4個欄位只在「建立」我的角色時用來組出提示語,建立後
+      // 一律用這個視窗直接編輯組好的提示語原文。
       editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        // 預設角色沒有名稱/身份/任務/回答風格的4欄位結構,只能直接編輯
-        // 提示語原文;我的角色是從4個欄位組出來的,編輯要用同一個
-        // 4欄位視窗,不是編輯組合後的原文。
-        if (role.kind === "preset") {
-          openRolePromptModal(role);
-        } else {
-          openRoleFormModal(role);
-        }
+        openRolePromptModal(role);
       });
       item.appendChild(editBtn);
 
@@ -2328,9 +2331,10 @@
       renderRoleMenu();
     }
 
-    // ---- 提示語視窗(僅預設角色用:查看+編輯合併成同一個視窗,
-    // 「恢復預設」直接放在視窗裡,不用再另外點一層選單)。我的角色的
-    // 編輯改用下面的4欄位視窗,不會用到這個。 ----
+    // ---- 提示語視窗(預設角色/我的角色共用同一個編輯格式,不會因為
+    // 角色來源不同而有兩套不一樣的編輯方式)。查看+編輯合併成同一個
+    // 視窗,「恢復預設」直接放在視窗裡(只有預設角色會顯示這顆按鈕,
+    // 我的角色沒有「預設值」可以恢復)。 ----
 
     let rolePromptModalRoleId = null;
 
@@ -2338,6 +2342,7 @@
       rolePromptModalRoleId = role.id;
       rolePromptModalTitle.textContent = "編輯提示詞 - " + role.label;
       rolePromptModalTextarea.value = role.promptTemplate;
+      rolePromptModalRestore.hidden = role.kind !== "preset";
       rolePromptModalOverlay.hidden = false;
     }
 
@@ -2366,44 +2371,42 @@
         alert("提示詞不能是空的。");
         return;
       }
-      const role = presetRoles.find((r) => r.id === id);
+      const role = findRoleById(id);
       if (!role) {
         closeRolePromptModal();
         return;
       }
       role.promptTemplate = newTemplate;
-      const overrides = loadPresetOverridesFromStorage();
-      if (newTemplate === role.defaultPromptTemplate) {
-        delete overrides[id]; // 改回跟預設一樣,不用再當作「有覆寫」存著
+      if (role.kind === "preset") {
+        const overrides = loadPresetOverridesFromStorage();
+        if (newTemplate === role.defaultPromptTemplate) {
+          delete overrides[id]; // 改回跟預設一樣,不用再當作「有覆寫」存著
+        } else {
+          overrides[id] = newTemplate;
+        }
+        savePresetOverridesToStorage(overrides);
       } else {
-        overrides[id] = newTemplate;
+        saveCustomRolesToStorage();
       }
-      savePresetOverridesToStorage(overrides);
       closeRolePromptModal();
       renderRoleMenu();
     });
 
-    // ---- 我的角色建立/編輯視窗(名稱+身份+任務+回答風格) ----
-    // 建立跟編輯共用同一個視窗;roleFormEditingId 是null代表現在是
-    // 「建立」,是字串代表正在「編輯」那個id的角色,儲存時依此決定是
-    // push新角色還是更新現有角色。
+    // ---- 我的角色建立視窗(名稱+身份+任務+回答風格,只用來組出建立
+    // 時的初始提示語;建立後一律用上面同一個提示語視窗編輯,不會再
+    // 回頭用這4個欄位的表單,格式才能跟預設角色的編輯方式一致)。 ----
 
-    let roleFormEditingId = null;
-
-    function openRoleFormModal(existingRole) {
-      roleFormEditingId = existingRole ? existingRole.id : null;
-      roleFormModalTitle.textContent = existingRole ? "編輯我的角色" : "建立我的角色";
-      roleFormName.value = existingRole ? existingRole.label : "";
-      roleFormIdentity.value = existingRole ? existingRole.identity || "" : "";
-      roleFormTask.value = existingRole ? existingRole.task || "" : "";
-      roleFormStyle.value = existingRole ? existingRole.style || "" : "";
+    function openRoleFormModal() {
+      roleFormName.value = "";
+      roleFormIdentity.value = "";
+      roleFormTask.value = "";
+      roleFormStyle.value = "";
       roleFormModalOverlay.hidden = false;
       roleFormName.focus();
     }
 
     function closeRoleFormModal() {
       roleFormModalOverlay.hidden = true;
-      roleFormEditingId = null;
     }
 
     roleFormCancel.addEventListener("click", closeRoleFormModal);
@@ -2417,31 +2420,20 @@
         alert("請輸入角色名稱。");
         return;
       }
+      if (customRoles.length >= MAX_CUSTOM_ROLES) {
+        alert(`最多只能建立 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
+        return;
+      }
       const identity = roleFormIdentity.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const task = roleFormTask.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const style = roleFormStyle.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
       const promptTemplate = composeCustomRoleTemplate(name, identity, task, style);
 
-      if (roleFormEditingId) {
-        const role = customRoles.find((r) => r.id === roleFormEditingId);
-        if (role) {
-          role.label = name;
-          role.identity = identity;
-          role.task = task;
-          role.style = style;
-          role.promptTemplate = promptTemplate;
-        }
-      } else {
-        if (customRoles.length >= MAX_CUSTOM_ROLES) {
-          alert(`最多只能建立 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
-          return;
-        }
-        customRoleSeq += 1;
-        const id = `custom_${Date.now()}_${customRoleSeq}`;
-        customRoles.push({ id, kind: "custom", icon: "custom", label: name, promptTemplate, identity, task, style });
-        if (selectedRoles.size < MAX_TEAM_ROLES) {
-          selectedRoles.add(id);
-        }
+      customRoleSeq += 1;
+      const id = `custom_${Date.now()}_${customRoleSeq}`;
+      customRoles.push({ id, kind: "custom", icon: "custom", label: name, promptTemplate, identity, task, style });
+      if (selectedRoles.size < MAX_TEAM_ROLES) {
+        selectedRoles.add(id);
       }
       saveCustomRolesToStorage();
       closeRoleFormModal();
