@@ -10,7 +10,8 @@
   },
   "rewrites": [
     { "source": "/", "destination": "/NEXUX.html" },
-    { "source": "/api/quota", "destination": "/api/generate" }
+    { "source": "/api/quota", "destination": "/api/generate" },
+    { "source": "/api/roles", "destination": "/api/generate" }
   ],
   "env": {
     "PYTHONUTF8": "1",
