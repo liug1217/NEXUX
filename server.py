@@ -208,7 +208,6 @@ def api_generate():
     provider = payload.get("provider") or "own"
     history = payload.get("history") or []
     debug = bool(payload.get("debug"))
-    skip_rules = bool(payload.get("skipRules"))
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
@@ -235,13 +234,14 @@ def api_generate():
     # NDJSON 串流:每個角色的文字一生成出來就送給前端,不用等所有角色+整合都
     # 生成完才一次看到內容(之前的版本是等全部跑完才一次回傳,使用者要空等
     # 好幾次生成的時間才第一次看到任何文字)。
-    roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
-    # 自訂角色(composer 角色選單裡的「+ 自訂角色」):使用者自己輸入角色
-    # 名稱,沒有預先寫好的專屬提示語,見 ai_roles.build_custom_role_prompt()。
-    # sanitize_custom_role_labels() 是真正生效的數量/長度上限,不能只信
-    # 前端已經做過的限制。
-    custom_role_labels = ai_roles.sanitize_custom_role_labels(payload.get("customRoles"))
-    if roles or custom_role_labels:
+    # roleRequests:composer「AI人員」選單裡目前選取的角色,每個都是
+    # {id, label, icon, promptTemplate} ——不管是預設角色(可能已經被
+    # 使用者右鍵編輯過)還是使用者自訂角色,前端一律送出組好的完整
+    # promptTemplate,後端不需要再知道這個角色原本的出處(見 ai_roles.py
+    # 開頭的說明)。sanitize_role_requests() 是真正生效的數量/長度驗證,
+    # 不能只信前端已經做過的限制。
+    role_requests = ai_roles.sanitize_role_requests(payload.get("roleRequests"))
+    if role_requests:
         try:
             config, model, tokenizer, is_sft = get_model_and_tokenizer()
         except FileNotFoundError:
@@ -257,31 +257,25 @@ def api_generate():
             minutes = (status["reset_in_seconds"] or 0) // 60
             return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
 
-        # 團隊模式會呼叫模型 (len(roles)+len(custom_role_labels))+1 次
-        # (每個角色一次+核心AI整合一次),用粗略估計值在生成前先擋下明顯
-        # 不足的額度,避免生成到一半才因為額度用完而中斷、浪費前面已經
-        # 生成的角色回覆。這個檢查必須在開始串流之前做完——一旦
-        # Response(stream(), ...) 開始送出第一個位元組,狀態碼就已經定案
-        # 是200,沒辦法半路改成429錯誤了。
-        total_role_count = len(roles) + len(custom_role_labels)
+        # 團隊模式會呼叫模型 len(role_requests)+1 次(每個角色一次+核心AI
+        # 整合一次),用粗略估計值在生成前先擋下明顯不足的額度,避免生成
+        # 到一半才因為額度用完而中斷、浪費前面已經生成的角色回覆。這個
+        # 檢查必須在開始串流之前做完——一旦 Response(stream(), ...) 開始
+        # 送出第一個位元組,狀態碼就已經定案是200,沒辦法半路改成429錯誤。
         status = quota_manager.get_status(client_id)
-        estimated_tokens = (total_role_count + 1) * 150
+        estimated_tokens = (len(role_requests) + 1) * 150
         if status["enabled"] and status["remaining"] < estimated_tokens:
             minutes = (status["reset_in_seconds"] or 0) // 60
             return jsonify({
-                "error": f"團隊模式需要呼叫模型 {total_role_count + 1} 次,預估至少需要 "
+                "error": f"團隊模式需要呼叫模型 {len(role_requests) + 1} 次,預估至少需要 "
                          f"{estimated_tokens} token,目前剩餘額度只有 {status['remaining']},"
                          f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
             }), 429
 
-        # 把預設角色跟自訂角色統一組成 (role_id, label, icon, 提示語文字)
-        # 的清單,兩種角色用同一套迴圈依序處理,不用寫兩次幾乎一樣的邏輯。
-        role_entries = []
-        for role in roles:
-            role_info = ai_roles.ROLES[role]
-            role_entries.append((role, role_info["label"], role_info["icon"], ai_roles.build_role_prompt(role, prompt)))
-        for label in custom_role_labels:
-            role_entries.append((f"custom:{label}", label, "custom", ai_roles.build_custom_role_prompt(label, prompt)))
+        role_entries = [
+            (r["id"], r["label"], r["icon"], ai_roles.build_prompt_from_template(r["promptTemplate"], prompt))
+            for r in role_requests
+        ]
 
         def team_stream():
             """
@@ -338,27 +332,24 @@ def api_generate():
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
     # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。
-    # skip_rules 開關(NEXUX.html「略過規則」勾選框)讓使用者可以強制跳過
-    # 這兩層保底機制,直接看模型自己會怎麼生成。
-    if not skip_rules:
-        smalltalk_match = match_smalltalk(prompt, history)
-        if smalltalk_match is not None:
-            smalltalk_reply, smalltalk_category = smalltalk_match
-            return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
+    smalltalk_match = match_smalltalk(prompt, history)
+    if smalltalk_match is not None:
+        smalltalk_reply, smalltalk_category = smalltalk_match
+        return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
-        # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
-        # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
-        # 出現過的問題都常常答錯,先確保這些「已知題目」一定答對(見 qa_lookup.py)。
-        qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
-        if qa_reply is not None:
-            return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+    # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
+    # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
+    # 出現過的問題都常常答錯,先確保這些「已知題目」一定答對(見 qa_lookup.py)。
+    qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
+    if qa_reply is not None:
+        return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
-        # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
-        # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
-        # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
-        weather_reply = match_weather(prompt)
-        if weather_reply is not None:
-            return jsonify({"reply": weather_reply, "type": "weather_lookup"})
+    # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
+    # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
+    # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
+    weather_reply = match_weather(prompt)
+    if weather_reply is not None:
+        return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
@@ -471,6 +462,18 @@ def api_quota():
     """給前端(composer 旁的額度顯示)輪詢用,見 quota_manager.py 的說明。"""
     client_id = quota_manager.get_client_identifier(request)
     return jsonify(quota_manager.get_status(client_id))
+
+
+@app.route("/api/roles", methods=["GET"])
+def api_roles():
+    """
+    給 composer 角色選單(AI人員)頁面載入時取得預設角色清單用,見
+    ai_roles.py 開頭的說明。前端會把這份清單當作「預設角色」的初始值/
+    右鍵「恢復預設」的還原目標,實際編輯/自訂角色都存在瀏覽器
+    localStorage,這個端點只提供唯一真相來源(ai_roles.ROLES),
+    不會受使用者的編輯影響。
+    """
+    return jsonify({"roles": ai_roles.get_default_roles()})
 
 
 @app.route("/api/bead_pattern", methods=["POST"])

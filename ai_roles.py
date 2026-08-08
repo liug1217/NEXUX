@@ -14,6 +14,22 @@ C:\\Users\\liug1\\.claude\\plans\\squishy-coalescing-coral.md)。
 實測過:跟一般直接提問比,不連貫程度沒有明顯變差(兩者對開放式問題本來
 就都偏語意破碎,這是目前模型規模的既有限制,不是這組提示語造成的退步),
 所以照原本設計的措辭沿用,不需要簡化。
+
+角色系統(composer「AI人員」選單,跟「核心AI自動決定哪些角色參與協作」
+是兩回事——後者現在還沒做):
+- 預設角色(ROLES):系統內建,見下面的字典,前端透過 /api/roles 取得
+  這份清單當作預設值。使用者可以對預設角色按右鍵「編輯提示詞」,編輯
+  結果存在瀏覽器 localStorage(不會回寫這個檔案),也可以「恢復預設」
+  丟掉編輯、變回這裡寫的原始版本。
+- 我的角色:使用者自己建立,名稱/身份/任務/回答風格4個欄位在前端組成
+  一個 promptTemplate 字串(組合邏輯在 NEXUX.html 的 JS,跟這裡的
+  ROLES 資料結構刻意保持一致,方便共用同一套渲染/右鍵選單邏輯)。
+
+不管是預設角色還是自訂角色,團隊模式送到後端的東西統一是「已經組好、
+含 {prompt} 佔位符的完整 promptTemplate 字串」(見 sanitize_role_requests),
+後端不需要再知道這個角色原本是預設的還是自訂的,大幅簡化了團隊模式的
+路由邏輯——這也是為什麼使用者可以「編輯」預設角色的提示詞:反正後端
+只在乎最後這段文字,不在乎它的出處。
 """
 
 ROLES = {
@@ -57,47 +73,61 @@ INTEGRATION_PROMPT_TEMPLATE = (
     "請你身為核心AI,用兩三句話整合出一個簡短的最終建議。"
 )
 
-# 使用者自訂角色(composer 角色選單裡的「+ 自訂角色」):使用者自己輸入
-# 角色名稱(例如「行銷」「法務」),沒有預先寫好的專屬提示語,所以用一個
-# 通用版模板,把使用者輸入的名稱代進去。跟 ROLES 裡固定的4個角色一樣,
-# 本質上還是同一個 own 小模型換個身份問一次,不是真的有法務/行銷知識。
-CUSTOM_ROLE_PROMPT_TEMPLATE = (
-    "你現在扮演一位{label}AI,請針對以下需求,提出你的專業建議:\n{prompt}"
-)
-
-# 自訂角色數量/名稱長度上限:防止使用者傳一長串文字灌爆團隊模式的呼叫
-# 次數(每多一個角色就多呼叫一次模型,額度消耗跟著變高),前端也會用
-# 同樣的常數限制輸入框,但後端這裡才是真正生效的防線,不能只信前端。
-MAX_CUSTOM_ROLES = 3
-MAX_CUSTOM_ROLE_LABEL_LEN = 12
+# 團隊模式一次請求最多能帶幾個角色(預設+自訂加起來),以及單一角色
+# promptTemplate/名稱的長度上限。防止使用者傳一長串內容灌爆團隊模式的
+# 呼叫次數(每多一個角色就多呼叫一次模型,額度消耗跟著變高)或塞入過長
+# 的提示語文字。前端也會用同樣的常數限制輸入,但這裡才是真正生效的
+# 防線,不能只信前端已經做過的限制。
+MAX_TEAM_ROLES = 6
+MAX_ROLE_LABEL_LEN = 20
+MAX_ROLE_PROMPT_LEN = 1500
 
 
-def build_role_prompt(role: str, user_prompt: str) -> str:
-    """回傳指定角色的完整提示語(還沒包上「問:.../答:」格式,由呼叫端負責包)。"""
-    return ROLES[role]["prompt_template"].format(prompt=user_prompt)
+def get_default_roles() -> list[dict]:
+    """給 /api/roles 用:回傳預設角色清單(id/label/icon/promptTemplate)。"""
+    return [
+        {"id": role_id, "label": info["label"], "icon": info["icon"], "promptTemplate": info["prompt_template"]}
+        for role_id, info in ROLES.items()
+    ]
 
 
-def build_custom_role_prompt(label: str, user_prompt: str) -> str:
-    """回傳使用者自訂角色的完整提示語(同樣還沒包「問:.../答:」)。"""
-    return CUSTOM_ROLE_PROMPT_TEMPLATE.format(label=label, prompt=user_prompt)
-
-
-def sanitize_custom_role_labels(raw_labels) -> list[str]:
+def sanitize_role_requests(raw_requests) -> list[dict]:
     """
-    把前端傳來的自訂角色名稱清單,過濾成安全、有限制的清單:
-    去頭尾空白、丟棄空字串、裁切過長名稱、丟棄超過數量上限的部分。
-    這是後端真正生效的驗證,前端的限制只是體驗上的提示,不能信任。
+    團隊模式現在改成前端直接送出每個角色完整的 promptTemplate(可能是
+    預設角色的原始版本,也可能是使用者右鍵編輯過的版本,或是自訂角色
+    組出來的版本),不管出處是什麼,後端都用同一套驗證跟生成邏輯處理。
+    這代表前端傳來的內容完全不可信,這裡是真正生效的驗證關卡:數量
+    上限、長度上限、缺少 {prompt} 佔位符時自動補上(避免使用者編輯
+    提示詞時不小心刪掉佔位符,導致生成永遠看不到使用者實際輸入的內容)。
     """
-    if not raw_labels:
+    if not raw_requests:
         return []
     cleaned = []
-    for item in raw_labels:
-        label = str(item or "").strip()[:MAX_CUSTOM_ROLE_LABEL_LEN]
-        if label:
-            cleaned.append(label)
-        if len(cleaned) >= MAX_CUSTOM_ROLES:
+    for item in raw_requests:
+        if not isinstance(item, dict):
+            continue
+        role_id = str(item.get("id") or "").strip()[:40]
+        label = str(item.get("label") or "").strip()[:MAX_ROLE_LABEL_LEN]
+        icon = str(item.get("icon") or "custom").strip()[:20]
+        template = str(item.get("promptTemplate") or "").strip()[:MAX_ROLE_PROMPT_LEN]
+        if not label or not template:
+            continue
+        if "{prompt}" not in template:
+            template = template + "\n{prompt}"
+        cleaned.append({"id": role_id or label, "label": label, "icon": icon, "promptTemplate": template})
+        if len(cleaned) >= MAX_TEAM_ROLES:
             break
     return cleaned
+
+
+def build_prompt_from_template(template: str, user_prompt: str) -> str:
+    """
+    把角色的 promptTemplate 代入使用者輸入,回傳完整提示語(還沒包上
+    「問:.../答:」格式,由呼叫端負責包)。刻意用字串取代(str.replace)
+    而不是 str.format(),因為使用者自訂的身份/任務/回答風格文字裡可能
+    剛好包含大括號,用 .format() 會被誤判成格式化欄位、丟出例外。
+    """
+    return template.replace("{prompt}", user_prompt)
 
 
 def build_integration_prompt(user_prompt: str, role_replies: list[tuple[str, str]]) -> str:

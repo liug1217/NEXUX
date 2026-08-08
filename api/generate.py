@@ -141,7 +141,6 @@ def api_generate():
     provider = payload.get("provider") or "own"
     history = payload.get("history") or []
     debug = bool(payload.get("debug"))
-    skip_rules = bool(payload.get("skipRules"))
 
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
@@ -175,11 +174,10 @@ def api_generate():
     # weather_lookup 這些為單一問答設計的短路機制。跟一般單一問答模式一樣改用
     # NDJSON 串流,不用等所有角色+整合都生成完才一次回傳。跟 server.py 的團隊
     # 模式分支邏輯保持一致。
-    roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
-    # 自訂角色(composer 角色選單裡的「+ 自訂角色」),見 server.py 同一段
-    # 邏輯的說明與 ai_roles.sanitize_custom_role_labels()。
-    custom_role_labels = ai_roles.sanitize_custom_role_labels(payload.get("customRoles"))
-    if roles or custom_role_labels:
+    # roleRequests:composer「AI人員」選單裡目前選取的角色,見 server.py
+    # 同一段邏輯的說明與 ai_roles.sanitize_role_requests()。
+    role_requests = ai_roles.sanitize_role_requests(payload.get("roleRequests"))
+    if role_requests:
         try:
             model, tokenizer = get_model_and_tokenizer()
         except FileNotFoundError as e:
@@ -193,23 +191,20 @@ def api_generate():
 
         # 這個檢查必須在開始串流之前做完——一旦 Response(team_stream(), ...)
         # 開始送出第一個位元組,狀態碼就已經定案是200,沒辦法半路改成429錯誤。
-        total_role_count = len(roles) + len(custom_role_labels)
         status = quota_manager.get_status(client_id)
-        estimated_tokens = (total_role_count + 1) * 150
+        estimated_tokens = (len(role_requests) + 1) * 150
         if status["enabled"] and status["remaining"] < estimated_tokens:
             minutes = (status["reset_in_seconds"] or 0) // 60
             return jsonify({
-                "error": f"團隊模式需要呼叫模型 {total_role_count + 1} 次,預估至少需要 "
+                "error": f"團隊模式需要呼叫模型 {len(role_requests) + 1} 次,預估至少需要 "
                          f"{estimated_tokens} token,目前剩餘額度只有 {status['remaining']},"
                          f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
             }), 429
 
-        role_entries = []
-        for role in roles:
-            role_info = ai_roles.ROLES[role]
-            role_entries.append((role, role_info["label"], role_info["icon"], ai_roles.build_role_prompt(role, prompt)))
-        for label in custom_role_labels:
-            role_entries.append((f"custom:{label}", label, "custom", ai_roles.build_custom_role_prompt(label, prompt)))
+        role_entries = [
+            (r["id"], r["label"], r["icon"], ai_roles.build_prompt_from_template(r["promptTemplate"], prompt))
+            for r in role_requests
+        ]
 
         def team_stream():
             """NDJSON協定跟 server.py 的 team_stream() 一致,見那裡的說明。"""
@@ -257,26 +252,23 @@ def api_generate():
         return Response(team_stream(), mimetype="application/x-ndjson; charset=utf-8")
 
     # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成。
-    # skip_rules 開關(NEXUX.html「略過規則」勾選框)讓使用者可以強制跳過
-    # 這兩層保底機制,直接看模型自己會怎麼生成,方便實測模型本身的能力。
-    if not skip_rules:
-        smalltalk_match = match_smalltalk(prompt, history)
-        if smalltalk_match is not None:
-            smalltalk_reply, smalltalk_category = smalltalk_match
-            return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
+    smalltalk_match = match_smalltalk(prompt, history)
+    if smalltalk_match is not None:
+        smalltalk_reply, smalltalk_category = smalltalk_match
+        return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
-        # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
-        # 直接比對回傳原始答案,不用冒險讓模型生成。
-        qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
-        if qa_reply is not None:
-            return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+    # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
+    # 直接比對回傳原始答案,不用冒險讓模型生成。
+    qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
+    if qa_reply is not None:
+        return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
-        # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
-        # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
-        # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
-        weather_reply = match_weather(prompt)
-        if weather_reply is not None:
-            return jsonify({"reply": weather_reply, "type": "weather_lookup"})
+    # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
+    # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
+    # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
+    weather_reply = match_weather(prompt)
+    if weather_reply is not None:
+        return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
     try:
         model, tokenizer = get_model_and_tokenizer()
@@ -385,3 +377,9 @@ def api_quota():
     """
     client_id = quota_manager.get_client_identifier(request)
     return jsonify(quota_manager.get_status(client_id))
+
+
+@app.route("/api/roles", methods=["GET"])
+def api_roles():
+    """給 composer 角色選單(AI人員)用,見 server.py 同名端點的說明。"""
+    return jsonify({"roles": ai_roles.get_default_roles()})

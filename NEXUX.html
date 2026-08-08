@@ -769,54 +769,33 @@
     background: rgba(255, 255, 255, 0.12);
   }
 
-  /* 自訂角色:「+ 自訂角色」按鈕本身用虛線邊框跟一般角色按鈕區隔,
-     點了之後改顯示下面的文字輸入列。 */
+  /* 角色選單分區標題(「預設角色」/「我的角色」),純文字小標籤,
+     不能點擊/選取。 */
+  .role-menu-section-label {
+    padding: 2px 8px;
+    font-family: 'Inter', var(--sans);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .role-menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* 「我的角色」區塊裡的「+ 建立角色」按鈕,用虛線邊框跟一般角色
+     按鈕區隔,點了彈出 #roleFormModalOverlay。 */
   .role-menu-add-btn {
     border-style: dashed;
     border-color: rgba(255, 255, 255, 0.25);
     color: rgba(255, 255, 255, 0.75);
   }
 
-  .role-menu-add-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .role-menu-add-input {
-    flex: 1;
-    height: 34px;
-    padding: 0 10px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    color: #FFFFFF;
-    font-family: 'Inter', var(--sans);
-    font-size: 13px;
-    outline: none;
-    min-width: 0;
-  }
-
-  .role-menu-add-confirm {
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
-    border: none;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.14);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .role-menu-add-confirm:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
   /* 使用者新增的自訂角色項目:跟一般角色按鈕一樣可以點選/取消選取,
      右邊多一個「移除」的×,把這個自訂角色從選單裡整個刪掉(不只是
-     取消選取)。 */
+     取消選取)。跟右鍵選單裡的「刪除」是同一個動作,兩種操作方式
+     並存,方便使用者。 */
   .role-menu-custom-item {
     position: relative;
     padding-right: 30px;
@@ -849,8 +828,7 @@
   /* .role-menu 的 display:flex 特異度會蓋掉瀏覽器預設的 [hidden]{display:none},
      這裡補上明確的覆寫規則,靠 hidden 屬性(JS 直接切換 roleMenu.hidden)
      正常收合/展開,不用額外自己維護一個 is-open class。 */
-  .role-menu[hidden],
-  .role-menu-add-row[hidden] {
+  .role-menu[hidden] {
     display: none;
   }
 
@@ -860,6 +838,165 @@
     opacity: 0.35;
     cursor: not-allowed;
   }
+
+  /* 角色右鍵選單:液態玻璃配方跟 .role-menu 一致,同樣搬到 <body>
+     底下用 position:fixed 定位(見script)。 */
+  .role-context-menu {
+    position: fixed;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    min-width: 140px;
+    border-radius: 14px;
+    background: rgba(40, 40, 40, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset 0 0 2px rgba(0, 0, 0, 0.5),
+      0px 4px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .role-context-menu[hidden] {
+    display: none;
+  }
+
+  .role-context-menu-item {
+    height: 32px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: #FFFFFF;
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .role-context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .role-context-menu-item:disabled {
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+    background: transparent;
+  }
+
+  .role-context-menu-item.is-danger {
+    color: #ff8080;
+  }
+
+  /* 角色提示語視窗、建立/編輯我的角色視窗共用的 modal 樣式。 */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .modal-overlay[hidden] {
+    display: none;
+  }
+
+  .modal-box {
+    width: min(420px, calc(100vw - 40px));
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow:
+      inset 2px -2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset -2px 2px 1px -1px rgba(255, 255, 255, 0.25),
+      inset 0 0 2px rgba(0, 0, 0, 0.5),
+      0px 8px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  .modal-title {
+    margin: 0 0 14px;
+    font-family: 'Inter', var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    color: #FFFFFF;
+  }
+
+  .modal-field-label {
+    display: block;
+    margin: 12px 0 6px;
+    font-family: 'Inter', var(--sans);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .modal-field-label:first-of-type {
+    margin-top: 0;
+  }
+
+  .modal-input,
+  .modal-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #FFFFFF;
+    font-family: 'Inter', var(--sans);
+    font-size: 14px;
+    outline: none;
+  }
+
+  .modal-textarea {
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  .modal-textarea:disabled {
+    color: rgba(255, 255, 255, 0.6);
+    cursor: default;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .modal-btn-primary,
+  .modal-btn-secondary {
+    height: 36px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .modal-btn-primary {
+    background: #FFFFFF;
+    color: #000000;
+  }
+
+  .modal-btn-primary:hover { opacity: 0.85; }
+
+  .modal-btn-secondary {
+    background: rgba(255, 255, 255, 0.10);
+    color: #FFFFFF;
+  }
+
+  .modal-btn-secondary:hover { background: rgba(255, 255, 255, 0.16); }
 
   /* Rectangle 12:圓角膠囊容器,寬度用100%取代原本固定771px,
      內部改成「上方文字區 / 下方工具列」的直向排列,
@@ -1097,26 +1234,6 @@
   .model-tag option {
     background: #2a2a2a;
     color: #FFFFFF;
-  }
-
-  .skip-rules-toggle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-    font-family: 'Inter', var(--sans);
-    font-size: 11px;
-    color: #B6B6B6;
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .skip-rules-toggle input {
-    cursor: pointer;
-    accent-color: #FFFFFF;
-    width: 12px;
-    height: 12px;
   }
 
   /* Mic:16x16,內縮 20.83%(左右)/ 4.17%(上下),1.6px白色線條 */
@@ -1414,86 +1531,32 @@
               <option value="groq">Groq</option>
             </select>
 
-            <!-- 略過規則:勾選後 smalltalk/qa_lookup 這兩層規則保底機制不會攔截,
-                 直接讓選定的模型自己生成,方便實際測試模型本身(尤其是 Beta)
-                 面對簡單問候這類平常會被規則接手的輸入時,自己的表現如何。 -->
-            <label class="skip-rules-toggle" id="skipRulesLabel" title="勾選後不經過規則比對,直接讓模型生成">
-              <input type="checkbox" id="skipRulesToggle" />
-              略過規則
-            </label>
-
-            <!-- NexoraAI 第一階段:composer 角色選擇(見 ai_roles.py)。
+            <!-- NexoraAI「AI人員」:composer 角色選擇/管理(見 ai_roles.py)。
                  跟 add-btn/mic-btn 一樣是輸入框工具列裡的圖示按鈕,點開才
-                 顯示4個角色選項的下拉選單(多選),不佔用輸入框本身版面。
-                 選了角色之後送出訊息會改用 /api/generate 的團隊模式(同一個
-                 own模型分別以每個角色的身份各答一次+核心AI整合一次),不是
-                 真正各自獨立思考的智慧體,見送出後訊息區塊下方的免責提醒。
+                 顯示角色選單(多選),不佔用輸入框本身版面。選單分兩區:
+                 預設角色(系統內建,見 /api/roles)、我的角色(使用者自己
+                 建立,存在瀏覽器localStorage)。角色按鈕可以右鍵開啟操作
+                 選單(編輯提示詞/查看提示語/預設角色可恢復預設/我的角色
+                 可刪除)。選了角色之後送出訊息會改用 /api/generate 的
+                 團隊模式(同一個own模型分別以每個角色的身份各答一次+核心
+                 AI整合一次),不是真正各自獨立思考的智慧體。這個「AI人員」
+                 選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI
+                 自動決定哪些角色參與協作」是不同功能(後者還沒實作)。
                  只支援own模型,切到其他 provider 時會被停用並清空選取
                  (見下方script)。 -->
             <div class="role-menu-wrap">
-              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="選擇角色" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="AI人員" aria-haspopup="true" aria-expanded="false">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M5.667 7.333a2 2 0 100-4 2 2 0 000 4zM10.333 7.333a2 2 0 100-4 2 2 0 000 4zM1.333 13.333c0-2.209 1.94-4 4.334-4s4.333 1.791 4.333 4M8 9.454c.36-.087.749-.121 1.333-.121 2.394 0 4.334 1.791 4.334 4" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span class="role-menu-badge" id="roleMenuBadge" hidden>0</span>
               </button>
               <div class="role-menu" id="roleMenu" hidden>
-                <button type="button" class="role-menu-item" data-role="engineer">
-                  <span class="role-menu-icon">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 4L2 8l3 4M11 4l3 4-3 4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>工程師</span>
-                </button>
-                <button type="button" class="role-menu-item" data-role="designer">
-                  <span class="role-menu-icon">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M11 2.5l2.5 2.5L6 12.5l-3 .5.5-3L11 2.5z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>設計師</span>
-                </button>
-                <button type="button" class="role-menu-item" data-role="security">
-                  <span class="role-menu-icon">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8 1.5l5 2v4c0 3.5-2.2 5.8-5 7-2.8-1.2-5-3.5-5-7v-4l5-2z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>資安</span>
-                </button>
-                <button type="button" class="role-menu-item" data-role="analyst">
-                  <span class="role-menu-icon">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2.5 13.5v-4M7 13.5v-8M11.5 13.5v-6M2 13.5h12" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>分析師</span>
-                </button>
-
+                <div class="role-menu-section-label">預設角色</div>
+                <div class="role-menu-section" id="roleMenuPresetSection"></div>
                 <div class="role-menu-divider"></div>
-
-                <!-- 使用者自訂角色:點了展開一個輸入框,自己輸入角色名稱
-                     (例如「行銷」「法務」),送出後在選單裡多一個跟預設角色
-                     同樣操作方式的按鈕(可以再點選/取消選取),沒有預先寫好
-                     的專屬提示語,後端用通用版模板(見 ai_roles.py 的
-                     CUSTOM_ROLE_PROMPT_TEMPLATE)。數量/長度上限見JS。 -->
-                <button type="button" class="role-menu-item role-menu-add-btn" id="roleMenuAddBtn">
-                  <span class="role-menu-icon">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                  <span>自訂角色</span>
-                </button>
-                <div class="role-menu-add-row" id="roleMenuAddRow" hidden>
-                  <input type="text" id="roleMenuAddInput" class="role-menu-add-input" placeholder="輸入角色名稱" maxlength="12">
-                  <button type="button" id="roleMenuAddConfirm" class="role-menu-add-confirm" aria-label="新增">
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 7l3 3 5-6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
+                <div class="role-menu-section-label">我的角色</div>
+                <div class="role-menu-section" id="roleMenuCustomSection"></div>
               </div>
             </div>
 
@@ -1536,6 +1599,46 @@
     </form>
 
     <p class="composer-disclaimer">本AI可能會出錯,請使用者謹慎使用。 <a href="/download.html">下載桌面版</a></p>
+  </div>
+
+  <!-- 角色右鍵選單:在游標位置彈出,內容依角色種類(預設/我的角色)動態
+       產生,見 script 裡的 openRoleContextMenu()。跟 #roleMenu 一樣搬到
+       <body> 底下用 position:fixed,避免被 .composer-pill 的
+       overflow:hidden 裁切。 -->
+  <div class="role-context-menu" id="roleContextMenu" hidden></div>
+
+  <!-- 角色提示語視窗:「編輯提示詞」跟「查看提示語」共用同一個視窗,
+       edit模式textarea可編輯+顯示儲存按鈕,view模式textarea唯讀+只有
+       關閉按鈕,見 script 裡的 openRolePromptModal()。 -->
+  <div class="modal-overlay" id="rolePromptModalOverlay" hidden>
+    <div class="modal-box">
+      <p class="modal-title" id="rolePromptModalTitle">編輯提示詞</p>
+      <textarea class="modal-textarea" id="rolePromptModalTextarea" rows="8"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-secondary" id="rolePromptModalCancel">關閉</button>
+        <button type="button" class="modal-btn-primary" id="rolePromptModalSave">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 我的角色建立/編輯視窗:名稱+身份+任務+回答風格4個欄位,建立跟
+       編輯共用同一個視窗,見 script 裡的 openRoleFormModal()。 -->
+  <div class="modal-overlay" id="roleFormModalOverlay" hidden>
+    <div class="modal-box">
+      <p class="modal-title" id="roleFormModalTitle">建立我的角色</p>
+      <label class="modal-field-label">角色名稱</label>
+      <input type="text" class="modal-input" id="roleFormName" maxlength="20" placeholder="例如:行銷、法務">
+      <label class="modal-field-label">身份</label>
+      <input type="text" class="modal-input" id="roleFormIdentity" maxlength="60" placeholder="這個角色的身份設定">
+      <label class="modal-field-label">任務</label>
+      <input type="text" class="modal-input" id="roleFormTask" maxlength="60" placeholder="主要負責回答什麼類型的問題">
+      <label class="modal-field-label">回答風格</label>
+      <input type="text" class="modal-input" id="roleFormStyle" maxlength="60" placeholder="例如:簡潔直接、專業嚴謹">
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-secondary" id="roleFormCancel">取消</button>
+        <button type="button" class="modal-btn-primary" id="roleFormSave">儲存</button>
+      </div>
+    </div>
   </div>
 
   <!-- 程式碼編輯器面板:AI回覆裡偵測到```程式碼```區塊時自動開啟
@@ -1834,7 +1937,6 @@
     const textarea = document.getElementById("prompt");
     const sendBtn = document.getElementById("sendBtn");
     const providerSelect = document.getElementById("providerSelect");
-    const skipRulesToggle = document.getElementById("skipRulesToggle");
     const micBtn = document.getElementById("micBtn");
     const roleMenuBtn = document.getElementById("roleMenuBtn");
     const roleMenu = document.getElementById("roleMenu");
@@ -1971,23 +2073,31 @@
       }
     });
 
-    // NexoraAI 第一階段:composer 角色選擇(見 ai_roles.py / plan
+    // NexoraAI「AI人員」:composer 角色選擇/管理(見 ai_roles.py / plan
     // squishy-coalescing-coral.md)。跟 add-btn 的附件選擇器同樣的手法:
     // 輸入框工具列裡一個小圖示按鈕,點了才彈出角色選單,不佔用輸入框
-    // 版面。selectedRoles 是目前選取的角色id集合(預設4個角色的id,
-    // 或是使用者自訂角色的 custom_N id),送出訊息時如果不是空集合,
-    // 就改走 /api/generate 的團隊模式(見下面 form submit handler)。
-    // 團隊模式只支援own模型,切到其他 provider 時直接停用按鈕、關閉
-    // 選單並清空選取,避免使用者以為能對GPT/Claude這類第三方API用
-    // 團隊模式。
-    const PREDEFINED_ROLE_IDS = new Set(["engineer", "designer", "security", "analyst"]);
-    const MAX_CUSTOM_ROLES = 3;
-    const MAX_CUSTOM_ROLE_LABEL_LEN = 12;
+    // 版面。角色分兩區:
+    // - 預設角色(presetRoles):系統內建,從 /api/roles 取得初始值,
+    //   使用者可以右鍵「編輯提示詞」直接改這個角色實際送給模型的文字,
+    //   編輯結果存在瀏覽器 localStorage(不會回寫伺服器,只影響這個
+    //   瀏覽器),也可以右鍵「恢復預設」丟掉編輯、變回伺服器的原始版本。
+    // - 我的角色(customRoles):使用者自己建立,名稱/身份/任務/回答風格
+    //   4個欄位組成一個 promptTemplate,一樣存在 localStorage,可以右鍵
+    //   編輯/查看/刪除。
+    // 不管哪一種,團隊模式送出的都是同一種格式(見下面 submit handler
+    // 的 roleRequests),後端不需要再區分角色出處(見 ai_roles.py)。
+    // 這個選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI自動
+    // 決定哪些角色參與協作」是不同功能(後者還沒實作)。
+    const MAX_TEAM_ROLES = 6; // 一次團隊請求最多能「選取」幾個角色,跟後端 ai_roles.MAX_TEAM_ROLES 一致
+    const MAX_CUSTOM_ROLES = 8; // 最多能「建立」幾個自訂角色(存起來,不是同時選取)
+    const CUSTOM_LABEL_MAX_LEN = 20;
+    const CUSTOM_FIELD_MAX_LEN = 60;
+    const STORAGE_KEY_CUSTOM_ROLES = "nexux_custom_roles";
+    const STORAGE_KEY_PRESET_OVERRIDES = "nexux_preset_overrides";
 
     // 每個角色圖示的SVG,固定寫死在程式碼裡(不是使用者輸入),才能安全
-    // 用 innerHTML 插入;角色名稱一律另外用 textContent 設定(見
-    // buildRoleIconSpan/addCustomRole),使用者自訂角色名稱不會有機會
-    // 被當成HTML解析,避免XSS。
+    // 用 innerHTML 插入;角色名稱/提示語一律另外用 textContent 設定,
+    // 使用者輸入的文字不會有機會被當成HTML解析,避免XSS。
     const ROLE_ICON_SVG = {
       engineer: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4L2 8l3 4M11 4l3 4-3 4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       designer: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 2.5l2.5 2.5L6 12.5l-3 .5.5-3L11 2.5z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -1995,21 +2105,97 @@
       analyst: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 13.5v-4M7 13.5v-8M11.5 13.5v-6M2 13.5h12" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       custom: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.3" stroke="white" stroke-width="1.3"/><path d="M3 13.5c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>',
       integration: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6l2.5 2L8 4l3.5 4L14 6l-1 6H3L2 6z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      add: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>',
     };
 
+    // presetRoles/customRoles:統一的角色資料結構,不管是哪一種都有
+    // {id, kind, icon, label, promptTemplate},預設角色多一個
+    // defaultPromptTemplate(給「恢復預設」用),自訂角色多存
+    // identity/task/style(給之後可能要重新編輯4欄位表單用)。
+    let presetRoles = [];
+    let customRoles = [];
     const selectedRoles = new Set();
-    const customRoleLabels = new Map(); // custom角色id -> 使用者輸入的名稱
-    let customRoleCounter = 0;
-    const roleMenuDivider = roleMenu.querySelector(".role-menu-divider");
-    const roleMenuAddBtn = document.getElementById("roleMenuAddBtn");
-    const roleMenuAddRow = document.getElementById("roleMenuAddRow");
-    const roleMenuAddInput = document.getElementById("roleMenuAddInput");
-    const roleMenuAddConfirm = document.getElementById("roleMenuAddConfirm");
+    let customRoleSeq = 0;
 
-    // .composer-pill 有 overflow:hidden(見CSS說明),選單如果留在裡面
-    // 用 position:fixed 也還是會被裁切掉一截,乾脆把這個元素整個搬到
-    // <body> 底下,徹底脫離 .composer-pill 的裁切範圍,位置改用JS算。
+    function loadCustomRolesFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_ROLES);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCustomRolesToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CUSTOM_ROLES, JSON.stringify(customRoles));
+      } catch {
+        // localStorage 滿了或被使用者停用瀏覽器儲存功能,靜默放棄持久化,
+        // 不影響這次對話當下的使用(角色還是能正常選取、送出)。
+      }
+    }
+
+    function loadPresetOverridesFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_PRESET_OVERRIDES);
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function savePresetOverridesToStorage(overrides) {
+      try {
+        localStorage.setItem(STORAGE_KEY_PRESET_OVERRIDES, JSON.stringify(overrides));
+      } catch {
+        // 同上
+      }
+    }
+
+    // 使用者建立「我的角色」時,把4個欄位組成一個含 {prompt} 佔位符的
+    // promptTemplate,跟預設角色的措辭風格(你現在扮演...)呼應。
+    function composeCustomRoleTemplate(name, identity, task, style) {
+      const parts = [`你現在扮演${name || "一位自訂角色"}AI。`];
+      if (identity) parts.push(`身份設定:${identity}`);
+      if (task) parts.push(`主要任務:${task}`);
+      if (style) parts.push(`回答風格:${style}`);
+      parts.push("請針對以下需求給出回覆:\n{prompt}");
+      return parts.join("\n");
+    }
+
+    function findRoleById(id) {
+      return presetRoles.find((r) => r.id === id) || customRoles.find((r) => r.id === id);
+    }
+
+    function buildRoleIconSpan(iconKey) {
+      const span = document.createElement("span");
+      span.className = "role-menu-icon";
+      span.innerHTML = ROLE_ICON_SVG[iconKey] || ROLE_ICON_SVG.custom; // 固定字串,非使用者輸入
+      return span;
+    }
+
+    // .composer-pill 有 overflow:hidden(見CSS說明),浮動選單/選單/視窗
+    // 如果留在裡面用 position:fixed 也還是會被裁切掉一截,乾脆把這些
+    // 元素整個搬到 <body> 底下,徹底脫離 .composer-pill 的裁切範圍。
+    const roleContextMenu = document.getElementById("roleContextMenu");
+    const rolePromptModalOverlay = document.getElementById("rolePromptModalOverlay");
+    const rolePromptModalTitle = document.getElementById("rolePromptModalTitle");
+    const rolePromptModalTextarea = document.getElementById("rolePromptModalTextarea");
+    const rolePromptModalCancel = document.getElementById("rolePromptModalCancel");
+    const rolePromptModalSave = document.getElementById("rolePromptModalSave");
+    const roleFormModalOverlay = document.getElementById("roleFormModalOverlay");
+    const roleFormName = document.getElementById("roleFormName");
+    const roleFormIdentity = document.getElementById("roleFormIdentity");
+    const roleFormTask = document.getElementById("roleFormTask");
+    const roleFormStyle = document.getElementById("roleFormStyle");
+    const roleFormCancel = document.getElementById("roleFormCancel");
+    const roleFormSave = document.getElementById("roleFormSave");
     document.body.appendChild(roleMenu);
+    document.body.appendChild(roleContextMenu);
+    document.body.appendChild(rolePromptModalOverlay);
+    document.body.appendChild(roleFormModalOverlay);
+
+    // ---- 角色選單(#roleMenu)開關/定位 ----
 
     function positionRoleMenu() {
       const rect = roleMenuBtn.getBoundingClientRect();
@@ -2041,138 +2227,330 @@
       }
     });
 
-    // 點選單以外的地方自動收合,跟一般下拉選單的慣例行為一致。選單本身
-    // 已經搬到 <body> 底下,不再是 .role-menu-wrap 的子元素,這裡要多
-    // 判斷一次 #roleMenu 本身,不然點選單裡的輸入框/按鈕會被誤判成
-    // 「點了選單外面」,選單瞬間關掉。
+    // 點選單/右鍵選單以外的地方自動收合,跟一般下拉選單的慣例行為
+    // 一致。這幾個浮動元素都已經搬到 <body> 底下,不再是
+    // .role-menu-wrap 的子元素,這裡要多判斷 #roleMenu/#roleContextMenu
+    // 本身,不然點裡面的按鈕會被誤判成「點了選單外面」而瞬間關掉。
     document.addEventListener("click", (e) => {
-      if (!roleMenu.hidden && !e.target.closest(".role-menu-wrap") && !e.target.closest("#roleMenu")) {
+      const insideRoleMenu = e.target.closest(".role-menu-wrap") || e.target.closest("#roleMenu");
+      const insideContextMenu = e.target.closest("#roleContextMenu");
+      if (!roleMenu.hidden && !insideRoleMenu && !insideContextMenu) {
         closeRoleMenu();
+      }
+      if (!roleContextMenu.hidden && !insideContextMenu) {
+        closeRoleContextMenu();
       }
     });
 
+    // ---- 選取/toggle ----
+
     function toggleRoleSelection(id, itemEl) {
+      closeRoleContextMenu();
       if (selectedRoles.has(id)) {
         selectedRoles.delete(id);
         itemEl.classList.remove("is-selected");
       } else {
+        if (selectedRoles.size >= MAX_TEAM_ROLES) {
+          alert(`一次最多只能選 ${MAX_TEAM_ROLES} 個角色。`);
+          return;
+        }
         selectedRoles.add(id);
         itemEl.classList.add("is-selected");
       }
       updateRoleMenuBadge();
     }
 
-    function wireRoleMenuItem(item) {
-      item.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleRoleSelection(item.dataset.role, item);
-      });
-    }
+    // ---- 角色選單項目渲染 ----
 
-    roleMenu.querySelectorAll(".role-menu-item[data-role]").forEach(wireRoleMenuItem);
-
-    function buildRoleIconSpan(iconKey) {
-      const span = document.createElement("span");
-      span.className = "role-menu-icon";
-      span.innerHTML = ROLE_ICON_SVG[iconKey] || ROLE_ICON_SVG.custom; // 固定字串,非使用者輸入
-      return span;
-    }
-
-    // 使用者自訂角色:自己輸入角色名稱(例如「行銷」「法務」),沒有
-    // 預先寫好的專屬提示語,後端用通用版模板(見 ai_roles.py 的
-    // build_custom_role_prompt)。新增後直接預設選取(新增角色的目的
-    // 就是要用它),數量/名稱長度上限只是體驗提示,後端
-    // sanitize_custom_role_labels() 才是真正生效的限制。
-    function addCustomRole(rawLabel) {
-      const label = rawLabel.trim().slice(0, MAX_CUSTOM_ROLE_LABEL_LEN);
-      if (!label) return;
-      if (customRoleLabels.size >= MAX_CUSTOM_ROLES) {
-        alert(`最多只能新增 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
-        return;
-      }
-      customRoleCounter += 1;
-      const id = `custom_${customRoleCounter}`;
-      customRoleLabels.set(id, label);
-
+    function buildRoleMenuItem(role) {
       const item = document.createElement("button");
       item.type = "button";
-      item.className = "role-menu-item role-menu-custom-item";
-      item.dataset.role = id;
-      item.appendChild(buildRoleIconSpan("custom"));
+      item.className = "role-menu-item";
+      if (role.kind === "custom") item.classList.add("role-menu-custom-item");
+      if (selectedRoles.has(role.id)) item.classList.add("is-selected");
+      item.dataset.role = role.id;
+      item.appendChild(buildRoleIconSpan(role.icon));
       const textSpan = document.createElement("span");
-      textSpan.textContent = label; // 使用者輸入的文字,一律走textContent,不經過innerHTML
+      textSpan.textContent = role.label; // 使用者輸入的文字,一律走textContent,不經過innerHTML
       item.appendChild(textSpan);
 
-      // 用 <span> 而不是 <button>:item 本身已經是 <button>,HTML 規格
-      // 不允許互動元素(button)互相巢狀,巢狀button在部分瀏覽器下
-      // focus/click行為不可預期,改用有 role="button" 的 span 代替。
-      const removeBtn = document.createElement("span");
-      removeBtn.className = "role-menu-item-remove";
-      removeBtn.setAttribute("role", "button");
-      removeBtn.setAttribute("tabindex", "0");
-      removeBtn.setAttribute("aria-label", "移除這個自訂角色");
-      removeBtn.textContent = "×";
-      removeBtn.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          removeBtn.click();
-        }
-      });
-      removeBtn.addEventListener("click", (e) => {
+      item.addEventListener("click", (e) => {
         e.stopPropagation();
-        selectedRoles.delete(id);
-        customRoleLabels.delete(id);
-        item.remove();
-        updateRoleMenuBadge();
+        toggleRoleSelection(role.id, item);
       });
-      item.appendChild(removeBtn);
-      wireRoleMenuItem(item);
+      item.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openRoleContextMenu(role, e.clientX, e.clientY);
+      });
 
-      roleMenuDivider.parentNode.insertBefore(item, roleMenuDivider);
+      if (role.kind === "custom") {
+        // 用 <span> 而不是 <button>:item 本身已經是 <button>,HTML 規格
+        // 不允許互動元素(button)互相巢狀,巢狀button在部分瀏覽器下
+        // focus/click行為不可預期,改用有 role="button" 的 span 代替。
+        // 這個快速刪除鈕跟右鍵選單裡的「刪除」是同一個動作,兩種操作
+        // 方式並存,方便使用者。
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "role-menu-item-remove";
+        removeBtn.setAttribute("role", "button");
+        removeBtn.setAttribute("tabindex", "0");
+        removeBtn.setAttribute("aria-label", "移除這個自訂角色");
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            removeBtn.click();
+          }
+        });
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteCustomRole(role.id);
+        });
+        item.appendChild(removeBtn);
+      }
 
-      selectedRoles.add(id);
-      item.classList.add("is-selected");
+      return item;
+    }
+
+    function renderRoleMenu() {
+      const presetSection = document.getElementById("roleMenuPresetSection");
+      const customSection = document.getElementById("roleMenuCustomSection");
+      presetSection.innerHTML = "";
+      customSection.innerHTML = "";
+
+      presetRoles.forEach((role) => presetSection.appendChild(buildRoleMenuItem(role)));
+      customRoles.forEach((role) => customSection.appendChild(buildRoleMenuItem(role)));
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "role-menu-item role-menu-add-btn";
+      addBtn.appendChild(buildRoleIconSpan("add"));
+      const addLabel = document.createElement("span");
+      addLabel.textContent = "建立角色";
+      addBtn.appendChild(addLabel);
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openRoleFormModal();
+      });
+      customSection.appendChild(addBtn);
+
       updateRoleMenuBadge();
     }
 
-    roleMenuAddBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      roleMenuAddRow.hidden = false;
-      roleMenuAddBtn.hidden = true;
-      roleMenuAddInput.value = "";
-      roleMenuAddInput.focus();
-    });
+    function deleteCustomRole(id) {
+      selectedRoles.delete(id);
+      customRoles = customRoles.filter((r) => r.id !== id);
+      saveCustomRolesToStorage();
+      updateRoleMenuBadge();
+      renderRoleMenu();
+    }
 
-    roleMenuAddConfirm.addEventListener("click", (e) => {
-      e.stopPropagation();
-      addCustomRole(roleMenuAddInput.value);
-      roleMenuAddRow.hidden = true;
-      roleMenuAddBtn.hidden = false;
-    });
+    function restorePresetRole(id) {
+      const role = presetRoles.find((r) => r.id === id);
+      if (!role) return;
+      role.promptTemplate = role.defaultPromptTemplate;
+      const overrides = loadPresetOverridesFromStorage();
+      delete overrides[id];
+      savePresetOverridesToStorage(overrides);
+      renderRoleMenu();
+    }
 
-    roleMenuAddInput.addEventListener("click", (e) => e.stopPropagation());
-    roleMenuAddInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        roleMenuAddConfirm.click();
-      } else if (e.key === "Escape") {
-        roleMenuAddRow.hidden = true;
-        roleMenuAddBtn.hidden = false;
+    // ---- 右鍵選單 ----
+
+    function closeRoleContextMenu() {
+      roleContextMenu.hidden = true;
+    }
+
+    function openRoleContextMenu(role, x, y) {
+      roleContextMenu.innerHTML = "";
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "role-context-menu-item";
+      editBtn.textContent = "編輯提示詞";
+      editBtn.addEventListener("click", () => {
+        closeRoleContextMenu();
+        openRolePromptModal(role, "edit");
+      });
+      roleContextMenu.appendChild(editBtn);
+
+      const viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "role-context-menu-item";
+      viewBtn.textContent = "查看提示語";
+      viewBtn.addEventListener("click", () => {
+        closeRoleContextMenu();
+        openRolePromptModal(role, "view");
+      });
+      roleContextMenu.appendChild(viewBtn);
+
+      if (role.kind === "preset") {
+        const restoreBtn = document.createElement("button");
+        restoreBtn.type = "button";
+        restoreBtn.className = "role-context-menu-item";
+        restoreBtn.textContent = "恢復預設";
+        restoreBtn.disabled = role.promptTemplate === role.defaultPromptTemplate;
+        restoreBtn.addEventListener("click", () => {
+          closeRoleContextMenu();
+          restorePresetRole(role.id);
+        });
+        roleContextMenu.appendChild(restoreBtn);
+      } else {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "role-context-menu-item is-danger";
+        deleteBtn.textContent = "刪除";
+        deleteBtn.addEventListener("click", () => {
+          closeRoleContextMenu();
+          if (confirm(`確定要刪除「${role.label}」這個角色嗎?`)) {
+            deleteCustomRole(role.id);
+          }
+        });
+        roleContextMenu.appendChild(deleteBtn);
       }
+
+      roleContextMenu.hidden = false;
+      // 用滑鼠點擊位置定位,並確保選單不會超出視窗邊界。
+      const menuRect = roleContextMenu.getBoundingClientRect();
+      const left = Math.min(x, window.innerWidth - menuRect.width - 8);
+      const top = Math.min(y, window.innerHeight - menuRect.height - 8);
+      roleContextMenu.style.left = `${Math.max(8, left)}px`;
+      roleContextMenu.style.top = `${Math.max(8, top)}px`;
+    }
+
+    // ---- 提示語視窗(編輯提示詞/查看提示語共用) ----
+
+    let rolePromptModalRoleId = null;
+
+    function openRolePromptModal(role, mode) {
+      rolePromptModalRoleId = role.id;
+      rolePromptModalTitle.textContent = (mode === "edit" ? "編輯提示詞 - " : "查看提示語 - ") + role.label;
+      rolePromptModalTextarea.value = role.promptTemplate;
+      rolePromptModalTextarea.disabled = mode !== "edit";
+      rolePromptModalSave.hidden = mode !== "edit";
+      rolePromptModalOverlay.hidden = false;
+    }
+
+    function closeRolePromptModal() {
+      rolePromptModalOverlay.hidden = true;
+      rolePromptModalRoleId = null;
+    }
+
+    rolePromptModalCancel.addEventListener("click", closeRolePromptModal);
+    rolePromptModalOverlay.addEventListener("click", (e) => {
+      if (e.target === rolePromptModalOverlay) closeRolePromptModal();
     });
+
+    rolePromptModalSave.addEventListener("click", () => {
+      const id = rolePromptModalRoleId;
+      const newTemplate = rolePromptModalTextarea.value.trim();
+      if (!newTemplate) {
+        alert("提示詞不能是空的。");
+        return;
+      }
+      const role = findRoleById(id);
+      if (!role) {
+        closeRolePromptModal();
+        return;
+      }
+      role.promptTemplate = newTemplate;
+      if (role.kind === "preset") {
+        const overrides = loadPresetOverridesFromStorage();
+        overrides[id] = newTemplate;
+        savePresetOverridesToStorage(overrides);
+      } else {
+        saveCustomRolesToStorage();
+      }
+      closeRolePromptModal();
+      renderRoleMenu();
+    });
+
+    // ---- 我的角色建立視窗(名稱+身份+任務+回答風格) ----
+
+    function openRoleFormModal() {
+      roleFormName.value = "";
+      roleFormIdentity.value = "";
+      roleFormTask.value = "";
+      roleFormStyle.value = "";
+      roleFormModalOverlay.hidden = false;
+      roleFormName.focus();
+    }
+
+    function closeRoleFormModal() {
+      roleFormModalOverlay.hidden = true;
+    }
+
+    roleFormCancel.addEventListener("click", closeRoleFormModal);
+    roleFormModalOverlay.addEventListener("click", (e) => {
+      if (e.target === roleFormModalOverlay) closeRoleFormModal();
+    });
+
+    roleFormSave.addEventListener("click", () => {
+      const name = roleFormName.value.trim().slice(0, CUSTOM_LABEL_MAX_LEN);
+      if (!name) {
+        alert("請輸入角色名稱。");
+        return;
+      }
+      if (customRoles.length >= MAX_CUSTOM_ROLES) {
+        alert(`最多只能建立 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
+        return;
+      }
+      const identity = roleFormIdentity.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
+      const task = roleFormTask.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
+      const style = roleFormStyle.value.trim().slice(0, CUSTOM_FIELD_MAX_LEN);
+      const promptTemplate = composeCustomRoleTemplate(name, identity, task, style);
+
+      customRoleSeq += 1;
+      const id = `custom_${Date.now()}_${customRoleSeq}`;
+      customRoles.push({ id, kind: "custom", icon: "custom", label: name, promptTemplate, identity, task, style });
+      saveCustomRolesToStorage();
+
+      if (selectedRoles.size < MAX_TEAM_ROLES) {
+        selectedRoles.add(id);
+      }
+      closeRoleFormModal();
+      renderRoleMenu();
+    });
+
+    // ---- provider 切換時的連動 ----
 
     function syncRoleSelectorWithProvider() {
       const isOwn = providerSelect.value === "own";
       roleMenuBtn.disabled = !isOwn;
       if (!isOwn && selectedRoles.size > 0) {
         selectedRoles.clear();
-        roleMenu.querySelectorAll(".role-menu-item.is-selected").forEach((item) => item.classList.remove("is-selected"));
-        updateRoleMenuBadge();
+        renderRoleMenu();
         closeRoleMenu();
       }
     }
     providerSelect.addEventListener("change", syncRoleSelectorWithProvider);
-    syncRoleSelectorWithProvider();
+
+    // ---- 初始化:先讀localStorage的我的角色/預設角色覆寫,
+    // 再向後端要預設角色的原始清單(給「恢復預設」當還原目標)。 ----
+
+    async function initRoleSystem() {
+      customRoles = loadCustomRolesFromStorage();
+      const overrides = loadPresetOverridesFromStorage();
+      try {
+        const res = await fetch("/api/roles");
+        const data = await res.json();
+        presetRoles = (data.roles || []).map((r) => ({
+          id: r.id,
+          kind: "preset",
+          icon: r.icon,
+          label: r.label,
+          defaultPromptTemplate: r.promptTemplate,
+          promptTemplate: overrides[r.id] || r.promptTemplate,
+        }));
+      } catch {
+        // 抓不到預設角色清單(伺服器還沒起來/網路問題),選單裡「預設
+        // 角色」區塊會是空的,不影響「我的角色」正常建立/選取/使用。
+        presetRoles = [];
+      }
+      renderRoleMenu();
+      syncRoleSelectorWithProvider();
+    }
+    initRoleSystem();
 
     // 首頁歡迎文案:集中管理在這裡,之後要新增/刪除文案,只要改
     // WELCOME_MESSAGE_POOLS.default 這個陣列即可。目前只實作「每次開啟
@@ -2766,22 +3144,18 @@
         return;
       }
 
-      // NexoraAI 團隊模式:composer 選了角色,改送 roles(預設角色id)+
-      // customRoles(使用者自訂角色名稱)給後端,後端會用 NDJSON 串流
-      // 依序回傳每個角色的文字(見 server.py/api/generate.py 的
-      // team_stream())。只支援own模型(切到其他provider時角色按鈕已經
-      // 被停用並清空選取,syncRoleSelectorWithProvider()),這裡不用再
-      // 另外判斷 provider。
+      // NexoraAI 團隊模式:composer 選了角色,改送 roleRequests(每個
+      // 角色完整的 id/label/icon/promptTemplate,不管預設還是自訂角色
+      // 都是同一種格式,包含使用者右鍵編輯過的內容)給後端,後端會用
+      // NDJSON 串流依序回傳每個角色的文字(見 server.py/api/generate.py
+      // 的 team_stream())。只支援own模型(切到其他provider時角色按鈕
+      // 已經被停用並清空選取,syncRoleSelectorWithProvider()),這裡
+      // 不用再另外判斷 provider。
       if (selectedRoles.size > 0) {
-        const teamRoles = [];
-        const teamCustomRoles = [];
-        selectedRoles.forEach((id) => {
-          if (PREDEFINED_ROLE_IDS.has(id)) {
-            teamRoles.push(id);
-          } else if (customRoleLabels.has(id)) {
-            teamCustomRoles.push(customRoleLabels.get(id));
-          }
-        });
+        const roleRequests = [...selectedRoles]
+          .map((id) => findRoleById(id))
+          .filter(Boolean)
+          .map((role) => ({ id: role.id, label: role.label, icon: role.icon, promptTemplate: role.promptTemplate }));
         const teamStartTime = Date.now();
         try {
           const res = await fetch("/api/generate", {
@@ -2790,8 +3164,7 @@
             body: JSON.stringify({
               prompt,
               provider: "own",
-              roles: teamRoles,
-              customRoles: teamCustomRoles,
+              roleRequests,
               clientId: getClientId(),
             }),
             signal: activeAbortController.signal,
@@ -2833,7 +3206,6 @@
             prompt,
             provider: providerSelect.value,
             history: historyForRequest,
-            skipRules: skipRulesToggle.checked,
             clientId: getClientId(),
           }),
           signal: activeAbortController.signal,
