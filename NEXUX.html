@@ -405,11 +405,18 @@
      標示,跟一般角色回覆區隔開來,呼應它是「整合大家意見」的角色,
      不是眾多角色之一。 */
   .team-role-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 600;
     color: #FFFFFF;
     opacity: 0.7;
     margin-bottom: 4px;
+  }
+
+  .team-role-label .role-menu-icon {
+    opacity: 1;
   }
 
   .team-role-msg {
@@ -733,6 +740,9 @@
   }
 
   .role-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     height: 34px;
     padding: 0 12px;
     border: 1px solid transparent;
@@ -746,6 +756,13 @@
     transition: background 0.15s ease, border-color 0.15s ease;
   }
 
+  .role-menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
   .role-menu-item:hover {
     background: rgba(255, 255, 255, 0.10);
   }
@@ -755,17 +772,102 @@
     background: rgba(255, 255, 255, 0.14);
   }
 
+  .role-menu-divider {
+    height: 1px;
+    margin: 2px 4px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* 自訂角色:「+ 自訂角色」按鈕本身用虛線邊框跟一般角色按鈕區隔,
+     點了之後改顯示下面的文字輸入列。 */
+  .role-menu-add-btn {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .role-menu-add-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .role-menu-add-input {
+    flex: 1;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #FFFFFF;
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    outline: none;
+    min-width: 0;
+  }
+
+  .role-menu-add-confirm {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .role-menu-add-confirm:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* 使用者新增的自訂角色項目:跟一般角色按鈕一樣可以點選/取消選取,
+     右邊多一個「移除」的×,把這個自訂角色從選單裡整個刪掉(不只是
+     取消選取)。 */
+  .role-menu-custom-item {
+    position: relative;
+    padding-right: 30px;
+  }
+
+  .role-menu-item-remove {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .role-menu-item-remove:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+  }
+
   /* .role-menu 的 display:flex 特異度會蓋掉瀏覽器預設的 [hidden]{display:none},
      這裡補上明確的覆寫規則,靠 hidden 屬性(JS 直接切換 roleMenu.hidden)
      正常收合/展開,不用額外自己維護一個 is-open class。 */
-  .role-menu[hidden] {
+  .role-menu[hidden],
+  .role-menu-add-row[hidden] {
     display: none;
   }
 
-  .role-menu-btn:disabled,
-  .role-menu-btn:disabled ~ .role-menu {
+  /* role-menu-btn 用原生 disabled 屬性,瀏覽器本身就不會對 disabled 的
+     按鈕觸發click事件,選單自然打不開,這裡只需要處理視覺上的變暗。 */
+  .role-menu-btn:disabled {
     opacity: 0.35;
-    pointer-events: none;
+    cursor: not-allowed;
   }
 
   /* Rectangle 12:圓角膠囊容器,寬度用100%取代原本固定771px,
@@ -1345,10 +1447,62 @@
                 <span class="role-menu-badge" id="roleMenuBadge" hidden>0</span>
               </button>
               <div class="role-menu" id="roleMenu" hidden>
-                <button type="button" class="role-menu-item" data-role="engineer">💻 工程師</button>
-                <button type="button" class="role-menu-item" data-role="designer">🎨 設計師</button>
-                <button type="button" class="role-menu-item" data-role="security">🛡️ 資安</button>
-                <button type="button" class="role-menu-item" data-role="analyst">📊 分析師</button>
+                <button type="button" class="role-menu-item" data-role="engineer">
+                  <span class="role-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 4L2 8l3 4M11 4l3 4-3 4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span>工程師</span>
+                </button>
+                <button type="button" class="role-menu-item" data-role="designer">
+                  <span class="role-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M11 2.5l2.5 2.5L6 12.5l-3 .5.5-3L11 2.5z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span>設計師</span>
+                </button>
+                <button type="button" class="role-menu-item" data-role="security">
+                  <span class="role-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 1.5l5 2v4c0 3.5-2.2 5.8-5 7-2.8-1.2-5-3.5-5-7v-4l5-2z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span>資安</span>
+                </button>
+                <button type="button" class="role-menu-item" data-role="analyst">
+                  <span class="role-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 13.5v-4M7 13.5v-8M11.5 13.5v-6M2 13.5h12" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span>分析師</span>
+                </button>
+
+                <div class="role-menu-divider"></div>
+
+                <!-- 使用者自訂角色:點了展開一個輸入框,自己輸入角色名稱
+                     (例如「行銷」「法務」),送出後在選單裡多一個跟預設角色
+                     同樣操作方式的按鈕(可以再點選/取消選取),沒有預先寫好
+                     的專屬提示語,後端用通用版模板(見 ai_roles.py 的
+                     CUSTOM_ROLE_PROMPT_TEMPLATE)。數量/長度上限見JS。 -->
+                <button type="button" class="role-menu-item role-menu-add-btn" id="roleMenuAddBtn">
+                  <span class="role-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                  </span>
+                  <span>自訂角色</span>
+                </button>
+                <div class="role-menu-add-row" id="roleMenuAddRow" hidden>
+                  <input type="text" id="roleMenuAddInput" class="role-menu-add-input" placeholder="輸入角色名稱" maxlength="12">
+                  <button type="button" id="roleMenuAddConfirm" class="role-menu-add-confirm" aria-label="新增">
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 7l3 3 5-6" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1829,13 +1983,37 @@
     // NexoraAI 第一階段:composer 角色選擇(見 ai_roles.py / plan
     // squishy-coalescing-coral.md)。跟 add-btn 的附件選擇器同樣的手法:
     // 輸入框工具列裡一個小圖示按鈕,點了才彈出角色選單,不佔用輸入框
-    // 版面。selectedRoles 是目前選取的角色id集合,送出訊息時如果不是
-    // 空集合,就改走 /api/generate 的團隊模式(見下面 form submit
-    // handler)。團隊模式只支援own模型,切到其他 provider 時直接停用
-    // 按鈕、關閉選單並清空選取,避免使用者以為能對GPT/Claude這類第三方
-    // API用團隊模式。
+    // 版面。selectedRoles 是目前選取的角色id集合(預設4個角色的id,
+    // 或是使用者自訂角色的 custom_N id),送出訊息時如果不是空集合,
+    // 就改走 /api/generate 的團隊模式(見下面 form submit handler)。
+    // 團隊模式只支援own模型,切到其他 provider 時直接停用按鈕、關閉
+    // 選單並清空選取,避免使用者以為能對GPT/Claude這類第三方API用
+    // 團隊模式。
+    const PREDEFINED_ROLE_IDS = new Set(["engineer", "designer", "security", "analyst"]);
+    const MAX_CUSTOM_ROLES = 3;
+    const MAX_CUSTOM_ROLE_LABEL_LEN = 12;
+
+    // 每個角色圖示的SVG,固定寫死在程式碼裡(不是使用者輸入),才能安全
+    // 用 innerHTML 插入;角色名稱一律另外用 textContent 設定(見
+    // buildRoleIconSpan/addCustomRole),使用者自訂角色名稱不會有機會
+    // 被當成HTML解析,避免XSS。
+    const ROLE_ICON_SVG = {
+      engineer: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4L2 8l3 4M11 4l3 4-3 4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      designer: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 2.5l2.5 2.5L6 12.5l-3 .5.5-3L11 2.5z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      security: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1.5l5 2v4c0 3.5-2.2 5.8-5 7-2.8-1.2-5-3.5-5-7v-4l5-2z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      analyst: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 13.5v-4M7 13.5v-8M11.5 13.5v-6M2 13.5h12" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      custom: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.3" stroke="white" stroke-width="1.3"/><path d="M3 13.5c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>',
+      integration: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6l2.5 2L8 4l3.5 4L14 6l-1 6H3L2 6z" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    };
+
     const selectedRoles = new Set();
-    const roleMenuItems = roleMenu.querySelectorAll(".role-menu-item");
+    const customRoleLabels = new Map(); // custom角色id -> 使用者輸入的名稱
+    let customRoleCounter = 0;
+    const roleMenuDivider = roleMenu.querySelector(".role-menu-divider");
+    const roleMenuAddBtn = document.getElementById("roleMenuAddBtn");
+    const roleMenuAddRow = document.getElementById("roleMenuAddRow");
+    const roleMenuAddInput = document.getElementById("roleMenuAddInput");
+    const roleMenuAddConfirm = document.getElementById("roleMenuAddConfirm");
 
     // .composer-pill 有 overflow:hidden(見CSS說明),選單如果留在裡面
     // 用 position:fixed 也還是會被裁切掉一截,乾脆把這個元素整個搬到
@@ -1872,26 +2050,124 @@
       }
     });
 
-    // 點選單以外的地方自動收合,跟一般下拉選單的慣例行為一致。
+    // 點選單以外的地方自動收合,跟一般下拉選單的慣例行為一致。選單本身
+    // 已經搬到 <body> 底下,不再是 .role-menu-wrap 的子元素,這裡要多
+    // 判斷一次 #roleMenu 本身,不然點選單裡的輸入框/按鈕會被誤判成
+    // 「點了選單外面」,選單瞬間關掉。
     document.addEventListener("click", (e) => {
-      if (!roleMenu.hidden && !e.target.closest(".role-menu-wrap")) {
+      if (!roleMenu.hidden && !e.target.closest(".role-menu-wrap") && !e.target.closest("#roleMenu")) {
         closeRoleMenu();
       }
     });
 
-    roleMenuItems.forEach((item) => {
+    function toggleRoleSelection(id, itemEl) {
+      if (selectedRoles.has(id)) {
+        selectedRoles.delete(id);
+        itemEl.classList.remove("is-selected");
+      } else {
+        selectedRoles.add(id);
+        itemEl.classList.add("is-selected");
+      }
+      updateRoleMenuBadge();
+    }
+
+    function wireRoleMenuItem(item) {
       item.addEventListener("click", (e) => {
         e.stopPropagation();
-        const role = item.dataset.role;
-        if (selectedRoles.has(role)) {
-          selectedRoles.delete(role);
-          item.classList.remove("is-selected");
-        } else {
-          selectedRoles.add(role);
-          item.classList.add("is-selected");
+        toggleRoleSelection(item.dataset.role, item);
+      });
+    }
+
+    roleMenu.querySelectorAll(".role-menu-item[data-role]").forEach(wireRoleMenuItem);
+
+    function buildRoleIconSpan(iconKey) {
+      const span = document.createElement("span");
+      span.className = "role-menu-icon";
+      span.innerHTML = ROLE_ICON_SVG[iconKey] || ROLE_ICON_SVG.custom; // 固定字串,非使用者輸入
+      return span;
+    }
+
+    // 使用者自訂角色:自己輸入角色名稱(例如「行銷」「法務」),沒有
+    // 預先寫好的專屬提示語,後端用通用版模板(見 ai_roles.py 的
+    // build_custom_role_prompt)。新增後直接預設選取(新增角色的目的
+    // 就是要用它),數量/名稱長度上限只是體驗提示,後端
+    // sanitize_custom_role_labels() 才是真正生效的限制。
+    function addCustomRole(rawLabel) {
+      const label = rawLabel.trim().slice(0, MAX_CUSTOM_ROLE_LABEL_LEN);
+      if (!label) return;
+      if (customRoleLabels.size >= MAX_CUSTOM_ROLES) {
+        alert(`最多只能新增 ${MAX_CUSTOM_ROLES} 個自訂角色。`);
+        return;
+      }
+      customRoleCounter += 1;
+      const id = `custom_${customRoleCounter}`;
+      customRoleLabels.set(id, label);
+
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "role-menu-item role-menu-custom-item";
+      item.dataset.role = id;
+      item.appendChild(buildRoleIconSpan("custom"));
+      const textSpan = document.createElement("span");
+      textSpan.textContent = label; // 使用者輸入的文字,一律走textContent,不經過innerHTML
+      item.appendChild(textSpan);
+
+      // 用 <span> 而不是 <button>:item 本身已經是 <button>,HTML 規格
+      // 不允許互動元素(button)互相巢狀,巢狀button在部分瀏覽器下
+      // focus/click行為不可預期,改用有 role="button" 的 span 代替。
+      const removeBtn = document.createElement("span");
+      removeBtn.className = "role-menu-item-remove";
+      removeBtn.setAttribute("role", "button");
+      removeBtn.setAttribute("tabindex", "0");
+      removeBtn.setAttribute("aria-label", "移除這個自訂角色");
+      removeBtn.textContent = "×";
+      removeBtn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          removeBtn.click();
         }
+      });
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectedRoles.delete(id);
+        customRoleLabels.delete(id);
+        item.remove();
         updateRoleMenuBadge();
       });
+      item.appendChild(removeBtn);
+      wireRoleMenuItem(item);
+
+      roleMenuDivider.parentNode.insertBefore(item, roleMenuDivider);
+
+      selectedRoles.add(id);
+      item.classList.add("is-selected");
+      updateRoleMenuBadge();
+    }
+
+    roleMenuAddBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      roleMenuAddRow.hidden = false;
+      roleMenuAddBtn.hidden = true;
+      roleMenuAddInput.value = "";
+      roleMenuAddInput.focus();
+    });
+
+    roleMenuAddConfirm.addEventListener("click", (e) => {
+      e.stopPropagation();
+      addCustomRole(roleMenuAddInput.value);
+      roleMenuAddRow.hidden = true;
+      roleMenuAddBtn.hidden = false;
+    });
+
+    roleMenuAddInput.addEventListener("click", (e) => e.stopPropagation());
+    roleMenuAddInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        roleMenuAddConfirm.click();
+      } else if (e.key === "Escape") {
+        roleMenuAddRow.hidden = true;
+        roleMenuAddBtn.hidden = false;
+      }
     });
 
     function syncRoleSelectorWithProvider() {
@@ -1899,7 +2175,7 @@
       roleMenuBtn.disabled = !isOwn;
       if (!isOwn && selectedRoles.size > 0) {
         selectedRoles.clear();
-        roleMenuItems.forEach((item) => item.classList.remove("is-selected"));
+        roleMenu.querySelectorAll(".role-menu-item.is-selected").forEach((item) => item.classList.remove("is-selected"));
         updateRoleMenuBadge();
         closeRoleMenu();
       }
@@ -2138,28 +2414,35 @@
     // 回覆+核心AI整合(見 server.py/api/generate.py 的團隊模式分支),
     // 不是NDJSON串流,這裡一次性渲染成「每個角色一個泡泡 + 整合建議
     // 卡片 + 誠實免責提醒」,不用打字機效果(已經是一次到齊的完整文字)。
+    // 角色圖示一律用固定SVG(見上面 ROLE_ICON_SVG),角色名稱(不管是預設
+    // 4種還是使用者自訂)一律走 textContent,不會被當成HTML解析,避免
+    // 使用者自訂角色名稱夾帶標籤造成XSS。
+    function buildTeamRoleLabel(iconKey, labelText) {
+      const label = document.createElement("div");
+      label.className = "team-role-label";
+      label.appendChild(buildRoleIconSpan(iconKey));
+      const textSpan = document.createElement("span");
+      textSpan.textContent = labelText;
+      label.appendChild(textSpan);
+      return label;
+    }
+
     function renderTeamReply(data) {
       (data.responses || []).forEach((r) => {
         const el = document.createElement("div");
         el.className = "msg assistant team-role-msg";
-        const label = document.createElement("div");
-        label.className = "team-role-label";
-        label.textContent = `${r.icon} ${r.label}`;
+        el.appendChild(buildTeamRoleLabel(r.icon, r.label));
         const body = document.createElement("div");
         body.textContent = r.reply || "(模型沒有生成任何內容)";
-        el.appendChild(label);
         el.appendChild(body);
         messagesEl.appendChild(el);
       });
 
       const integrationEl = document.createElement("div");
       integrationEl.className = "msg assistant team-integration-msg";
-      const integrationLabel = document.createElement("div");
-      integrationLabel.className = "team-role-label";
-      integrationLabel.textContent = "👑 核心AI整合建議";
+      integrationEl.appendChild(buildTeamRoleLabel("integration", "核心AI整合建議"));
       const integrationBody = document.createElement("div");
       integrationBody.textContent = data.integration || "(模型沒有生成任何內容)";
-      integrationEl.appendChild(integrationLabel);
       integrationEl.appendChild(integrationBody);
       messagesEl.appendChild(integrationEl);
 
@@ -2409,12 +2692,22 @@
         return;
       }
 
-      // NexoraAI 團隊模式:composer 選了角色,改送 roles 陣列給後端,
-      // 後端會回傳一次到齊的 type:"team" JSON(不是NDJSON串流),見
-      // server.py/api/generate.py 的團隊模式分支。只支援own模型(切到
-      // 其他provider時角色按鈕已經被停用並清空選取,syncRoleSelectorWithProvider()),
-      // 這裡不用再另外判斷 provider。
+      // NexoraAI 團隊模式:composer 選了角色,改送 roles(預設角色id)+
+      // customRoles(使用者自訂角色名稱)給後端,後端會回傳一次到齊的
+      // type:"team" JSON(不是NDJSON串流),見 server.py/api/generate.py
+      // 的團隊模式分支。只支援own模型(切到其他provider時角色按鈕已經
+      // 被停用並清空選取,syncRoleSelectorWithProvider()),這裡不用再
+      // 另外判斷 provider。
       if (selectedRoles.size > 0) {
+        const teamRoles = [];
+        const teamCustomRoles = [];
+        selectedRoles.forEach((id) => {
+          if (PREDEFINED_ROLE_IDS.has(id)) {
+            teamRoles.push(id);
+          } else if (customRoleLabels.has(id)) {
+            teamCustomRoles.push(customRoleLabels.get(id));
+          }
+        });
         try {
           const res = await fetch("/api/generate", {
             method: "POST",
@@ -2422,7 +2715,8 @@
             body: JSON.stringify({
               prompt,
               provider: "own",
-              roles: [...selectedRoles],
+              roles: teamRoles,
+              customRoles: teamCustomRoles,
               clientId: getClientId(),
             }),
             signal: activeAbortController.signal,

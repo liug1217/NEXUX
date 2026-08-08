@@ -219,7 +219,12 @@ def api_generate():
     # 的觀點」,直接查表回同一句罐頭答案沒有意義),也不用 NDJSON 串流(要等所有
     # 角色+整合都生成完才一次回傳)。
     roles = [r for r in (payload.get("roles") or []) if r in ai_roles.ROLES]
-    if roles:
+    # 自訂角色(composer 角色選單裡的「+ 自訂角色」):使用者自己輸入角色
+    # 名稱,沒有預先寫好的專屬提示語,見 ai_roles.build_custom_role_prompt()。
+    # sanitize_custom_role_labels() 是真正生效的數量/長度上限,不能只信
+    # 前端已經做過的限制。
+    custom_role_labels = ai_roles.sanitize_custom_role_labels(payload.get("customRoles"))
+    if roles or custom_role_labels:
         try:
             config, model, tokenizer, is_sft = get_model_and_tokenizer()
         except FileNotFoundError:
@@ -235,15 +240,17 @@ def api_generate():
             minutes = (status["reset_in_seconds"] or 0) // 60
             return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
 
-        # 團隊模式會呼叫模型 len(roles)+1 次(每個角色一次+核心AI整合一次),
-        # 用粗略估計值在生成前先擋下明顯不足的額度,避免生成到一半才因為
-        # 額度用完而中斷、浪費前面已經生成的角色回覆。
+        # 團隊模式會呼叫模型 (len(roles)+len(custom_role_labels))+1 次
+        # (每個角色一次+核心AI整合一次),用粗略估計值在生成前先擋下明顯
+        # 不足的額度,避免生成到一半才因為額度用完而中斷、浪費前面已經
+        # 生成的角色回覆。
+        total_role_count = len(roles) + len(custom_role_labels)
         status = quota_manager.get_status(client_id)
-        estimated_tokens = (len(roles) + 1) * 150
+        estimated_tokens = (total_role_count + 1) * 150
         if status["enabled"] and status["remaining"] < estimated_tokens:
             minutes = (status["reset_in_seconds"] or 0) // 60
             return jsonify({
-                "error": f"團隊模式需要呼叫模型 {len(roles) + 1} 次,預估至少需要 "
+                "error": f"團隊模式需要呼叫模型 {total_role_count + 1} 次,預估至少需要 "
                          f"{estimated_tokens} token,目前剩餘額度只有 {status['remaining']},"
                          f"約 {minutes} 分鐘後額度會重置,建議減少選取的角色數量或稍後再試。"
             }), 429
@@ -260,6 +267,15 @@ def api_generate():
                 "role": role, "label": role_info["label"], "icon": role_info["icon"], "reply": reply_text,
             })
             role_replies_for_integration.append((role_info["label"], reply_text))
+
+        for label in custom_role_labels:
+            role_prompt = ai_roles.build_custom_role_prompt(label, prompt)
+            reply_text, tokens_used = _generate_team_reply(role_prompt, config, model, tokenizer)
+            total_tokens += tokens_used
+            responses.append({
+                "role": f"custom:{label}", "label": label, "icon": "custom", "reply": reply_text,
+            })
+            role_replies_for_integration.append((label, reply_text))
 
         integration_prompt = ai_roles.build_integration_prompt(prompt, role_replies_for_integration)
         integration_text, integration_tokens = _generate_team_reply(integration_prompt, config, model, tokenizer)
