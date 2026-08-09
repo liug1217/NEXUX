@@ -769,6 +769,26 @@
     background: rgba(255, 255, 255, 0.12);
   }
 
+  /* 「設定角色」選單最上面的返回鈕,點了收合整個選單(跟點選單外面
+     效果一樣,只是給一個明確的關閉入口)。 */
+  .role-menu-back-btn {
+    height: 30px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .role-menu-back-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #FFFFFF;
+  }
+
   /* 角色選單分區標題(「預設角色」/「我的角色」),純文字小標籤,
      不能點擊/選取。 */
   .role-menu-section-label {
@@ -1497,30 +1517,37 @@
               <option value="groq">Groq</option>
             </select>
 
-            <!-- NexoraAI「AI人員」:composer 角色選擇/管理(見 ai_roles.py)。
+            <!-- NexoraAI「設定角色」:composer 角色管理(見 ai_roles.py)。
                  跟 add-btn/mic-btn 一樣是輸入框工具列裡的圖示按鈕,點開才
-                 顯示角色選單(多選),不佔用輸入框本身版面。選單分兩區:
-                 預設角色(系統內建,見 /api/roles)、我的角色(使用者自己
-                 建立,存在瀏覽器localStorage)。角色框框右邊有個鉛筆圖示,
-                 點了直接開啟提示語編輯視窗,預設角色跟我的角色是同一套
-                 編輯格式(都是直接編輯提示語原文),只有預設角色多一顆
-                 「恢復預設」按鈕;4欄位表單(名稱/身份/任務/回答風格)
-                 只在「建立」我的角色時用來組出初始提示語。選了角色之後
-                 送出訊息會改用 /api/generate 的
-                 團隊模式(同一個own模型分別以每個角色的身份各答一次+核心
-                 AI整合一次),不是真正各自獨立思考的智慧體。這個「AI人員」
-                 選單純粹是使用者手動查看/選擇/管理角色的介面,跟「核心AI
-                 自動決定哪些角色參與協作」是不同功能(後者還沒實作)。
+                 顯示角色選單,不佔用輸入框本身版面。選單最上面是「返回」
+                 (收合選單),接著分兩區:預設角色(系統內建,見
+                 /api/roles)、我的角色(使用者自己建立,存在瀏覽器
+                 localStorage)。角色框框右邊有個鉛筆圖示,點了直接開啟
+                 提示語編輯視窗,預設角色跟我的角色是同一套編輯格式(都是
+                 直接編輯提示語原文),只有預設角色多一顆「恢復預設」按鈕;
+                 4欄位表單(名稱/身份/任務/回答風格)只在「建立」我的角色
+                 時用來組出初始提示語。
+                 【目前狀態】這裡目前還是「管理+選取」合一(點角色框框
+                 本身會加進 selectedRoles,送出訊息時用來決定團隊模式要
+                 帶哪些角色)。使用者已經確認之後要把「選取要送出的角色」
+                 拆成獨立於這個管理選單之外的介面,「設定角色」屆時會變成
+                 純管理(建立/編輯/刪除),但選取介面實際要長怎樣還沒決定
+                 (使用者說「等等再說」),所以先不要在這裡拿掉選取邏輯,
+                 避免團隊模式暫時失去唯一的選取入口。
+                 跟「核心AI自動決定哪些角色參與協作」是不同功能(後者還
+                 沒實作)。
                  只支援own模型,切到其他 provider 時會被停用並清空選取
                  (見下方script)。 -->
             <div class="role-menu-wrap">
-              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="AI人員" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="設定角色" aria-haspopup="true" aria-expanded="false">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M5.667 7.333a2 2 0 100-4 2 2 0 000 4zM10.333 7.333a2 2 0 100-4 2 2 0 000 4zM1.333 13.333c0-2.209 1.94-4 4.334-4s4.333 1.791 4.333 4M8 9.454c.36-.087.749-.121 1.333-.121 2.394 0 4.334 1.791 4.334 4" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span class="role-menu-badge" id="roleMenuBadge" hidden>0</span>
               </button>
               <div class="role-menu" id="roleMenu" hidden>
+                <button type="button" class="role-menu-back-btn" id="roleMenuBackBtn">‹ 返回</button>
+                <div class="role-menu-divider"></div>
                 <div class="role-menu-section-label">預設角色</div>
                 <div class="role-menu-section" id="roleMenuPresetSection"></div>
                 <div class="role-menu-divider"></div>
@@ -1908,6 +1935,7 @@
     const roleMenuBtn = document.getElementById("roleMenuBtn");
     const roleMenu = document.getElementById("roleMenu");
     const roleMenuBadge = document.getElementById("roleMenuBadge");
+    const roleMenuBackBtn = document.getElementById("roleMenuBackBtn");
     const quickActions = document.getElementById("quickActions");
     const composerHeading = document.getElementById("composerHeading");
     const quotaRingEl = document.getElementById("quotaRing");
@@ -2040,7 +2068,7 @@
       }
     });
 
-    // NexoraAI「AI人員」:composer 角色選擇/管理(見 ai_roles.py / plan
+    // NexoraAI「設定角色」:composer 角色選擇/管理(見 ai_roles.py / plan
     // squishy-coalescing-coral.md)。跟 add-btn 的附件選擇器同樣的手法:
     // 輸入框工具列裡一個小圖示按鈕,點了才彈出角色選單,不佔用輸入框
     // 版面。角色分兩區:
@@ -2196,6 +2224,11 @@
       } else {
         closeRoleMenu();
       }
+    });
+
+    roleMenuBackBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeRoleMenu();
     });
 
     // 點選單以外的地方自動收合,跟一般下拉選單的慣例行為一致。#roleMenu
