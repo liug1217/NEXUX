@@ -769,7 +769,7 @@
     background: rgba(255, 255, 255, 0.12);
   }
 
-  /* 「設定角色」選單最上面的返回鈕,點了收合整個選單(跟點選單外面
+  /* 「設定AI角色人員」選單最上面的返回鈕,點了收合整個選單(跟點選單外面
      效果一樣,只是給一個明確的關閉入口)。 */
   .role-menu-back-btn {
     height: 30px;
@@ -867,7 +867,7 @@
      預設的 [hidden]{display:none},這裡補上明確的覆寫規則,靠 hidden
      屬性(JS 直接切換)正常收合/展開,不用額外自己維護 is-open class。
      #roleMenuEntryPage 是 .role-menu-section,兩頁式選單(第一頁只有
-     「設定角色」,第二頁才是完整清單)靠這條規則正確隱藏第一頁。 */
+     「設定AI角色人員」,第二頁才是完整清單)靠這條規則正確隱藏第一頁。 */
   .role-menu[hidden],
   .role-menu-section[hidden] {
     display: none;
@@ -1520,7 +1520,7 @@
               <option value="groq">Groq</option>
             </select>
 
-            <!-- NexoraAI「設定角色」:composer 角色管理(見 ai_roles.py)。
+            <!-- NexoraAI「設定AI角色人員」:composer 角色管理(見 ai_roles.py)。
                  跟 add-btn/mic-btn 一樣是輸入框工具列裡的圖示按鈕,點開才
                  顯示角色選單,不佔用輸入框本身版面。選單最上面是「返回」
                  (收合選單),接著分兩區:預設角色(系統內建,見
@@ -1533,7 +1533,7 @@
                  【目前狀態】這裡目前還是「管理+選取」合一(點角色框框
                  本身會加進 selectedRoles,送出訊息時用來決定團隊模式要
                  帶哪些角色)。使用者已經確認之後要把「選取要送出的角色」
-                 拆成獨立於這個管理選單之外的介面,「設定角色」屆時會變成
+                 拆成獨立於這個管理選單之外的介面,「設定AI角色人員」屆時會變成
                  純管理(建立/編輯/刪除),但選取介面實際要長怎樣還沒決定
                  (使用者說「等等再說」),所以先不要在這裡拿掉選取邏輯,
                  避免團隊模式暫時失去唯一的選取入口。
@@ -1542,14 +1542,14 @@
                  只支援own模型,切到其他 provider 時會被停用並清空選取
                  (見下方script)。 -->
             <div class="role-menu-wrap">
-              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="設定角色" aria-haspopup="true" aria-expanded="false">
+              <button type="button" class="role-menu-btn" id="roleMenuBtn" aria-label="設定AI角色人員" aria-haspopup="true" aria-expanded="false">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M5.667 7.333a2 2 0 100-4 2 2 0 000 4zM10.333 7.333a2 2 0 100-4 2 2 0 000 4zM1.333 13.333c0-2.209 1.94-4 4.334-4s4.333 1.791 4.333 4M8 9.454c.36-.087.749-.121 1.333-.121 2.394 0 4.334 1.791 4.334 4" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span class="role-menu-badge" id="roleMenuBadge" hidden>0</span>
               </button>
               <div class="role-menu" id="roleMenu" hidden>
-                <!-- 第一頁:選單一打開只顯示這一顆「設定角色」項目,點了
+                <!-- 第一頁:選單一打開只顯示這一顆「設定AI角色人員」項目,點了
                      才切換到下面的角色清單頁(#roleMenuListPage)。 -->
                 <div class="role-menu-section" id="roleMenuEntryPage">
                   <button type="button" class="role-menu-item" id="roleMenuEntryBtn">
@@ -1558,11 +1558,11 @@
                         <path d="M5.667 7.333a2 2 0 100-4 2 2 0 000 4zM10.333 7.333a2 2 0 100-4 2 2 0 000 4zM1.333 13.333c0-2.209 1.94-4 4.334-4s4.333 1.791 4.333 4M8 9.454c.36-.087.749-.121 1.333-.121 2.394 0 4.334 1.791 4.334 4" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </span>
-                    <span class="role-menu-item-label">設定角色</span>
+                    <span class="role-menu-item-label">設定AI角色人員</span>
                   </button>
                 </div>
 
-                <!-- 第二頁:點了「設定角色」才會顯示,最上面有返回鈕
+                <!-- 第二頁:點了「設定AI角色人員」才會顯示,最上面有返回鈕
                      可以回到第一頁。 -->
                 <div id="roleMenuListPage" hidden>
                   <button type="button" class="role-menu-back-btn" id="roleMenuBackBtn">‹ 返回</button>
@@ -2091,7 +2091,7 @@
       }
     });
 
-    // NexoraAI「設定角色」:composer 角色選擇/管理(見 ai_roles.py / plan
+    // NexoraAI「設定AI角色人員」:composer 角色選擇/管理(見 ai_roles.py / plan
     // squishy-coalescing-coral.md)。跟 add-btn 的附件選擇器同樣的手法:
     // 輸入框工具列裡一個小圖示按鈕,點了才彈出角色選單,不佔用輸入框
     // 版面。角色分兩區:
@@ -2232,7 +2232,7 @@
       roleMenuBtn.classList.toggle("has-selection", count > 0);
     }
 
-    // 選單分兩頁:第一頁只有一顆「設定角色」項目,點了才切到第二頁
+    // 選單分兩頁:第一頁只有一顆「設定AI角色人員」項目,點了才切到第二頁
     // (返回+預設角色+我的角色+建立角色的完整清單)。每次選單整個
     // 重新打開時都固定從第一頁開始,「返回」是回到第一頁,不是直接
     // 關掉整個選單(關閉選單要點選單外面,或再點一次工具列上的按鈕)。
