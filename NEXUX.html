@@ -812,6 +812,110 @@
     color: rgba(255, 255, 255, 0.75);
   }
 
+  /* 成員列表：頭像 + 姓名，純展示不可點擊 */
+  .member-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+  }
+
+  .member-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: #FFFFFF;
+    overflow: hidden;
+  }
+
+  .member-avatar-ai {
+    background: var(--accent);
+  }
+
+  .member-name {
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 頭像顏色選擇器（設定 profile / 邀請成員視窗） */
+  .modal-avatar-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0 0;
+  }
+
+  .modal-avatar-color {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .modal-avatar-color.selected {
+    border-color: #FFFFFF;
+  }
+
+  .member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .modal-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .modal-upload-btn {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'Inter', var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+  }
+
+  .modal-upload-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #FFFFFF;
+  }
+
+  .modal-upload-preview {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: none;
+    flex-shrink: 0;
+  }
+
+  .modal-upload-preview.visible {
+    display: block;
+  }
+
   /* 角色名稱撐滿剩餘空間,把鉛筆/移除按鈕推到最右邊。 */
   .role-menu-item-label {
     flex: 1;
@@ -1560,6 +1664,20 @@
                     </span>
                     <span class="role-menu-item-label">設定AI角色人員</span>
                   </button>
+                  <button type="button" class="role-menu-item" id="inviteMemberBtn">
+                    <span class="role-menu-icon">
+                      <!-- person with + sign -->
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="6" cy="5.2" r="2.3" stroke="white" stroke-width="1.3"/>
+                        <path d="M1.5 13.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                        <path d="M12.5 5v4M10.5 7h4" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                      </svg>
+                    </span>
+                    <span class="role-menu-item-label">邀請</span>
+                  </button>
+                  <div class="role-menu-divider"></div>
+                  <div class="role-menu-section-label">成員</div>
+                  <div id="membersList"></div>
                 </div>
 
                 <!-- 第二頁:點了「設定AI角色人員」才會顯示,最上面有返回鈕
@@ -1651,6 +1769,60 @@
       <div class="modal-actions">
         <button type="button" class="modal-btn-secondary" id="roleFormCancel">取消</button>
         <button type="button" class="modal-btn-primary" id="roleFormSave">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開啟 app 時設定使用者名稱與頭像顏色 -->
+  <div class="modal-overlay" id="profileSetupModalOverlay" hidden>
+    <div class="modal-box">
+      <p class="modal-title">設定你的資料</p>
+      <label class="modal-field-label">顯示名稱</label>
+      <input type="text" class="modal-input" id="profileNameInput" maxlength="20" placeholder="輸入你的名稱">
+      <label class="modal-field-label">頭像顏色</label>
+      <div class="modal-avatar-picker">
+        <button type="button" class="modal-avatar-color selected" data-color="#5a8a5a" style="background:#5a8a5a;" aria-label="綠色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#5a6e8a" style="background:#5a6e8a;" aria-label="藍色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#8a5a5a" style="background:#8a5a5a;" aria-label="紅色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#7a5a8a" style="background:#7a5a8a;" aria-label="紫色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#8a7a5a" style="background:#8a7a5a;" aria-label="橘色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#5a8a80" style="background:#5a8a80;" aria-label="青色"></button>
+      </div>
+      <div class="modal-upload-row">
+        <input type="file" id="profileImageInput" accept="image/*" style="display:none">
+        <button type="button" class="modal-upload-btn" id="profileImageBtn">上傳圖片</button>
+        <img class="modal-upload-preview" id="profileImagePreview" alt="頭像預覽">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-secondary" id="profileSetupCancel">跳過</button>
+        <button type="button" class="modal-btn-primary" id="profileSetupSave">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 邀請成員視窗 -->
+  <div class="modal-overlay" id="inviteMemberModalOverlay" hidden>
+    <div class="modal-box">
+      <p class="modal-title">邀請成員</p>
+      <label class="modal-field-label">顯示名稱</label>
+      <input type="text" class="modal-input" id="inviteNameInput" maxlength="20" placeholder="輸入成員名稱">
+      <label class="modal-field-label">頭像顏色</label>
+      <div class="modal-avatar-picker">
+        <button type="button" class="modal-avatar-color selected" data-color="#5a6e8a" style="background:#5a6e8a;" aria-label="藍色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#5a8a5a" style="background:#5a8a5a;" aria-label="綠色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#8a5a5a" style="background:#8a5a5a;" aria-label="紅色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#7a5a8a" style="background:#7a5a8a;" aria-label="紫色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#8a7a5a" style="background:#8a7a5a;" aria-label="橘色"></button>
+        <button type="button" class="modal-avatar-color" data-color="#5a8a80" style="background:#5a8a80;" aria-label="青色"></button>
+      </div>
+      <div class="modal-upload-row">
+        <input type="file" id="inviteImageInput" accept="image/*" style="display:none">
+        <button type="button" class="modal-upload-btn" id="inviteImageBtn">上傳圖片</button>
+        <img class="modal-upload-preview" id="inviteImagePreview" alt="頭像預覽">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn-secondary" id="inviteModalCancel">取消</button>
+        <button type="button" class="modal-btn-primary" id="inviteModalSave">邀請</button>
       </div>
     </div>
   </div>
@@ -2216,6 +2388,225 @@
     document.body.appendChild(roleMenu);
     document.body.appendChild(rolePromptModalOverlay);
     document.body.appendChild(roleFormModalOverlay);
+    const profileSetupModalOverlay = document.getElementById("profileSetupModalOverlay");
+    const inviteMemberModalOverlay = document.getElementById("inviteMemberModalOverlay");
+    document.body.appendChild(profileSetupModalOverlay);
+    document.body.appendChild(inviteMemberModalOverlay);
+
+    // ---- 成員系統：個人資料 + 邀請成員 ----
+
+    const STORAGE_KEY_PROFILE = "nexux_profile";
+    const STORAGE_KEY_INVITE_MEMBERS = "nexux_invite_members";
+
+    function loadProfile() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_PROFILE) || "null"); } catch { return null; }
+    }
+    function saveProfile(p) {
+      try { localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(p)); } catch {}
+    }
+
+    let inviteMembers = [];
+    function loadInviteMembers() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_INVITE_MEMBERS) || "[]"); } catch { return []; }
+    }
+    function saveInviteMembers() {
+      try { localStorage.setItem(STORAGE_KEY_INVITE_MEMBERS, JSON.stringify(inviteMembers)); } catch {}
+    }
+
+    // AI 頭像 SVG:上方頭部圓形 + 下方底圓形
+    const AI_AVATAR_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4.5" fill="rgba(255,255,255,0.9)"/><circle cx="12" cy="21" r="7" fill="rgba(255,255,255,0.9)"/></svg>`;
+
+    // 把圖片檔案縮圖成 64×64 JPEG data URL 再存，避免 localStorage 超額
+    function resizeImageToDataUrl(file, size, cb) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          const min = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width - min) / 2, (img.height - min) / 2, min, min, 0, 0, size, size);
+          cb(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function makeAvatarEl(cfg) {
+      const el = document.createElement("div");
+      el.className = "member-avatar" + (cfg.aiBase ? " member-avatar-ai" : "");
+      if (cfg.image) {
+        const img = document.createElement("img");
+        img.src = cfg.image;
+        img.alt = "";
+        el.appendChild(img);
+      } else if (cfg.iconSvg) {
+        if (!cfg.aiBase) el.style.background = "var(--accent)";
+        el.innerHTML = cfg.iconSvg; // 固定常數字串，非使用者輸入
+      } else {
+        el.style.background = cfg.color || "#5a8a5a";
+        el.textContent = (cfg.initial || "?").charAt(0).toUpperCase();
+      }
+      return el;
+    }
+
+    function makeMemberItem(avatarCfg, name) {
+      const item = document.createElement("div");
+      item.className = "member-item";
+      item.appendChild(makeAvatarEl(avatarCfg));
+      const nameEl = document.createElement("span");
+      nameEl.className = "member-name";
+      nameEl.textContent = name;
+      item.appendChild(nameEl);
+      return item;
+    }
+
+    function renderMembersList() {
+      const membersList = document.getElementById("membersList");
+      if (!membersList) return;
+      membersList.innerHTML = "";
+
+      // AI 助手（基礎）
+      membersList.appendChild(makeMemberItem({ aiBase: true, iconSvg: AI_AVATAR_SVG }, "AI 助手"));
+
+      // 已選取的 AI 角色（設定AI角色人員選的）
+      if (typeof selectedRoles !== "undefined" && selectedRoles.size > 0) {
+        const allRoles = [
+          ...(typeof presetRoles !== "undefined" ? presetRoles : []),
+          ...(typeof customRoles !== "undefined" ? customRoles : []),
+        ];
+        selectedRoles.forEach((id) => {
+          const role = allRoles.find((r) => r.id === id);
+          if (!role) return;
+          const iconSvg = (typeof ROLE_ICON_SVG !== "undefined" && ROLE_ICON_SVG[role.icon])
+            ? ROLE_ICON_SVG[role.icon] : (ROLE_ICON_SVG || {}).custom || "";
+          membersList.appendChild(makeMemberItem({ iconSvg }, role.label));
+        });
+      }
+
+      // 使用者自己
+      const profile = loadProfile();
+      if (profile && profile.name) {
+        membersList.appendChild(makeMemberItem(
+          { image: profile.image, color: profile.color, initial: profile.name.charAt(0) },
+          profile.name
+        ));
+      }
+
+      // 邀請進來的人
+      inviteMembers.forEach((m) => {
+        membersList.appendChild(makeMemberItem(
+          { image: m.image, color: m.color, initial: (m.name || "?").charAt(0) },
+          m.name
+        ));
+      });
+    }
+
+    // ---- Profile setup modal ----
+
+    let profileImageDataUrl = null;
+
+    function openProfileSetupModal() {
+      profileImageDataUrl = null;
+      const prev = document.getElementById("profileImagePreview");
+      prev.src = ""; prev.classList.remove("visible");
+      profileSetupModalOverlay.removeAttribute("hidden");
+      document.getElementById("profileNameInput").focus();
+    }
+    function closeProfileSetupModal() {
+      profileSetupModalOverlay.setAttribute("hidden", "");
+    }
+
+    document.getElementById("profileImageBtn").addEventListener("click", () => {
+      document.getElementById("profileImageInput").click();
+    });
+    document.getElementById("profileImageInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      resizeImageToDataUrl(file, 64, (dataUrl) => {
+        profileImageDataUrl = dataUrl;
+        const prev = document.getElementById("profileImagePreview");
+        prev.src = dataUrl; prev.classList.add("visible");
+      });
+    });
+
+    document.getElementById("profileSetupCancel").addEventListener("click", closeProfileSetupModal);
+
+    document.getElementById("profileSetupSave").addEventListener("click", () => {
+      const name = document.getElementById("profileNameInput").value.trim();
+      if (!name) { document.getElementById("profileNameInput").focus(); return; }
+      const sel = profileSetupModalOverlay.querySelector(".modal-avatar-color.selected");
+      const color = sel ? sel.dataset.color : "#5a8a5a";
+      saveProfile({ name, color, image: profileImageDataUrl || null });
+      closeProfileSetupModal();
+      renderMembersList();
+    });
+
+    profileSetupModalOverlay.querySelectorAll(".modal-avatar-color").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        profileSetupModalOverlay.querySelectorAll(".modal-avatar-color").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+    });
+
+    // ---- Invite member modal ----
+
+    let inviteImageDataUrl = null;
+
+    document.getElementById("inviteMemberBtn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeRoleMenu();
+      inviteImageDataUrl = null;
+      document.getElementById("inviteNameInput").value = "";
+      document.getElementById("inviteImageInput").value = "";
+      const prev = document.getElementById("inviteImagePreview");
+      prev.src = ""; prev.classList.remove("visible");
+      inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((b, i) => b.classList.toggle("selected", i === 0));
+      inviteMemberModalOverlay.removeAttribute("hidden");
+      document.getElementById("inviteNameInput").focus();
+    });
+
+    document.getElementById("inviteImageBtn").addEventListener("click", () => {
+      document.getElementById("inviteImageInput").click();
+    });
+    document.getElementById("inviteImageInput").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      resizeImageToDataUrl(file, 64, (dataUrl) => {
+        inviteImageDataUrl = dataUrl;
+        const prev = document.getElementById("inviteImagePreview");
+        prev.src = dataUrl; prev.classList.add("visible");
+      });
+    });
+
+    document.getElementById("inviteModalCancel").addEventListener("click", () => {
+      inviteMemberModalOverlay.setAttribute("hidden", "");
+    });
+
+    document.getElementById("inviteModalSave").addEventListener("click", () => {
+      const name = document.getElementById("inviteNameInput").value.trim();
+      if (!name) { document.getElementById("inviteNameInput").focus(); return; }
+      const sel = inviteMemberModalOverlay.querySelector(".modal-avatar-color.selected");
+      const color = sel ? sel.dataset.color : "#5a6e8a";
+      inviteMembers.push({ name, color, image: inviteImageDataUrl || null });
+      saveInviteMembers();
+      inviteMemberModalOverlay.setAttribute("hidden", "");
+      renderMembersList();
+    });
+
+    inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      });
+    });
+
+    // init
+    inviteMembers = loadInviteMembers();
+    renderMembersList();
+    if (!loadProfile()) openProfileSetupModal();
 
     // ---- 角色選單(#roleMenu)開關/定位 ----
 
@@ -2302,6 +2693,7 @@
         itemEl.classList.add("is-selected");
       }
       updateRoleMenuBadge();
+      renderMembersList();
     }
 
     // ---- 角色選單項目渲染 ----
