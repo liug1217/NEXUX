@@ -55,7 +55,7 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
-    sft_max_iters: int = 3000                # 語料量增加,步數提高以充分學習(1500->3000)
+    sft_max_iters: int = 1500                # 3000步過擬合,回調至1500步
     sft_eval_interval: int = 150
 
     # ------- 推理 (inference) 參數 -------
