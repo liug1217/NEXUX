@@ -330,12 +330,11 @@ def api_generate():
 
         return Response(team_stream(), mimetype="application/x-ndjson; charset=utf-8")
 
-    # 短的問候/道別/道謝類輸入,直接用規則比對回覆,不經過模型生成,
-    # 因為目前模型規模太小,對這種短輸入常常分不清語境(見 smalltalk.py 說明)。
-    smalltalk_match = match_smalltalk(prompt, history)
-    if smalltalk_match is not None:
-        smalltalk_reply, smalltalk_category = smalltalk_match
-        return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
+    # [已停用] smalltalk 規則攔截——模型已經訓練過寒暄語料,交給模型生成。
+    # smalltalk_match = match_smalltalk(prompt, history)
+    # if smalltalk_match is not None:
+    #     smalltalk_reply, smalltalk_category = smalltalk_match
+    #     return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
     # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
     # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
