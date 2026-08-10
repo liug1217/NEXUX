@@ -336,12 +336,10 @@ def api_generate():
     #     smalltalk_reply, smalltalk_category = smalltalk_match
     #     return jsonify({"reply": smalltalk_reply, "type": smalltalk_category})
 
-    # 訓練語料裡「本來就有標準答案」的問題(qa.jsonl / html.jsonl / python.jsonl),
-    # 直接比對回傳原始答案,不用冒險讓模型生成——目前模型規模太小,連訓練資料裡
-    # 出現過的問題都常常答錯,先確保這些「已知題目」一定答對(見 qa_lookup.py)。
-    qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
-    if qa_reply is not None:
-        return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+    # [已停用] qa_lookup 規則攔截——模型已經訓練過這些語料,交給模型生成。
+    # qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
+    # if qa_reply is not None:
+    #     return jsonify({"reply": qa_reply, "type": "qa_lookup"})
 
     # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
     # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
