@@ -55,9 +55,9 @@ app = Flask(__name__)
 # ---- 推理設定(NEXUX v1.0):repetition_penalty 2.0 是實測後解決重複
 # 退化問題(連續生成同一個字)的結果,見 docs/MODEL_MIGRATION.md。 ----
 MAX_NEW_TOKENS = 100
-TEMPERATURE = 0.8
-TOP_K = 40
-TOP_P = 0.9
+TEMPERATURE = 0.5
+TOP_K = 20
+TOP_P = 0.8
 REPETITION_PENALTY = 2.0
 
 _cache = {"model": None, "tokenizer": None}

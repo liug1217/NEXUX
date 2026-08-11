@@ -73,9 +73,9 @@ def get_model_and_tokenizer():
             **base.__dict__,
             "block_size": 1024,
             "max_new_tokens": 100,
-            "temperature": 0.8,
-            "top_k": 40,
-            "top_p": 0.9,
+            "temperature": 0.5,
+            "top_k": 20,
+            "top_p": 0.8,
             "repetition_penalty": 2.0,
         })
         _cache["model"] = model

@@ -55,14 +55,14 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
-    sft_max_iters: int = 1500                # 3000步過擬合,回調至1500步
+    sft_max_iters: int = 2000                # 1500步學不夠,2000步折中
     sft_eval_interval: int = 150
 
     # ------- 推理 (inference) 參數 -------
     max_new_tokens: int = 80   # 縮短生成長度,避免回完問題後模型繼續自由接龍出下一輪假對話
-    temperature: float = 0.7       # 調高,避免每次都固定選同一個「最安全」的開頭字,增加回覆變化
-    top_k: int = 40
-    top_p: float = 0.9             # 核採樣門檻,搭配 top_k 一起使用效果較好
+    temperature: float = 0.5       # 小模型需要低溫度才能穩定生成,0.8太高會亂跑
+    top_k: int = 20               # 收緊取樣範圍,避免選到低機率的錯誤字
+    top_p: float = 0.8            # 核採樣門檻收緊,搭配低溫度提升回覆品質
     repetition_penalty: float = 1.5  # 提高懲罰力道,更積極避免重複字詞
 
     # ------- 裝置 -------
