@@ -54,7 +54,7 @@ class Config:
     # 目的是讓模型學會「看到問題,就該認真回答」這種行為模式,
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
-    sft_learning_rate: float = 5e-5         # 比預訓練的學習率小,避免破壞已經學到的語言能力
+    sft_learning_rate: float = 5e-5
     sft_max_iters: int = 2000                # 1500步學不夠,2000步折中
     sft_eval_interval: int = 150
 

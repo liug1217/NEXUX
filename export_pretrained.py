@@ -1,24 +1,14 @@
 """
 export_pretrained.py
 ----------------------
-把微調好的預訓練模型(checkpoint_pretrained.pt)匯出成部署用格式,
-邏輯跟 export_weights.py(char-level 模型用)類似,但這個模型有 102M
-參數,float16 匯出後約 195~208MB,超過 GitHub 單檔 100MB 上限,所以改用
-int8 仿射量化(每個 tensor 各自算 min/scale,量化成 0~255 的整數,推論時
-再還原成浮點數),實測壓縮後約 86MB,在限制內。
-
-量化品質已經驗證過(見 docs/MODEL_MIGRATION.md):對同一段輸入,量化前後
-生成內容維持相近的語意品質,沒有明顯劣化。
+把微調好的預訓練模型(checkpoint_pretrained.pt)匯出成部署用格式。
+使用 int8 仿射量化壓縮權重,大模型會自動拆成多個 npz 檔案
+(每個 < 95MB,避免超過 GitHub 100MB 限制)。
 
 輸出檔案:
-    weights_meta_pretrained.json  架構等中繼資料
-    weights_pretrained.npz        int8 量化權重 + 各 tensor 的還原參數
-    vocab_pretrained.txt          BertWordpieceTokenizer 用的詞表(已存在,
-                                   這裡不會重新產生,convert_pretrained.py
-                                   已經輸出過)
-
-用法:
-    python export_pretrained.py
+    weights_meta_pretrained.json  架構等中繼資料(含 num_parts)
+    weights_pretrained_0.npz      int8 量化權重(第 0 部分)
+    weights_pretrained_1.npz      ...（大模型才會有多個 part）
 """
 
 import json
@@ -30,12 +20,10 @@ import torch
 _KEY_SEP_ORIGINAL = "."
 _KEY_SEP_NPZ = "__"
 
+MAX_PART_BYTES = 90 * 1024 * 1024  # 90MB per part
+
 
 def _quantize_tensor(tensor: torch.Tensor) -> tuple[np.ndarray, float, float]:
-    """
-    仿射量化(affine quantization):把浮點數線性映射到 0~255 的整數。
-    還原公式:原始值 ≈ 量化整數 * scale + qmin
-    """
     arr = tensor.numpy().astype(np.float32)
     qmin_val = float(arr.min())
     qmax_val = float(arr.max())
@@ -47,7 +35,7 @@ def _quantize_tensor(tensor: torch.Tensor) -> tuple[np.ndarray, float, float]:
 def export_pretrained(
     checkpoint_path: str = "checkpoint_pretrained.pt",
     meta_path: str = "weights_meta_pretrained.json",
-    npz_path: str = "weights_pretrained.npz",
+    npz_prefix: str = "weights_pretrained",
 ):
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(
@@ -57,6 +45,44 @@ def export_pretrained(
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
     state_dict = checkpoint["model_state_dict"]
     arch = checkpoint["architecture"]
+
+    all_arrays = {}
+    for name, tensor in state_dict.items():
+        if "attn.mask" in name:
+            continue
+        key = name.replace(_KEY_SEP_ORIGINAL, _KEY_SEP_NPZ)
+        quantized, qmin_val, scale = _quantize_tensor(tensor)
+        all_arrays[key] = quantized
+        all_arrays[f"{key}|qmin"] = np.float32(qmin_val)
+        all_arrays[f"{key}|qscale"] = np.float32(scale)
+
+    parts = []
+    current_part = {}
+    current_size = 0
+
+    for key, arr in all_arrays.items():
+        arr_size = arr.nbytes
+        if current_size + arr_size > MAX_PART_BYTES and current_part:
+            parts.append(current_part)
+            current_part = {}
+            current_size = 0
+        current_part[key] = arr
+        current_size += arr_size
+
+    if current_part:
+        parts.append(current_part)
+
+    old_files = [f for f in os.listdir(".") if f.startswith(npz_prefix) and f.endswith(".npz")]
+    for f in old_files:
+        os.remove(f)
+
+    total_size = 0
+    for i, part in enumerate(parts):
+        part_path = f"{npz_prefix}_{i}.npz"
+        np.savez_compressed(part_path, **part)
+        part_size = os.path.getsize(part_path)
+        total_size += part_size
+        print(f"[export_pretrained] Part {i}: {part_path} ({part_size / 1024 / 1024:.1f} MB)")
 
     meta = {
         "config": {
@@ -68,28 +94,18 @@ def export_pretrained(
         },
         "sft_applied": checkpoint.get("sft_applied", False),
         "quantized": True,
+        "num_parts": len(parts),
+        "npz_prefix": npz_prefix,
     }
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f)
 
-    arrays = {}
-    for name, tensor in state_dict.items():
-        if "attn.mask" in name:
-            continue  # buffer,不是訓練出來的權重,不需要匯出,推論端會自動生成
-        key = name.replace(_KEY_SEP_ORIGINAL, _KEY_SEP_NPZ)
-        quantized, qmin_val, scale = _quantize_tensor(tensor)
-        arrays[key] = quantized
-        arrays[f"{key}|qmin"] = np.float32(qmin_val)
-        arrays[f"{key}|qscale"] = np.float32(scale)
-
-    np.savez_compressed(npz_path, **arrays)
-
-    meta_size_kb = os.path.getsize(meta_path) / 1024
-    npz_size_mb = os.path.getsize(npz_path) / (1024 * 1024)
-    print(f"[export_pretrained] 已匯出 {meta_path}({meta_size_kb:.1f} KB)"
-          f" 與 {npz_path}({npz_size_mb:.2f} MB,int8 量化)")
-    if npz_size_mb >= 100:
-        print("[export_pretrained] 警告:檔案仍超過 GitHub 單檔 100MB 限制,需要進一步分片或量化。")
+    print(f"[export_pretrained] 共 {len(parts)} 個 part,總計 {total_size / 1024 / 1024:.1f} MB")
+    for i in range(len(parts)):
+        part_path = f"{npz_prefix}_{i}.npz"
+        sz = os.path.getsize(part_path) / (1024 * 1024)
+        if sz >= 100:
+            print(f"[export_pretrained] 警告: {part_path} ({sz:.1f} MB) 超過 GitHub 100MB 限制！")
 
 
 if __name__ == "__main__":

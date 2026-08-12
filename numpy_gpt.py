@@ -51,13 +51,8 @@ class NumpyGPT:
 
     def __init__(self, meta_path: str, npz_filename: str = "weights.npz"):
         """
-        meta_path: weights_meta.json 的路徑,實際權重數字則從同一個資料夾底下
-        的 weights.npz 讀取(export_weights.py 會把兩個檔案輸出在一起)。
-
-        npz_filename: 權重檔案名稱,預設 "weights.npz"(現有 char-level 模型
-        用的檔名)。export_pretrained.py(預訓練/微調模型的匯出流程,體積
-        較大)會用 int8 量化過的權重,檔名不同,呼叫端可以指定不同檔名,
-        避免跟正式站現有的 weights.npz 互相覆蓋。
+        meta_path: weights_meta.json 的路徑,實際權重從同目錄的 npz 讀取。
+        支援單檔(weights.npz)和多檔(weights_pretrained_0.npz, _1.npz, ...)。
         """
         with open(meta_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -71,28 +66,32 @@ class NumpyGPT:
         self.head_size = self.n_embd // self.n_head
         self.is_sft = data.get("sft_applied", False)
 
-        # 權重數字存在跟 meta_path 同一個資料夾底下的 weights.npz(壓縮二進位
-        # 格式,比純文字 JSON 小很多),讀進來後轉回 float64 供後續矩陣運算。
-        npz_path = os.path.join(os.path.dirname(meta_path), npz_filename)
-        npz = np.load(npz_path)
+        base_dir = os.path.dirname(meta_path)
+        num_parts = data.get("num_parts", 0)
+        npz_prefix = data.get("npz_prefix", "")
 
-        # int8 量化過的權重,每個 tensor 會多存一組「key|qmin」「key|qscale」
-        # (仿射量化的還原參數:實際值 = 量化整數 * qscale + qmin),讀取時
-        # 偵測到就先還原成浮點數再繼續,detect 不到就走原本 float16 直接讀的
-        # 舊邏輯,兩種格式都能吃,不影響現有 char-level 模型的推論。
-        quant_keys = {k for k in npz.files if k.endswith("|qmin") or k.endswith("|qscale")}
-        data_keys = [k for k in npz.files if k not in quant_keys]
+        if num_parts > 0 and npz_prefix:
+            npz_files_list = [
+                np.load(os.path.join(base_dir, f"{npz_prefix}_{i}.npz"))
+                for i in range(num_parts)
+            ]
+        else:
+            npz_files_list = [np.load(os.path.join(base_dir, npz_filename))]
 
         self.w = {}
-        for key in data_keys:
-            qmin_key, qscale_key = f"{key}|qmin", f"{key}|qscale"
-            if qmin_key in npz.files and qscale_key in npz.files:
-                qmin = float(npz[qmin_key])
-                qscale = float(npz[qscale_key])
-                value = npz[key].astype(np.float64) * qscale + qmin
-            else:
-                value = npz[key].astype(np.float64)
-            self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value
+        for npz in npz_files_list:
+            quant_keys = {k for k in npz.files if k.endswith("|qmin") or k.endswith("|qscale")}
+            data_keys = [k for k in npz.files if k not in quant_keys]
+
+            for key in data_keys:
+                qmin_key, qscale_key = f"{key}|qmin", f"{key}|qscale"
+                if qmin_key in npz.files and qscale_key in npz.files:
+                    qmin = float(npz[qmin_key])
+                    qscale = float(npz[qscale_key])
+                    value = npz[key].astype(np.float64) * qscale + qmin
+                else:
+                    value = npz[key].astype(np.float64)
+                self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value
 
     def _linear(self, x: np.ndarray, weight: np.ndarray, bias: np.ndarray | None = None) -> np.ndarray:
         """對應 torch 的 nn.Linear:y = x @ weight.T + bias"""

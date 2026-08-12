@@ -66,22 +66,15 @@ _cache = {"model": None, "tokenizer": None}
 def get_model_and_tokenizer():
     if _cache["model"] is None:
         weights_meta_path = os.path.join(BASE_DIR, "weights_meta_pretrained.json")
-        weights_npz_path = os.path.join(BASE_DIR, "weights_pretrained.npz")
         vocab_path = os.path.join(BASE_DIR, "vocab_pretrained.txt")
 
-        if (
-            not os.path.exists(weights_meta_path)
-            or not os.path.exists(weights_npz_path)
-            or not os.path.exists(vocab_path)
-        ):
+        if not os.path.exists(weights_meta_path) or not os.path.exists(vocab_path):
             raise FileNotFoundError(
-                "找不到 weights_meta_pretrained.json / weights_pretrained.npz "
-                "或 vocab_pretrained.txt。請先執行「python convert_pretrained.py」"
-                "「python run_pretrained_sft.py」「python export_pretrained.py」,"
-                "再把這三個檔案一起 commit 上傳。"
+                "找不到 weights_meta_pretrained.json 或 vocab_pretrained.txt。"
+                "請先執行完整的訓練匯出流程。"
             )
 
-        _cache["model"] = NumpyGPT(weights_meta_path, npz_filename="weights_pretrained.npz")
+        _cache["model"] = NumpyGPT(weights_meta_path)
         _cache["tokenizer"] = BertWordpieceTokenizer.load_from_vocab_txt(vocab_path)
 
     return _cache["model"], _cache["tokenizer"]

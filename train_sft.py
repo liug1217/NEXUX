@@ -20,6 +20,7 @@ SFT 訓練會直接載入 train.py 產生的 checkpoint.pt,在原本的權重基
 """
 
 import glob
+import math
 import os
 import torch
 
@@ -27,6 +28,18 @@ from config import Config
 from tokenizer import CharTokenizer
 from dataset import SFTDataset
 from model import GPTModel
+
+
+def _get_sft_lr(step: int, max_iters: int, peak_lr: float) -> float:
+    warmup_iters = min(100, max_iters // 10)
+    min_lr = peak_lr / 10
+    if step < warmup_iters:
+        return peak_lr * (step + 1) / warmup_iters
+    if step >= max_iters:
+        return min_lr
+    decay_ratio = (step - warmup_iters) / max(1, max_iters - warmup_iters)
+    coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
+    return min_lr + coeff * (peak_lr - min_lr)
 
 
 def _ensure_sft_data_up_to_date(config: Config) -> None:
@@ -127,25 +140,37 @@ def train_sft(config: Config | None = None, tokenizer=None):
         print("[train_sft] 已啟用混合精度訓練(AMP)")
 
     # ---- 5. SFT 訓練迴圈 ----
+    accum_steps = 8
     model.train()
+    optimizer.zero_grad(set_to_none=True)
+    accum_loss = 0.0
     for step in range(config.sft_max_iters):
+        lr = _get_sft_lr(step, config.sft_max_iters, config.sft_learning_rate)
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
+
         x, y = dataset.get_batch("train")
 
         with torch.amp.autocast("cuda", enabled=use_amp):
             _, loss = model(x, y)
+        scaled_loss = loss / accum_steps
+        scaler.scale(scaled_loss).backward()
+        accum_loss += loss.item()
 
-        optimizer.zero_grad(set_to_none=True)
-        scaler.scale(loss).backward()
-
-        if config.grad_clip > 0:
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
-
-        scaler.step(optimizer)
-        scaler.update()
+        if (step + 1) % accum_steps == 0 or step == config.sft_max_iters - 1:
+            if config.grad_clip > 0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
 
         if step % config.sft_eval_interval == 0 or step == config.sft_max_iters - 1:
-            print(f"[SFT step {step:4d}] loss {loss.item():.4f}")
+            avg_loss = accum_loss / min(step % accum_steps + 1, accum_steps) if accum_loss > 0 else loss.item()
+            print(f"[SFT step {step:4d}] loss {avg_loss:.4f} lr {lr:.2e}")
+            accum_loss = 0.0
+        elif (step + 1) % accum_steps == 0:
+            accum_loss = 0.0
 
     # ---- 6. 儲存 SFT 完成後的模型(覆蓋掉原本的 checkpoint.pt) ----
     torch.save(

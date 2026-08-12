@@ -94,8 +94,8 @@ def eval_pretrained(seed: int = 1337):
         idx = torch.tensor([ids])
         with torch.no_grad():
             out = model.generate(
-                idx, max_new_tokens=100, temperature=0.8, top_k=40,
-                top_p=0.9, repetition_penalty=1.3, eos_id=tokenizer.eos_id,
+                idx, max_new_tokens=100, temperature=0.5, top_k=20,
+                top_p=0.8, repetition_penalty=2.0, eos_id=tokenizer.eos_id,
             )
         new_ids = out[0, len(ids):].tolist()
         hit_eos = len(new_ids) > 0 and new_ids[-1] == tokenizer.eos_id
