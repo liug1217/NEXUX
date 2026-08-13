@@ -165,7 +165,7 @@ class BertWordpieceTokenizer:
         pieces = [self.itos.get(i, self.unk_token) for i in ids]
         out = []
         for piece in pieces:
-            if piece in ("[CLS]", "[SEP]", "[PAD]", "[MASK]"):
+            if piece in ("[CLS]", "[SEP]", "[PAD]", "[MASK]", "[UNK]"):
                 continue
             if piece.startswith("##"):
                 out.append(piece[2:])

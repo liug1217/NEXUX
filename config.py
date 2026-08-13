@@ -55,8 +55,8 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5
-    sft_max_iters: int = 2000                # 1500步學不夠,2000步折中
-    sft_eval_interval: int = 150
+    sft_max_iters: int = 3000                # 2000步知識題弱,3000步+lr scheduler平衡
+    sft_eval_interval: int = 300
 
     # ------- 推理 (inference) 參數 -------
     max_new_tokens: int = 80   # 縮短生成長度,避免回完問題後模型繼續自由接龍出下一輪假對話
