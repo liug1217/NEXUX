@@ -43,16 +43,78 @@ def softmax(x: np.ndarray, axis: int = -1) -> np.ndarray:
     return exp_x / np.sum(exp_x, axis=axis, keepdims=True)
 
 
+class _LazyWeights:
+    """
+    延遲解量化的權重容器。int4 packed 資料（~80MB）常駐記憶體，
+    只在存取某個 key 時才即時解壓成 float32 並快取（LRU）。
+    這樣 345M 模型也能在 Vercel 免費方案（1024MB）跑起來，
+    不用一次把所有權重都解壓成 float32（~1.3GB）。
+    """
+
+    def __init__(self):
+        self._raw = {}
+        self._cache = {}
+        self._cache_order = []
+        self._max_cache = 20
+
+    def set_raw(self, key, packed, qmin, qscale, numel, shape):
+        self._raw[key] = (packed, qmin, qscale, numel, shape)
+
+    def set_direct(self, key, value):
+        self._raw[key] = value
+
+    def _dequant(self, key):
+        entry = self._raw[key]
+        if isinstance(entry, np.ndarray):
+            return entry
+        packed, qmin, qscale, numel, shape = entry
+        if numel is not None:
+            hi = (packed >> 4).astype(np.float32)
+            lo = (packed & 0x0F).astype(np.float32)
+            flat = np.empty(len(packed) * 2, dtype=np.float32)
+            flat[0::2] = hi
+            flat[1::2] = lo
+            value = flat[:numel] * qscale + qmin
+            if shape is not None:
+                value = value.reshape(shape)
+        else:
+            value = packed.astype(np.float32) * qscale + qmin
+        return value
+
+    def __getitem__(self, key):
+        if key in self._cache:
+            return self._cache[key]
+        value = self._dequant(key)
+        if len(self._cache_order) >= self._max_cache:
+            old_key = self._cache_order.pop(0)
+            self._cache.pop(old_key, None)
+        self._cache[key] = value
+        self._cache_order.append(key)
+        return value
+
+    def __contains__(self, key):
+        return key in self._raw
+
+    def get(self, key, default=None):
+        if key in self._raw:
+            return self[key]
+        return default
+
+    def items(self):
+        for key in self._raw:
+            yield key, self[key]
+
+
 class NumpyGPT:
     """
     純 numpy 版的 GPT 推理引擎。
-    只支援 batch_size = 1 的生成(對聊天網頁來說已經足夠)。
+    只支援 batch_size = 1 的生成（對聊天網頁來說已經足夠）。
     """
 
     def __init__(self, meta_path: str, npz_filename: str = "weights.npz"):
         """
         meta_path: weights_meta.json 的路徑,實際權重從同目錄的 npz 讀取。
-        支援單檔(weights.npz)和多檔(weights_pretrained_0.npz, _1.npz, ...)。
+        支援單檔（weights.npz）和多檔（weights_pretrained_0.npz, _1.npz, ...）。
         """
         with open(meta_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -80,34 +142,28 @@ class NumpyGPT:
 
         quant_bits = data.get("quant_bits", 8)
 
-        self.w = {}
+        self.w = _LazyWeights()
         for npz in npz_files_list:
             meta_keys = {k for k in npz.files if "|" in k}
             data_keys = [k for k in npz.files if k not in meta_keys]
 
             for key in data_keys:
+                real_key = key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)
                 qmin_key, qscale_key = f"{key}|qmin", f"{key}|qscale"
                 numel_key = f"{key}|numel"
                 if qmin_key in npz.files and qscale_key in npz.files:
                     qmin = float(npz[qmin_key])
                     qscale = float(npz[qscale_key])
+                    packed = np.array(npz[key])
                     if quant_bits == 4 and numel_key in npz.files:
                         numel = int(npz[numel_key])
-                        packed = npz[key]
-                        hi = (packed >> 4).astype(np.float32)
-                        lo = (packed & 0x0F).astype(np.float32)
-                        flat = np.empty(len(packed) * 2, dtype=np.float32)
-                        flat[0::2] = hi
-                        flat[1::2] = lo
-                        value = flat[:numel] * qscale + qmin
                         shape_key = f"{key}|shape"
-                        if shape_key in npz.files:
-                            value = value.reshape(npz[shape_key])
+                        shape = tuple(npz[shape_key]) if shape_key in npz.files else None
+                        self.w.set_raw(real_key, packed, qmin, qscale, numel, shape)
                     else:
-                        value = npz[key].astype(np.float32) * qscale + qmin
+                        self.w.set_raw(real_key, packed, qmin, qscale, None, None)
                 else:
-                    value = npz[key].astype(np.float32)
-                self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value
+                    self.w.set_direct(real_key, npz[key].astype(np.float32))
 
     def _linear(self, x: np.ndarray, weight: np.ndarray, bias: np.ndarray | None = None) -> np.ndarray:
         """對應 torch 的 nn.Linear:y = x @ weight.T + bias"""
