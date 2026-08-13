@@ -94,9 +94,9 @@ class NumpyGPT:
                     if quant_bits == 4 and numel_key in npz.files:
                         numel = int(npz[numel_key])
                         packed = npz[key]
-                        hi = (packed >> 4).astype(np.float64)
-                        lo = (packed & 0x0F).astype(np.float64)
-                        flat = np.empty(len(packed) * 2, dtype=np.float64)
+                        hi = (packed >> 4).astype(np.float32)
+                        lo = (packed & 0x0F).astype(np.float32)
+                        flat = np.empty(len(packed) * 2, dtype=np.float32)
                         flat[0::2] = hi
                         flat[1::2] = lo
                         value = flat[:numel] * qscale + qmin
@@ -104,9 +104,9 @@ class NumpyGPT:
                         if shape_key in npz.files:
                             value = value.reshape(npz[shape_key])
                     else:
-                        value = npz[key].astype(np.float64) * qscale + qmin
+                        value = npz[key].astype(np.float32) * qscale + qmin
                 else:
-                    value = npz[key].astype(np.float64)
+                    value = npz[key].astype(np.float32)
                 self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value
 
     def _linear(self, x: np.ndarray, weight: np.ndarray, bias: np.ndarray | None = None) -> np.ndarray:
