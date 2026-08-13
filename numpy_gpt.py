@@ -100,6 +100,9 @@ class NumpyGPT:
                         flat[0::2] = hi
                         flat[1::2] = lo
                         value = flat[:numel] * qscale + qmin
+                        shape_key = f"{key}|shape"
+                        if shape_key in npz.files:
+                            value = value.reshape(npz[shape_key])
                     else:
                         value = npz[key].astype(np.float64) * qscale + qmin
                 else:

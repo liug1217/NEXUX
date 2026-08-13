@@ -73,6 +73,7 @@ def export_pretrained(
         all_arrays[f"{key}|qscale"] = np.float32(scale)
         if use_int4:
             all_arrays[f"{key}|numel"] = np.int64(tensor.numel())
+            all_arrays[f"{key}|shape"] = np.array(tensor.shape, dtype=np.int64)
 
     parts = []
     current_part = {}
