@@ -36,7 +36,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 _CACHE_DIR = r"C:\mlcache"
-_MODEL_NAME = "ckiplab/gpt2-base-chinese"
+_MODEL_NAME = "uer/gpt2-medium-chinese-cluecorpussmall"
 
 OUT_CHECKPOINT = "checkpoint_pretrained.pt"
 OUT_VOCAB = "vocab_pretrained.txt"

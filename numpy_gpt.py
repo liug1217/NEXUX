@@ -78,17 +78,30 @@ class NumpyGPT:
         else:
             npz_files_list = [np.load(os.path.join(base_dir, npz_filename))]
 
+        quant_bits = data.get("quant_bits", 8)
+
         self.w = {}
         for npz in npz_files_list:
-            quant_keys = {k for k in npz.files if k.endswith("|qmin") or k.endswith("|qscale")}
-            data_keys = [k for k in npz.files if k not in quant_keys]
+            meta_keys = {k for k in npz.files if "|" in k}
+            data_keys = [k for k in npz.files if k not in meta_keys]
 
             for key in data_keys:
                 qmin_key, qscale_key = f"{key}|qmin", f"{key}|qscale"
+                numel_key = f"{key}|numel"
                 if qmin_key in npz.files and qscale_key in npz.files:
                     qmin = float(npz[qmin_key])
                     qscale = float(npz[qscale_key])
-                    value = npz[key].astype(np.float64) * qscale + qmin
+                    if quant_bits == 4 and numel_key in npz.files:
+                        numel = int(npz[numel_key])
+                        packed = npz[key]
+                        hi = (packed >> 4).astype(np.float64)
+                        lo = (packed & 0x0F).astype(np.float64)
+                        flat = np.empty(len(packed) * 2, dtype=np.float64)
+                        flat[0::2] = hi
+                        flat[1::2] = lo
+                        value = flat[:numel] * qscale + qmin
+                    else:
+                        value = npz[key].astype(np.float64) * qscale + qmin
                 else:
                     value = npz[key].astype(np.float64)
                 self.w[key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)] = value

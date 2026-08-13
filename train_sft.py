@@ -126,6 +126,10 @@ def train_sft(config: Config | None = None, tokenizer=None):
     assert all("attn.mask" in k for k in missing), f"checkpoint 缺少非 buffer 的權重: {missing}"
     print(f"[train_sft] 已載入預訓練權重,起始 loss 應該會比從零訓練低很多")
 
+    if model_config.n_layer >= 24:
+        model.gradient_checkpointing = True
+        print("[train_sft] 大模型,已啟用 gradient checkpointing 節省 VRAM")
+
     # ---- 4. Optimizer(用比預訓練小很多的學習率,避免破壞已學到的能力) ----
     optimizer = torch.optim.AdamW(
         model.parameters(),

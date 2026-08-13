@@ -13,6 +13,7 @@ model.py
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint as grad_checkpoint
 from config import Config
 
 
@@ -92,12 +93,13 @@ class GPTModel(nn.Module):
         super().__init__()
         self.config = config
         self.vocab_size = vocab_size
+        self.gradient_checkpointing = False
 
         self.token_emb = nn.Embedding(vocab_size, config.n_embd)
         self.pos_emb = nn.Embedding(config.block_size, config.n_embd)
         self.drop = nn.Dropout(config.dropout)
 
-        self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.blocks = nn.ModuleList([Block(config) for _ in range(config.n_layer)])
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, vocab_size, bias=False)
 
@@ -128,7 +130,11 @@ class GPTModel(nn.Module):
         pos = torch.arange(T, device=idx.device)
         x = self.token_emb(idx) + self.pos_emb(pos)  # (B, T, n_embd)
         x = self.drop(x)
-        x = self.blocks(x)
+        for block in self.blocks:
+            if self.gradient_checkpointing and self.training:
+                x = grad_checkpoint(block, x, use_reentrant=False)
+            else:
+                x = block(x)
         x = self.ln_f(x)
         logits = self.head(x)  # (B, T, vocab_size)
 

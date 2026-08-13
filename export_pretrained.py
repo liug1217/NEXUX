@@ -32,10 +32,23 @@ def _quantize_tensor(tensor: torch.Tensor) -> tuple[np.ndarray, float, float]:
     return quantized, qmin_val, scale
 
 
+def _quantize_tensor_int4(tensor: torch.Tensor) -> tuple[np.ndarray, float, float]:
+    arr = tensor.numpy().astype(np.float32).ravel()
+    qmin_val = float(arr.min())
+    qmax_val = float(arr.max())
+    scale = (qmax_val - qmin_val) / 15.0 if qmax_val > qmin_val else 1.0
+    q = np.clip(np.round((arr - qmin_val) / scale), 0, 15).astype(np.uint8)
+    if len(q) % 2 != 0:
+        q = np.append(q, np.uint8(0))
+    packed = (q[0::2] << 4) | q[1::2]
+    return packed, qmin_val, scale
+
+
 def export_pretrained(
     checkpoint_path: str = "checkpoint_pretrained.pt",
     meta_path: str = "weights_meta_pretrained.json",
     npz_prefix: str = "weights_pretrained",
+    use_int4: bool = False,
 ):
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(
@@ -47,14 +60,19 @@ def export_pretrained(
     arch = checkpoint["architecture"]
 
     all_arrays = {}
+    qfunc = _quantize_tensor_int4 if use_int4 else _quantize_tensor
+    if use_int4:
+        print("[export_pretrained] 使用 int4 量化(適合大模型部署)")
     for name, tensor in state_dict.items():
         if "attn.mask" in name:
             continue
         key = name.replace(_KEY_SEP_ORIGINAL, _KEY_SEP_NPZ)
-        quantized, qmin_val, scale = _quantize_tensor(tensor)
+        quantized, qmin_val, scale = qfunc(tensor)
         all_arrays[key] = quantized
         all_arrays[f"{key}|qmin"] = np.float32(qmin_val)
         all_arrays[f"{key}|qscale"] = np.float32(scale)
+        if use_int4:
+            all_arrays[f"{key}|numel"] = np.int64(tensor.numel())
 
     parts = []
     current_part = {}
@@ -94,6 +112,7 @@ def export_pretrained(
         },
         "sft_applied": checkpoint.get("sft_applied", False),
         "quantized": True,
+        "quant_bits": 4 if use_int4 else 8,
         "num_parts": len(parts),
         "npz_prefix": npz_prefix,
     }
@@ -109,4 +128,5 @@ def export_pretrained(
 
 
 if __name__ == "__main__":
-    export_pretrained()
+    import sys
+    export_pretrained(use_int4="--int4" in sys.argv)
