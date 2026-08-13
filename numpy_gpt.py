@@ -45,63 +45,48 @@ def softmax(x: np.ndarray, axis: int = -1) -> np.ndarray:
 
 class _LazyWeights:
     """
-    延遲解量化的權重容器。int4 packed 資料（~80MB）常駐記憶體，
-    只在存取某個 key 時才即時解壓成 float32 並快取（LRU）。
-    這樣 345M 模型也能在 Vercel 免費方案（1024MB）跑起來，
-    不用一次把所有權重都解壓成 float32（~1.3GB）。
+    記憶體友善的權重容器。載入時把 int4 packed 資料解開成 uint8
+    （~345MB），存取時做簡單的 float32 轉換（arr * scale + qmin）。
+    推理峰值 ~606MB，在 Vercel 免費方案（1024MB）跑得動。
     """
 
     def __init__(self):
-        self._raw = {}
-        self._cache = {}
-        self._cache_order = []
-        self._max_cache = 20
+        self._store = {}
 
-    def set_raw(self, key, packed, qmin, qscale, numel, shape):
-        self._raw[key] = (packed, qmin, qscale, numel, shape)
+    def set_int4(self, key, packed, qmin, qscale, numel, shape):
+        hi = packed >> 4
+        lo = packed & 0x0F
+        flat = np.empty(len(packed) * 2, dtype=np.uint8)
+        flat[0::2] = hi
+        flat[1::2] = lo
+        arr = flat[:numel]
+        if shape is not None:
+            arr = arr.reshape(shape)
+        self._store[key] = (arr, np.float32(qmin), np.float32(qscale))
+
+    def set_int8(self, key, packed, qmin, qscale):
+        self._store[key] = (packed, np.float32(qmin), np.float32(qscale))
 
     def set_direct(self, key, value):
-        self._raw[key] = value
-
-    def _dequant(self, key):
-        entry = self._raw[key]
-        if isinstance(entry, np.ndarray):
-            return entry
-        packed, qmin, qscale, numel, shape = entry
-        if numel is not None:
-            hi = (packed >> 4).astype(np.float32)
-            lo = (packed & 0x0F).astype(np.float32)
-            flat = np.empty(len(packed) * 2, dtype=np.float32)
-            flat[0::2] = hi
-            flat[1::2] = lo
-            value = flat[:numel] * qscale + qmin
-            if shape is not None:
-                value = value.reshape(shape)
-        else:
-            value = packed.astype(np.float32) * qscale + qmin
-        return value
+        self._store[key] = value
 
     def __getitem__(self, key):
-        if key in self._cache:
-            return self._cache[key]
-        value = self._dequant(key)
-        if len(self._cache_order) >= self._max_cache:
-            old_key = self._cache_order.pop(0)
-            self._cache.pop(old_key, None)
-        self._cache[key] = value
-        self._cache_order.append(key)
-        return value
+        entry = self._store[key]
+        if isinstance(entry, np.ndarray):
+            return entry
+        arr, qmin, qscale = entry
+        return arr.astype(np.float32) * qscale + qmin
 
     def __contains__(self, key):
-        return key in self._raw
+        return key in self._store
 
     def get(self, key, default=None):
-        if key in self._raw:
+        if key in self._store:
             return self[key]
         return default
 
     def items(self):
-        for key in self._raw:
+        for key in self._store:
             yield key, self[key]
 
 
@@ -158,10 +143,10 @@ class NumpyGPT:
                     if quant_bits == 4 and numel_key in npz.files:
                         numel = int(npz[numel_key])
                         shape_key = f"{key}|shape"
-                        shape = tuple(npz[shape_key]) if shape_key in npz.files else None
-                        self.w.set_raw(real_key, packed, qmin, qscale, numel, shape)
+                        shape = tuple(int(s) for s in npz[shape_key]) if shape_key in npz.files else None
+                        self.w.set_int4(real_key, packed, qmin, qscale, numel, shape)
                     else:
-                        self.w.set_raw(real_key, packed, qmin, qscale, None, None)
+                        self.w.set_int8(real_key, packed, qmin, qscale)
                 else:
                     self.w.set_direct(real_key, npz[key].astype(np.float32))
 
