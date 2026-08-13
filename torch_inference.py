@@ -5,8 +5,7 @@ Railway 專用的 PyTorch 推理引擎。從 int4/int8 npz 權重反量化後載
 model.py 的 GPTModel，用 PyTorch 做推理——即使在純 CPU 上也比 numpy
 快很多倍（PyTorch 內建 optimized BLAS + 多線程矩陣運算）。
 
-Vercel 因為套件大小限制不能裝 torch，所以 Vercel 繼續用 numpy_gpt.py；
-Railway 是 Docker 容器沒有限制，可以裝完整的 torch。
+記憶體優化：逐層載入權重，避免整份 state_dict 和 model 同時佔用記憶體。
 """
 
 import json
@@ -22,12 +21,49 @@ _KEY_SEP_NPZ = "__"
 _KEY_SEP_ORIGINAL = "."
 
 
-def _load_npz_to_state_dict(meta_path: str):
+def _dequant_array(npz_files, key, quant_bits):
+    for npz in npz_files:
+        if key not in npz.files:
+            continue
+        qmin_key = f"{key}|qmin"
+        qscale_key = f"{key}|qscale"
+        numel_key = f"{key}|numel"
+        shape_key = f"{key}|shape"
+
+        if qmin_key in npz.files and qscale_key in npz.files:
+            qmin = float(npz[qmin_key])
+            qscale = float(npz[qscale_key])
+            packed = np.array(npz[key])
+
+            if quant_bits == 4 and numel_key in npz.files:
+                numel = int(npz[numel_key])
+                hi = packed >> 4
+                lo = packed & 0x0F
+                flat = np.empty(len(packed) * 2, dtype=np.uint8)
+                flat[0::2] = hi
+                flat[1::2] = lo
+                del packed, hi, lo
+                arr = flat[:numel].astype(np.float32) * qscale + qmin
+                del flat
+                if shape_key in npz.files:
+                    shape = tuple(int(s) for s in npz[shape_key])
+                    arr = arr.reshape(shape)
+            else:
+                arr = packed.astype(np.float32) * qscale + qmin
+                del packed
+        else:
+            arr = npz[key].astype(np.float32)
+
+        return torch.from_numpy(arr)
+    return None
+
+
+def load_model(meta_path: str):
     with open(meta_path, "r", encoding="utf-8") as f:
         meta = json.load(f)
 
     cfg = meta["config"]
-    base_dir = os.path.dirname(meta_path)
+    base_dir = os.path.dirname(meta_path) or "."
     num_parts = meta.get("num_parts", 0)
     npz_prefix = meta.get("npz_prefix", "")
     quant_bits = meta.get("quant_bits", 8)
@@ -40,49 +76,13 @@ def _load_npz_to_state_dict(meta_path: str):
     else:
         npz_files = [np.load(os.path.join(base_dir, "weights.npz"))]
 
-    state_dict = {}
+    all_data_keys = set()
     for npz in npz_files:
-        meta_keys = {k for k in npz.files if "|" in k}
-        data_keys = [k for k in npz.files if k not in meta_keys]
-
-        for key in data_keys:
-            real_key = key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)
-            qmin_key = f"{key}|qmin"
-            qscale_key = f"{key}|qscale"
-            numel_key = f"{key}|numel"
-            shape_key = f"{key}|shape"
-
-            if qmin_key in npz.files and qscale_key in npz.files:
-                qmin = float(npz[qmin_key])
-                qscale = float(npz[qscale_key])
-                packed = np.array(npz[key])
-
-                if quant_bits == 4 and numel_key in npz.files:
-                    numel = int(npz[numel_key])
-                    hi = packed >> 4
-                    lo = packed & 0x0F
-                    flat = np.empty(len(packed) * 2, dtype=np.uint8)
-                    flat[0::2] = hi
-                    flat[1::2] = lo
-                    arr = flat[:numel].astype(np.float32) * qscale + qmin
-                    if shape_key in npz.files:
-                        shape = tuple(int(s) for s in npz[shape_key])
-                        arr = arr.reshape(shape)
-                else:
-                    arr = packed.astype(np.float32) * qscale + qmin
-            else:
-                arr = npz[key].astype(np.float32)
-
-            state_dict[real_key] = torch.from_numpy(arr)
-
-    return state_dict, cfg, meta
-
-
-def load_model(meta_path: str) -> tuple[GPTModel, dict]:
-    state_dict, cfg, meta = _load_npz_to_state_dict(meta_path)
+        for k in npz.files:
+            if "|" not in k:
+                all_data_keys.add(k)
 
     config = Config()
-    config.vocab_size = cfg["vocab_size"]
     config.n_embd = cfg["n_embd"]
     config.n_head = cfg["n_head"]
     config.n_layer = cfg["n_layer"]
@@ -90,12 +90,36 @@ def load_model(meta_path: str) -> tuple[GPTModel, dict]:
     config.dropout = 0.0
 
     model = GPTModel(config, cfg["vocab_size"])
-
-    if "head.weight" not in state_dict:
-        state_dict["head.weight"] = state_dict["token_emb.weight"].clone()
-
-    model.load_state_dict(state_dict, strict=False)
     model.eval()
+
+    with torch.no_grad():
+        for npz_key in all_data_keys:
+            real_key = npz_key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)
+            tensor = _dequant_array(npz_files, npz_key, quant_bits)
+            if tensor is None:
+                continue
+
+            parts = real_key.split(".")
+            obj = model
+            for part in parts[:-1]:
+                if part.isdigit():
+                    obj = obj[int(part)]
+                else:
+                    obj = getattr(obj, part)
+
+            attr_name = parts[-1]
+            param = getattr(obj, attr_name, None)
+            if isinstance(param, torch.nn.Parameter):
+                param.data.copy_(tensor)
+            elif isinstance(param, torch.Tensor):
+                param.copy_(tensor)
+            else:
+                setattr(obj, attr_name, tensor)
+
+            del tensor
+
+    for npz in npz_files:
+        npz.close()
 
     info = {
         "n_layer": cfg["n_layer"],
