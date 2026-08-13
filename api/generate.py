@@ -244,6 +244,32 @@ def api_generate():
 
         return Response(team_stream(), mimetype="application/x-ndjson; charset=utf-8")
 
+    _INFERENCE_URL = os.environ.get("OWN_INFERENCE_URL")
+    if _INFERENCE_URL:
+        import urllib.request
+        fwd_payload = json.dumps({
+            "prompt": prompt, "provider": "own",
+            "history": history, "debug": debug,
+            "roleRequests": payload.get("roleRequests"),
+        }).encode("utf-8")
+        fwd_req = urllib.request.Request(
+            f"{_INFERENCE_URL.rstrip('/')}/api/generate",
+            data=fwd_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            fwd_resp = urllib.request.urlopen(fwd_req, timeout=55)
+            content_type = fwd_resp.headers.get("Content-Type", "application/json")
+            if "ndjson" in content_type:
+                def proxy_stream():
+                    for line in fwd_resp:
+                        yield line
+                return Response(proxy_stream(), mimetype=content_type)
+            else:
+                return Response(fwd_resp.read(), mimetype=content_type)
+        except Exception:
+            pass  # 外部推理伺服器不可用，fallback 到本地 numpy 推理
+
     # [已停用] smalltalk 規則攔截——模型已經訓練過寒暄語料,交給模型生成。
     # smalltalk_match = match_smalltalk(prompt, history)
     # if smalltalk_match is not None:
