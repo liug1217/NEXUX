@@ -1,9 +1,8 @@
 """
 railway_server.py
 ------------------
-Railway 部署用的推理伺服器。跟 api/generate.py 用同一套 numpy_gpt.py
-推理引擎，但以常駐容器運行——模型啟動時載入一次、常駐記憶體，
-之後每個請求直接推理，沒有 Vercel serverless 的冷啟動和 timeout 問題。
+Railway 部署用的推理伺服器。用 PyTorch 推理引擎（比 numpy 快很多倍），
+以常駐容器運行——模型啟動時載入一次、常駐記憶體，之後每個請求直接推理。
 
 Vercel 前端透過 OWN_INFERENCE_URL 環境變數把 own 模型的請求轉過來。
 """
@@ -13,10 +12,11 @@ import os
 import sys
 import time
 
+import torch
 from flask import Flask, request, jsonify, Response
 
 from bert_wordpiece_tokenizer import BertWordpieceTokenizer
-from numpy_gpt import NumpyGPT
+from torch_inference import load_model
 from text_cleanup import find_next_turn_marker
 from conversation import build_context_prompt
 
@@ -30,18 +30,19 @@ REPETITION_PENALTY = 2.0
 
 _model = None
 _tokenizer = None
+_model_info = None
 
 
 def get_model_and_tokenizer():
-    global _model, _tokenizer
+    global _model, _tokenizer, _model_info
     if _model is None:
-        print("[railway] 載入 LYNX 模型...", flush=True)
+        print("[railway] 載入 LYNX 模型 (PyTorch)...", flush=True)
         t0 = time.time()
-        _model = NumpyGPT("weights_meta_pretrained.json")
+        _model, _model_info = load_model("weights_meta_pretrained.json")
         _tokenizer = BertWordpieceTokenizer.load_from_vocab_txt("vocab_pretrained.txt")
         print(f"[railway] LYNX 載入完成 ({time.time()-t0:.1f}s) "
-              f"n_layer={_model.n_layer} n_embd={_model.n_embd}", flush=True)
-    return _model, _tokenizer
+              f"n_layer={_model_info['n_layer']} n_embd={_model_info['n_embd']}", flush=True)
+    return _model, _tokenizer, _model_info
 
 
 @app.route("/api/generate", methods=["POST"])
@@ -53,18 +54,20 @@ def api_generate():
     if not prompt:
         return jsonify({"error": "請輸入內容再送出。"}), 400
 
-    model, tokenizer = get_model_and_tokenizer()
+    model, tokenizer, info = get_model_and_tokenizer()
 
-    if model.is_sft:
+    if info["is_sft"]:
         wrapped_prompt = build_context_prompt(
-            history, prompt, tokenizer, model.block_size, MAX_NEW_TOKENS
+            history, prompt, tokenizer, info["block_size"], MAX_NEW_TOKENS
         )
     else:
         wrapped_prompt = prompt
 
-    idx = tokenizer.encode(wrapped_prompt)
-    if len(idx) == 0:
+    token_ids = tokenizer.encode(wrapped_prompt)
+    if len(token_ids) == 0:
         return jsonify({"error": "輸入的文字包含詞表以外的字元,請換一句話試試。"}), 400
+
+    idx = torch.tensor([token_ids], dtype=torch.long)
 
     def stream():
         accumulated = ""
@@ -72,7 +75,7 @@ def api_generate():
         HOLD = 3
         step = 0
 
-        for token_id in model.generate_stream(
+        for token_id_list in model.generate_stream(
             idx,
             max_new_tokens=MAX_NEW_TOKENS,
             temperature=TEMPERATURE,
@@ -82,6 +85,7 @@ def api_generate():
             eos_id=getattr(tokenizer, "eos_id", None),
         ):
             step += 1
+            token_id = token_id_list[0] if isinstance(token_id_list, list) else token_id_list
             accumulated += tokenizer.decode([token_id])
 
             marker = find_next_turn_marker(accumulated)
@@ -107,12 +111,12 @@ def api_generate():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "model": "LYNX"})
+    return jsonify({"status": "ok", "model": "LYNX", "engine": "pytorch"})
 
 
 print("[railway] 啟動中，預先載入模型...", flush=True)
 get_model_and_tokenizer()
-print("[railway] LYNX 推理伺服器就緒", flush=True)
+print("[railway] LYNX 推理伺服器就緒 (PyTorch engine)", flush=True)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
