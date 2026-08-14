@@ -2,10 +2,9 @@
 torch_inference.py
 ------------------
 Railway 專用的 PyTorch 推理引擎。從 int4/int8 npz 權重反量化後載入
-model.py 的 GPTModel，用 PyTorch 做推理——即使在純 CPU 上也比 numpy
-快很多倍（PyTorch 內建 optimized BLAS + 多線程矩陣運算）。
+model.py 的 GPTModel（float16），用 PyTorch 做推理。
 
-記憶體優化：逐層載入權重，避免整份 state_dict 和 model 同時佔用記憶體。
+float16 讓整個模型只佔 ~700MB，配合逐層載入避免峰值暴衝。
 """
 
 import json
@@ -54,7 +53,7 @@ def _dequant_array(npz_files, key, quant_bits):
         else:
             arr = npz[key].astype(np.float32)
 
-        return torch.from_numpy(arr)
+        return torch.from_numpy(arr).half()
     return None
 
 
@@ -90,11 +89,15 @@ def load_model(meta_path: str):
     config.dropout = 0.0
 
     model = GPTModel(config, cfg["vocab_size"])
+    model.half()
     model.eval()
 
+    has_head_weight = False
     with torch.no_grad():
         for npz_key in all_data_keys:
             real_key = npz_key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)
+            if real_key == "head.weight":
+                has_head_weight = True
             tensor = _dequant_array(npz_files, npz_key, quant_bits)
             if tensor is None:
                 continue
@@ -117,6 +120,9 @@ def load_model(meta_path: str):
                 setattr(obj, attr_name, tensor)
 
             del tensor
+
+    if not has_head_weight:
+        model.head.weight.data.copy_(model.token_emb.weight.data)
 
     for npz in npz_files:
         npz.close()
