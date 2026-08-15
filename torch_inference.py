@@ -4,23 +4,24 @@ torch_inference.py
 Railway 專用的 PyTorch 推理引擎。從 int4/int8 npz 權重反量化後載入
 model.py 的 GPTModel（float16），用 PyTorch 做推理。
 
-float16 讓整個模型只佔 ~700MB，配合逐層載入避免峰值暴衝。
+記憶體優化：
+- 直接以 float16 初始化模型（避免 float32→float16 轉換的雙倍峰值）
+- 逐個權重載入，立刻釋放暫存
+- 總峰值 ~850MB
 """
 
 import json
 import os
+import gc
 
 import numpy as np
 import torch
-
-from model import GPTModel
-from config import Config
 
 _KEY_SEP_NPZ = "__"
 _KEY_SEP_ORIGINAL = "."
 
 
-def _dequant_array(npz_files, key, quant_bits):
+def _dequant_one(npz_files, key, quant_bits):
     for npz in npz_files:
         if key not in npz.files:
             continue
@@ -53,7 +54,9 @@ def _dequant_array(npz_files, key, quant_bits):
         else:
             arr = npz[key].astype(np.float32)
 
-        return torch.from_numpy(arr).half()
+        t = torch.from_numpy(arr).half()
+        del arr
+        return t
     return None
 
 
@@ -81,6 +84,9 @@ def load_model(meta_path: str):
             if "|" not in k:
                 all_data_keys.add(k)
 
+    from config import Config
+    from model import GPTModel
+
     config = Config()
     config.n_embd = cfg["n_embd"]
     config.n_head = cfg["n_head"]
@@ -88,9 +94,13 @@ def load_model(meta_path: str):
     config.block_size = cfg["block_size"]
     config.dropout = 0.0
 
+    prev_dtype = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float16)
     model = GPTModel(config, cfg["vocab_size"])
-    model.half()
+    torch.set_default_dtype(prev_dtype)
     model.eval()
+
+    gc.collect()
 
     has_head_weight = False
     with torch.no_grad():
@@ -98,7 +108,7 @@ def load_model(meta_path: str):
             real_key = npz_key.replace(_KEY_SEP_NPZ, _KEY_SEP_ORIGINAL)
             if real_key == "head.weight":
                 has_head_weight = True
-            tensor = _dequant_array(npz_files, npz_key, quant_bits)
+            tensor = _dequant_one(npz_files, npz_key, quant_bits)
             if tensor is None:
                 continue
 
@@ -121,11 +131,15 @@ def load_model(meta_path: str):
 
             del tensor
 
+        gc.collect()
+
     if not has_head_weight:
         model.head.weight.data.copy_(model.token_emb.weight.data)
 
     for npz in npz_files:
         npz.close()
+
+    gc.collect()
 
     info = {
         "n_layer": cfg["n_layer"],
