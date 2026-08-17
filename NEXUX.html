@@ -1861,6 +1861,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
 
   <script>
+    // ===== Colab 後端設定 =====
+    // 把這裡換成你在 Colab 跑 ngrok 拿到的網址,例如 "https://abcd-1234.ngrok-free.app"
+    // 設成空字串 "" 就會退回用原本的 /api/generate（Vercel 本機測試用）
+    const COLAB_API_URL = "https://jersey-moustache-frustrate.ngrok-free.dev";
+
     // 對話記憶:記錄目前這個分頁裡聊過的每一輪對話,讓後端組 context 時
     // 能看到之前聊過什麼(例如「我叫小明」->「我叫什麼?」),重新整理頁面就會清空。
     const conversationHistory = [];
@@ -3556,6 +3561,34 @@
           .map((role) => ({ id: role.id, label: role.label, icon: role.icon, promptTemplate: role.promptTemplate }));
         const teamStartTime = Date.now();
         try {
+          // ---- Colab 模式:把角色 prompt 跟使用者訊息合在一起送出 ----
+          if (COLAB_API_URL) {
+            for (const role of roleRequests) {
+              const combinedPrompt = (role.promptTemplate || "").replace("{{input}}", prompt) || prompt;
+              const res = await fetch(COLAB_API_URL + "/api/chat", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "ngrok-skip-browser-warning": "1",
+                },
+                body: JSON.stringify({ prompt: combinedPrompt }),
+                signal: activeAbortController.signal,
+              });
+              const data = await res.json();
+              if (!res.ok || data.error) {
+                addMessage(data.error || `${role.icon} ${role.label} 回覆失敗`, "error");
+              } else {
+                const el = document.createElement("div");
+                el.className = "msg assistant";
+                messagesEl.appendChild(el);
+                const replyText = `${role.icon} ${role.label}\n${data.reply || "(無回覆)"}`;
+                await typeOutText(el, replyText, 12, activeAbortController.signal);
+                conversationHistory.push({ role: "assistant", text: replyText });
+              }
+            }
+          }
+          // ---- 原本的 Vercel / 本機團隊模式 ----
+          else {
           const res = await fetch("/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -3568,24 +3601,24 @@
             signal: activeAbortController.signal,
           });
           const contentType = res.headers.get("content-type") || "";
-          // 額度不足/模型還沒載入這類「生成開始前」就先被擋下的錯誤,
-          // 後端還是走 jsonify()(application/json);真的開始生成的話,
-          // 一定是 NDJSON 串流,兩種情況要分開處理。
           if (!res.ok || contentType.includes("application/json")) {
             let errMsg = "團隊模式發生未知錯誤,請稍後再試。";
             try {
               const data = await res.json();
               errMsg = data.error || errMsg;
-            } catch { /* 保底,理論上這個分支一定是JSON */ }
+            } catch { /* 保底 */ }
             addMessage(errMsg, "error");
           } else {
             const integrationText = await streamTeamReply(res, teamStartTime);
             conversationHistory.push({ role: "assistant", text: integrationText });
             refreshQuotaDisplay();
           }
+          } // end else (非 Colab)
         } catch (err) {
           if (err.name !== "AbortError") {
-            addMessage("無法連線到伺服器,請確認 server.py 是否正在執行。", "error");
+            addMessage(COLAB_API_URL
+              ? "無法連線到 Colab 後端,請確認 ngrok 網址正確且 Colab 還在執行。"
+              : "無法連線到伺服器,請確認 server.py 是否正在執行。", "error");
           }
         } finally {
           sendBtn.classList.remove("generating");
@@ -3597,6 +3630,32 @@
       }
 
       try {
+        // ---- Colab 模式:直接 POST 到 ngrok,拿簡單 JSON 回來 ----
+        if (COLAB_API_URL) {
+          const res = await fetch(COLAB_API_URL + "/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "1",
+            },
+            body: JSON.stringify({ prompt }),
+            signal: activeAbortController.signal,
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            addMessage(data.error || "Colab 後端回傳錯誤,請確認 Colab 是否還在執行。", "error");
+          } else {
+            const el = document.createElement("div");
+            el.className = "msg assistant";
+            messagesEl.appendChild(el);
+            const replyText = data.reply || "(模型沒有生成任何內容)";
+            await typeOutText(el, replyText, 12, activeAbortController.signal);
+            conversationHistory.push({ role: "assistant", text: replyText });
+            maybeOpenCodeEditorFromReply(replyText);
+          }
+        }
+        // ---- 原本的 Vercel / 本機模式(COLAB_API_URL 空字串時走這裡) ----
+        else {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3612,10 +3671,6 @@
         const contentType = res.headers.get("content-type") || "";
 
         if (contentType.includes("application/json")) {
-          // 非串流:一次拿到完整 JSON 回應(Vercel 上的 api/generate.py 走這條路,
-          // 不管成功或失敗都會是 JSON,要看 res.ok / data.error 才能判斷是不是錯誤,
-          // 不能只看「是不是 JSON」就當成錯誤)。因為是一次到齊,
-          // 額外用 typeOutText 補上打字機效果,不然文字會整段瞬間跳出來。
           const data = await res.json();
           if (!res.ok || data.error) {
             addMessage(data.error || "發生未知錯誤,請稍後再試。", "error");
@@ -3631,10 +3686,6 @@
             conversationHistory.push({ role: "assistant", text: replyText });
             maybeOpenCodeEditorFromReply(replyText);
 
-            // 時間類回覆也預設12小時制文字(伺服器已經是這樣寫的),
-            // 點一下切換成24小時制,句子風格要跟12小時制版本一致
-            // (「現在是{上午/下午}X點Y分。」),12小時制和24小時制
-            // 都要保留上午/下午標示,只有時數表示法不同(1~12 vs 0~23)。
             if (data.type === "time") {
               const now = new Date();
               const period = now.getHours() < 12 ? "上午" : "下午";
@@ -3651,12 +3702,6 @@
         } else if (!res.ok) {
           addMessage("發生未知錯誤,請稍後再試。", "error");
         } else {
-          // 串流讀取:伺服器現在是以 NDJSON(一行一個 JSON 物件)傳回,
-          // 格式 {"delta": "...", "n": 目前token數} 或結尾的
-          // {"done": true, "total_tokens": 總token數}(見 server.py /
-          // api/generate.py 的 stream())。文字部分一樣先存進 queue,
-          // 用固定節奏吐出來做打字機效果;token 數量則是收到就立刻更新,
-          // 讓使用者能看到目前生成到第幾個 token,不受打字機節奏影響。
           const el = document.createElement("div");
           el.className = "msg assistant";
           messagesEl.appendChild(el);
@@ -3683,8 +3728,6 @@
             try {
               msg = JSON.parse(line);
             } catch (err) {
-              // 理論上不該發生(協定固定是一行一個 JSON),萬一真的收到
-              // 不是 JSON 的內容,就當作純文字直接顯示,避免這段內容憑空消失。
               queue.push(...line);
               return;
             }
@@ -3714,9 +3757,6 @@
               }
               if (lineBuffer) handleStreamLine(lineBuffer);
             } catch (err) {
-              // 使用者按下停止中止了 fetch,忽略這個例外,讓下面的迴圈
-              // 用 streamDone(在 finally 裡一定會設成 true)自然結束,
-              // 已經吐出來的文字(queue 裡還沒顯示完的部分)會照常顯示。
               if (err.name !== "AbortError") throw err;
             } finally {
               streamDone = true;
@@ -3740,17 +3780,17 @@
           } else {
             conversationHistory.push({ role: "assistant", text: received.trim() });
             maybeOpenCodeEditorFromReply(received.trim());
-            // 沒收到 done 事件(例如使用者中途按停止、或連線中斷),
-            // 「正在生成...」的字樣留著沒有意義,直接移除,不留下不準確的殘留文字。
             if (finalTokenCount === null) {
               tokenCounterEl.remove();
             }
           }
         }
+        } // end else (非 Colab 模式)
       } catch (err) {
-        // AbortError 是使用者主動按下停止造成的,不用當成連線錯誤顯示。
         if (err.name !== "AbortError") {
-          addMessage("無法連線到伺服器,請確認 server.py 是否正在執行。", "error");
+          addMessage(COLAB_API_URL
+            ? "無法連線到 Colab 後端,請確認 ngrok 網址正確且 Colab 還在執行。"
+            : "無法連線到伺服器,請確認 server.py 是否正在執行。", "error");
         }
       } finally {
         sendBtn.classList.remove("generating");
