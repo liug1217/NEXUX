@@ -65,7 +65,7 @@ class _LazyWeights:
         self._store[key] = (arr, np.float32(qmin), np.float32(qscale))
 
     def set_int8(self, key, packed, qmin, qscale):
-        self._store[key] = (packed, np.float32(qmin), np.float32(qscale))
+        self._store[key] = packed.astype(np.float32) * np.float32(qscale) + np.float32(qmin)
 
     def set_direct(self, key, value):
         self._store[key] = value
