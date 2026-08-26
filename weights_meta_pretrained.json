@@ -1,1 +1,1 @@
-{"config": {"vocab_size": 21128, "n_embd": 768, "n_head": 12, "n_layer": 12, "block_size": 1024}, "sft_applied": true, "quantized": true, "num_parts": 2, "npz_prefix": "weights_pretrained"}
+{"config": {"vocab_size": 21128, "n_embd": 1024, "n_head": 16, "n_layer": 24, "block_size": 1024}, "sft_applied": true, "quantized": true, "quant_bits": 8, "num_parts": 4, "npz_prefix": "weights_pretrained"}

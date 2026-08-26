@@ -1,0 +1,45 @@
+{"messages": [{"role": "user", "content": "什麼是token？"}, {"role": "assistant", "content": "token 是模型處理文字時使用的基本單位之一，不一定等於完整單字。"}]}
+{"messages": [{"role": "user", "content": "什麼是context window？"}, {"role": "assistant", "content": "context window 是模型一次可處理的上下文容量。"}]}
+{"messages": [{"role": "user", "content": "什麼是prompt？"}, {"role": "assistant", "content": "prompt 是提供給模型的輸入與指示。"}]}
+{"messages": [{"role": "user", "content": "什麼是fine-tuning？"}, {"role": "assistant", "content": "fine-tuning 是在既有模型基礎上使用特定資料進一步訓練。"}]}
+{"messages": [{"role": "user", "content": "什麼是supervised fine-tuning？"}, {"role": "assistant", "content": "監督式微調使用輸入與目標輸出的範例來調整模型行為。"}]}
+{"messages": [{"role": "user", "content": "什麼是pretraining？"}, {"role": "assistant", "content": "pretraining 通常先以大量資料學習一般語言或任務能力。"}]}
+{"messages": [{"role": "user", "content": "什麼是embedding？"}, {"role": "assistant", "content": "embedding 是把資料轉換成向量表示，以利相似度或其他模型處理。"}]}
+{"messages": [{"role": "user", "content": "什麼是evaluation？"}, {"role": "assistant", "content": "evaluation 是以固定標準或測試集衡量模型能力與錯誤。"}]}
+{"messages": [{"role": "user", "content": "什麼是data leakage？"}, {"role": "assistant", "content": "data leakage 是評估或訓練流程中不該被模型利用的資訊提前進入。"}]}
+{"messages": [{"role": "user", "content": "什麼是overfitting？"}, {"role": "assistant", "content": "overfitting 指模型過度適應訓練資料，對新資料泛化變差。"}]}
+{"messages": [{"role": "user", "content": "什麼是underfitting？"}, {"role": "assistant", "content": "underfitting 指模型沒有充分學到資料中的規律。"}]}
+{"messages": [{"role": "user", "content": "什麼是learning rate？"}, {"role": "assistant", "content": "learning rate 控制每次參數更新的步幅。"}]}
+{"messages": [{"role": "user", "content": "什麼是batch size？"}, {"role": "assistant", "content": "batch size 表示一次參數更新使用多少訓練樣本。"}]}
+{"messages": [{"role": "user", "content": "什麼是epoch？"}, {"role": "assistant", "content": "epoch 通常指完整遍歷一次訓練資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是checkpoint？"}, {"role": "assistant", "content": "checkpoint 是訓練過程中保存的模型狀態。"}]}
+{"messages": [{"role": "user", "content": "什麼是evaluation dataset？"}, {"role": "assistant", "content": "評估資料集應與訓練資料適當分離，才能較可靠地衡量模型泛化能力。"}]}
+{"messages": [{"role": "user", "content": "什麼是golden set？"}, {"role": "assistant", "content": "golden set 是人工確認品質的一小組基準案例，常用來追蹤模型版本變化。"}]}
+{"messages": [{"role": "user", "content": "什麼是regression test？"}, {"role": "assistant", "content": "模型 regression test 用固定案例比較新版與舊版輸出，避免改善一項能力時破壞另一項。"}]}
+{"messages": [{"role": "user", "content": "什麼是prompt injection？"}, {"role": "assistant", "content": "prompt injection 是輸入內容試圖改變模型原本指示或行為的情況，需要在系統設計上加以防範。"}]}
+{"messages": [{"role": "user", "content": "什麼是ground truth？"}, {"role": "assistant", "content": "ground truth 是用來作為評估基準的可信目標答案或標註。"}]}
+{"messages": [{"role": "user", "content": "什麼是label consistency？"}, {"role": "assistant", "content": "標註一致性越高，模型越容易學到穩定的任務規則。"}]}
+{"messages": [{"role": "user", "content": "什麼是deduplication？"}, {"role": "assistant", "content": "訓練資料去重可以降低同一資訊被過度重複呈現的情況。"}]}
+{"messages": [{"role": "user", "content": "什麼是near-duplicate？"}, {"role": "assistant", "content": "near-duplicate 指文字略有變化但語意與內容幾乎相同的資料，需要考慮語意去重。"}]}
+{"messages": [{"role": "user", "content": "什麼是data contamination？"}, {"role": "assistant", "content": "若測試資料或其衍生內容進入訓練資料，會造成資料污染並使評估偏樂觀。"}]}
+{"messages": [{"role": "user", "content": "什麼是train/validation split？"}, {"role": "assistant", "content": "訓練資料與驗證資料應保持合理分離，以便觀察泛化表現。"}]}
+{"messages": [{"role": "user", "content": "什麼是learning curve？"}, {"role": "assistant", "content": "learning curve 可觀察模型表現隨訓練量或訓練步數的變化。"}]}
+{"messages": [{"role": "user", "content": "什麼是checkpoint selection？"}, {"role": "assistant", "content": "checkpoint selection 應根據一致的驗證指標選擇，而不是只看最後一步。"}]}
+{"messages": [{"role": "user", "content": "什麼是early stopping？"}, {"role": "assistant", "content": "當驗證表現持續不改善時，可以利用 early stopping 降低不必要的訓練。"}]}
+{"messages": [{"role": "user", "content": "什麼是quantization tradeoff？"}, {"role": "assistant", "content": "量化通常能降低模型記憶體與部分運算成本，但可能犧牲部分精度。"}]}
+{"messages": [{"role": "user", "content": "什麼是int8 quantization？"}, {"role": "assistant", "content": "INT8 quantization 用較低精度的整數表示部分模型計算，可降低儲存與記憶體需求。"}]}
+{"messages": [{"role": "user", "content": "什麼是sharding？"}, {"role": "assistant", "content": "模型 sharding 把大型權重或資料切成多個部分，以便在儲存或部署時分開管理。"}]}
+{"messages": [{"role": "user", "content": "什麼是batch inference？"}, {"role": "assistant", "content": "batch inference 一次處理多筆輸入，常用來提高離線推理吞吐量。"}]}
+{"messages": [{"role": "user", "content": "什麼是latency？"}, {"role": "assistant", "content": "latency 是一次請求從開始到產生可用回應所需的時間。"}]}
+{"messages": [{"role": "user", "content": "什麼是throughput？"}, {"role": "assistant", "content": "throughput 表示單位時間可以完成多少請求或樣本。"}]}
+{"messages": [{"role": "user", "content": "什麼是cold start？"}, {"role": "assistant", "content": "cold start 是服務剛啟動或資源尚未準備時額外產生的啟動延遲。"}]}
+{"messages": [{"role": "user", "content": "什麼是streaming response？"}, {"role": "assistant", "content": "streaming response 可以在生成過程中逐步傳送輸出，而不是等全部內容完成才回傳。"}]}
+{"messages": [{"role": "user", "content": "什麼是structured output？"}, {"role": "assistant", "content": "structured output 要求模型遵循指定資料結構，方便程式直接處理結果。"}]}
+{"messages": [{"role": "user", "content": "什麼是JSON Schema？"}, {"role": "assistant", "content": "JSON Schema 可以描述 JSON 資料的欄位、型別與限制，適合做結構化資料驗證。"}]}
+{"messages": [{"role": "user", "content": "什麼是retrieval quality？"}, {"role": "assistant", "content": "RAG 系統不只要看生成品質，也要評估檢索是否找到了真正相關的資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是chunking？"}, {"role": "assistant", "content": "文件切 chunk 時要兼顧上下文完整性與檢索粒度。"}]}
+{"messages": [{"role": "user", "content": "什麼是embedding retrieval？"}, {"role": "assistant", "content": "embedding retrieval 以向量相似度尋找語意相近內容，適合處理文字概念相似但字面不同的查詢。"}]}
+{"messages": [{"role": "user", "content": "什麼是reranking？"}, {"role": "assistant", "content": "reranking 會在初步檢索後再次排序候選文件，以提高最前面結果的相關性。"}]}
+{"messages": [{"role": "user", "content": "什麼是citation grounding？"}, {"role": "assistant", "content": "citation grounding 讓回答中的重要資訊能對應回可驗證的來源。"}]}
+{"messages": [{"role": "user", "content": "什麼是human evaluation？"}, {"role": "assistant", "content": "human evaluation 由人工依明確標準評分，可補足單純自動指標無法反映的品質面向。"}]}
+{"messages": [{"role": "user", "content": "什麼是error taxonomy？"}, {"role": "assistant", "content": "error taxonomy 把模型錯誤依類型分類，能幫助團隊知道下一輪資料或模型應改善哪裡。"}]}

@@ -38,13 +38,13 @@ load_dotenv()
 import time
 
 from config import Config
-from inference import load_pretrained_model
 from text_cleanup import find_next_turn_marker
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS
 from conversation import build_context_prompt
 from smalltalk import match_smalltalk
 from qa_lookup import match_qa
 from weather_lookup import match_weather
+from math_calc import match_math
 from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
 import ai_roles
 import quota_manager
@@ -59,16 +59,24 @@ _cache = {"model": None, "tokenizer": None, "config": None, "is_sft": False}
 
 def get_model_and_tokenizer():
     """
-    NEXUX v1.0:本機開發伺服器現在載入的是微調過的預訓練模型(見
-    docs/MODEL_MIGRATION.md),跟正式站(Vercel)服務的是同一個版本。
-    需要先在本機執行過 convert_pretrained.py + run_pretrained_sft.py,
-    產生 checkpoint_pretrained.pt 才能載入(這個檔案不會進 git)。
+    優先從 checkpoint_pretrained.pt 載入（本機訓練後的完整 checkpoint），
+    找不到就退回用 torch_inference 從 npz 權重載入（跟 git 裡的檔案一樣）。
     """
     if _cache["model"] is None:
-        model, tokenizer, is_sft = load_pretrained_model()  # 找不到 checkpoint 時,這裡會拋出 FileNotFoundError
+        import os
         base = Config()
-        # 沿用 api/generate.py 的 own_beta 生成參數(見那裡的說明:
-        # repetition_penalty 2.0 是實測解決重複退化問題的結果)。
+        if os.path.exists("checkpoint_pretrained.pt"):
+            from inference import load_pretrained_model
+            model, tokenizer, is_sft = load_pretrained_model()
+        else:
+            from torch_inference import load_model as _load_npz
+            from bert_wordpiece_tokenizer import BertWordpieceTokenizer
+            model, info = _load_npz("weights_meta_pretrained.json")
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            model = model.to(device)
+            model.eval()
+            tokenizer = BertWordpieceTokenizer.load_from_vocab_txt("vocab_pretrained.txt")
+            is_sft = info.get("is_sft", False)
         cfg = Config(**{
             **base.__dict__,
             "block_size": 1024,
@@ -340,6 +348,10 @@ def api_generate():
     # qa_reply = match_qa(prompt, data_dir=os.path.join(BASE_DIR, "data"))
     # if qa_reply is not None:
     #     return jsonify({"reply": qa_reply, "type": "qa_lookup"})
+
+    math_reply = match_math(prompt)
+    if math_reply is not None:
+        return jsonify({"reply": math_reply, "type": "math_calc"})
 
     # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
     # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py

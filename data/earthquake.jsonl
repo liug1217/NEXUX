@@ -1,0 +1,45 @@
+{"messages": [{"role": "user", "content": "什麼是P 波？"}, {"role": "assistant", "content": "P 波是地震波中通常較早抵達測站的一類體波。"}]}
+{"messages": [{"role": "user", "content": "什麼是S 波？"}, {"role": "assistant", "content": "S 波通常比 P 波晚抵達，而且主要在固體介質中傳播。"}]}
+{"messages": [{"role": "user", "content": "什麼是表面波？"}, {"role": "assistant", "content": "表面波沿地表附近傳播，常對地表震動有重要影響。"}]}
+{"messages": [{"role": "user", "content": "什麼是震央？"}, {"role": "assistant", "content": "震央是地表上位於震源正上方附近的位置。"}]}
+{"messages": [{"role": "user", "content": "什麼是震源？"}, {"role": "assistant", "content": "震源是地震破裂或能量釋放開始的地下位置。"}]}
+{"messages": [{"role": "user", "content": "什麼是震源深度？"}, {"role": "assistant", "content": "震源深度是震源到地表的垂直距離。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震規模？"}, {"role": "assistant", "content": "地震規模用來描述地震本身釋放能量的尺度。"}]}
+{"messages": [{"role": "user", "content": "什麼是震度？"}, {"role": "assistant", "content": "震度描述特定地點實際受到的地震搖晃程度。"}]}
+{"messages": [{"role": "user", "content": "什麼是到時？"}, {"role": "assistant", "content": "到時是地震波抵達測站的時間。"}]}
+{"messages": [{"role": "user", "content": "什麼是P-S 到時差？"}, {"role": "assistant", "content": "P 波與 S 波抵達時間的差值可以協助估計測站與震源的距離。"}]}
+{"messages": [{"role": "user", "content": "什麼是震央定位？"}, {"role": "assistant", "content": "多個測站的到時資訊可以一起用來估計震源或震央位置。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震儀？"}, {"role": "assistant", "content": "地震儀用來記錄地面振動。"}]}
+{"messages": [{"role": "user", "content": "什麼是波形？"}, {"role": "assistant", "content": "波形是地震儀記錄振動隨時間變化的資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是強震儀？"}, {"role": "assistant", "content": "強震儀特別設計用來記錄較強的地面運動。"}]}
+{"messages": [{"role": "user", "content": "什麼是微震？"}, {"role": "assistant", "content": "微震通常指規模很小、可能不易被人感受到的地震。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震定位中的測站幾何？"}, {"role": "assistant", "content": "震源附近的測站若分布過於單側，定位結果可能比測站環繞震源時更不穩定。"}]}
+{"messages": [{"role": "user", "content": "什麼是到時拾取？"}, {"role": "assistant", "content": "到時拾取是從地震波形中判定特定波開始抵達時間的過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是自動拾取？"}, {"role": "assistant", "content": "自動拾取可利用演算法從大量地震波形中尋找可能的 P 波或 S 波到時。"}]}
+{"messages": [{"role": "user", "content": "什麼是人工拾取？"}, {"role": "assistant", "content": "人工拾取由分析者直接檢視波形並標記到時，適合品質檢查與複核。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震目錄？"}, {"role": "assistant", "content": "地震目錄通常記錄事件時間、位置、深度、規模等基本資訊。"}]}
+{"messages": [{"role": "user", "content": "什麼是震源機制？"}, {"role": "assistant", "content": "震源機制用來描述斷層運動的方向與型態。"}]}
+{"messages": [{"role": "user", "content": "什麼是矩張量？"}, {"role": "assistant", "content": "矩張量是描述地震震源與能量釋放特徵的重要數學表示。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震活動率？"}, {"role": "assistant", "content": "地震活動率描述一定時間與區域內地震事件出現的頻率。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震群？"}, {"role": "assistant", "content": "地震群是短時間內同一區域出現許多地震的活動型態。"}]}
+{"messages": [{"role": "user", "content": "什麼是前震？"}, {"role": "assistant", "content": "在特定主震發生前、且後來被認定與主震相關的較小地震可稱前震。"}]}
+{"messages": [{"role": "user", "content": "什麼是餘震序列？"}, {"role": "assistant", "content": "餘震序列可用統計方式分析其隨時間與空間的變化。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震深度誤差？"}, {"role": "assistant", "content": "震源深度通常比水平位置更容易受到測站幾何與資料品質影響。"}]}
+{"messages": [{"role": "user", "content": "什麼是速度模型？"}, {"role": "assistant", "content": "地震定位需要地殼速度模型來估算地震波從震源到測站的傳播時間。"}]}
+{"messages": [{"role": "user", "content": "什麼是一維速度模型？"}, {"role": "assistant", "content": "一維速度模型假設速度主要隨深度改變，用於部分地震定位流程。"}]}
+{"messages": [{"role": "user", "content": "什麼是三維速度模型？"}, {"role": "assistant", "content": "三維速度模型可以考慮地下速度在不同空間位置的差異。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震波衰減？"}, {"role": "assistant", "content": "地震波在傳播途中會因幾何擴散、介質吸收等因素使振幅逐漸降低。"}]}
+{"messages": [{"role": "user", "content": "什麼是頻譜分析？"}, {"role": "assistant", "content": "頻譜分析把時間域的地震波形轉換到頻率域，協助研究不同頻率成分。"}]}
+{"messages": [{"role": "user", "content": "什麼是震級飽和？"}, {"role": "assistant", "content": "不同規模尺度對大型地震的表示能力不同，因此研究中需要選擇適合的規模定義。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震烈度分布？"}, {"role": "assistant", "content": "地震烈度分布可以顯示不同地點實際受到的搖晃程度差異。"}]}
+{"messages": [{"role": "user", "content": "什麼是場址效應？"}, {"role": "assistant", "content": "局部地質條件可能放大或改變地震動，是評估地震影響的重要因素。"}]}
+{"messages": [{"role": "user", "content": "什麼是地基條件？"}, {"role": "assistant", "content": "軟弱地層與堅硬岩盤對同一地震的地表震動反應可能不同。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震早期警報限制？"}, {"role": "assistant", "content": "地震早期警報是在地震發生後利用有限先到資訊爭取時間，並不是事前預測地震。"}]}
+{"messages": [{"role": "user", "content": "什麼是警報延遲？"}, {"role": "assistant", "content": "地震警報從偵測、計算、通訊到使用者裝置接收都可能產生延遲。"}]}
+{"messages": [{"role": "user", "content": "什麼是警報區域？"}, {"role": "assistant", "content": "地震預警或速報的可用提前時間與震源位置、波傳速度、測站分布及使用者距離有關。"}]}
+{"messages": [{"role": "user", "content": "什麼是地震資料品質控制？"}, {"role": "assistant", "content": "分析地震資料時需要檢查缺測、飽和、時間同步與明顯噪聲等問題。"}]}
+{"messages": [{"role": "user", "content": "什麼是測站飽和？"}, {"role": "assistant", "content": "非常強的地面運動可能超過部分儀器的量測範圍，造成波形失真或飽和。"}]}
+{"messages": [{"role": "user", "content": "什麼是連續波形？"}, {"role": "assistant", "content": "連續波形記錄可以在沒有事件目錄的情況下保留完整的時間序列，方便事後重新分析。"}]}
+{"messages": [{"role": "user", "content": "什麼是事件觸發？"}, {"role": "assistant", "content": "事件觸發系統會根據波形特徵判斷是否可能存在地震事件。"}]}
+{"messages": [{"role": "user", "content": "什麼是自動地震目錄？"}, {"role": "assistant", "content": "自動地震目錄可以快速處理大量資料，但重要事件通常仍需要品質檢核。"}]}
+{"messages": [{"role": "user", "content": "什麼是跨測站驗證？"}, {"role": "assistant", "content": "同一事件若在多個空間分散的測站呈現一致到時與波形特徵，通常比單站訊號更有說服力。"}]}

@@ -1,0 +1,135 @@
+{"messages": [{"role": "user", "content": "什麼是box model？"}, {"role": "assistant", "content": "CSS box model 包含 content、padding、border 與 margin。"}]}
+{"messages": [{"role": "user", "content": "什麼是margin？"}, {"role": "assistant", "content": "margin 是元素邊框外側的空間。"}]}
+{"messages": [{"role": "user", "content": "什麼是padding？"}, {"role": "assistant", "content": "padding 是元素內容與邊框之間的內側空間。"}]}
+{"messages": [{"role": "user", "content": "什麼是border？"}, {"role": "assistant", "content": "border 是元素周圍的邊框。"}]}
+{"messages": [{"role": "user", "content": "什麼是display:flex？"}, {"role": "assistant", "content": "display:flex 會把元素建立為 flex container。"}]}
+{"messages": [{"role": "user", "content": "什麼是justify-content？"}, {"role": "assistant", "content": "justify-content 主要控制 flex 主軸上的分配與對齊。"}]}
+{"messages": [{"role": "user", "content": "什麼是align-items？"}, {"role": "assistant", "content": "align-items 控制 flex 項目在交叉軸上的對齊。"}]}
+{"messages": [{"role": "user", "content": "什麼是flex-wrap？"}, {"role": "assistant", "content": "flex-wrap 決定 flex 項目是否可以換行。"}]}
+{"messages": [{"role": "user", "content": "什麼是display:grid？"}, {"role": "assistant", "content": "display:grid 建立 CSS Grid 版面。"}]}
+{"messages": [{"role": "user", "content": "什麼是grid-template-columns？"}, {"role": "assistant", "content": "grid-template-columns 用來定義 Grid 的欄位軌道。"}]}
+{"messages": [{"role": "user", "content": "什麼是gap？"}, {"role": "assistant", "content": "gap 可設定 Grid 或 Flex 項目之間的間距。"}]}
+{"messages": [{"role": "user", "content": "什麼是position:relative？"}, {"role": "assistant", "content": "relative positioning 讓元素保留原本空間並可相對自身位置調整。"}]}
+{"messages": [{"role": "user", "content": "什麼是position:absolute？"}, {"role": "assistant", "content": "absolute positioning 讓元素脫離一般文流並相對定位祖先定位。"}]}
+{"messages": [{"role": "user", "content": "什麼是position:fixed？"}, {"role": "assistant", "content": "fixed 元素通常相對視窗定位，不會隨一般文流移動。"}]}
+{"messages": [{"role": "user", "content": "什麼是z-index？"}, {"role": "assistant", "content": "z-index 用來控制重疊元素的堆疊順序。"}]}
+{"messages": [{"role": "user", "content": "什麼是<html>？"}, {"role": "assistant", "content": "<html> 是 HTML 文件的根元素。"}]}
+{"messages": [{"role": "user", "content": "什麼是<head>？"}, {"role": "assistant", "content": "<head> 放置文件的中繼資訊與資源設定。"}]}
+{"messages": [{"role": "user", "content": "什麼是<body>？"}, {"role": "assistant", "content": "<body> 放置頁面主要內容。"}]}
+{"messages": [{"role": "user", "content": "什麼是<title>？"}, {"role": "assistant", "content": "<title> 定義文件標題，常顯示在瀏覽器分頁。"}]}
+{"messages": [{"role": "user", "content": "什麼是<meta charset>？"}, {"role": "assistant", "content": "<meta charset> 可指定文件的字元編碼。"}]}
+{"messages": [{"role": "user", "content": "什麼是<h1>？"}, {"role": "assistant", "content": "<h1> 表示最高層級的主要標題。"}]}
+{"messages": [{"role": "user", "content": "什麼是<p>？"}, {"role": "assistant", "content": "<p> 表示一個段落。"}]}
+{"messages": [{"role": "user", "content": "什麼是<a>？"}, {"role": "assistant", "content": "<a> 用來建立超連結。"}]}
+{"messages": [{"role": "user", "content": "什麼是<img>？"}, {"role": "assistant", "content": "<img> 用來嵌入圖片。"}]}
+{"messages": [{"role": "user", "content": "什麼是alt？"}, {"role": "assistant", "content": "alt 提供圖片的替代文字，對無障礙與圖片無法載入情況很重要。"}]}
+{"messages": [{"role": "user", "content": "什麼是<button>？"}, {"role": "assistant", "content": "<button> 是具有原生互動語意的按鈕元素。"}]}
+{"messages": [{"role": "user", "content": "什麼是<form>？"}, {"role": "assistant", "content": "<form> 表示用來提交使用者輸入的表單區域。"}]}
+{"messages": [{"role": "user", "content": "什麼是<label>？"}, {"role": "assistant", "content": "<label> 用來為表單控制項提供文字標籤。"}]}
+{"messages": [{"role": "user", "content": "什麼是<input>？"}, {"role": "assistant", "content": "<input> 可建立多種表單輸入控制項。"}]}
+{"messages": [{"role": "user", "content": "什麼是<textarea>？"}, {"role": "assistant", "content": "<textarea> 提供多行文字輸入區域。"}]}
+{"messages": [{"role": "user", "content": "什麼是let？"}, {"role": "assistant", "content": "let 宣告區塊作用域的可重新指定變數。"}]}
+{"messages": [{"role": "user", "content": "什麼是const？"}, {"role": "assistant", "content": "const 宣告區塊作用域的不可重新指定綁定。"}]}
+{"messages": [{"role": "user", "content": "什麼是var？"}, {"role": "assistant", "content": "var 是較舊的變數宣告方式，具有函式作用域等不同特性。"}]}
+{"messages": [{"role": "user", "content": "什麼是object？"}, {"role": "assistant", "content": "object 可用鍵值屬性保存結構化資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是array？"}, {"role": "assistant", "content": "array 用來保存有順序的多個值。"}]}
+{"messages": [{"role": "user", "content": "什麼是function？"}, {"role": "assistant", "content": "function 是可以被呼叫的程式碼單位。"}]}
+{"messages": [{"role": "user", "content": "什麼是arrow function？"}, {"role": "assistant", "content": "arrow function 是較簡潔的函式語法，且 this 行為與一般函式不同。"}]}
+{"messages": [{"role": "user", "content": "什麼是scope？"}, {"role": "assistant", "content": "scope 決定名稱在哪些程式區域可以被存取。"}]}
+{"messages": [{"role": "user", "content": "什麼是closure？"}, {"role": "assistant", "content": "closure 讓函式可以保留對其外部詞法作用域的引用。"}]}
+{"messages": [{"role": "user", "content": "什麼是DOM？"}, {"role": "assistant", "content": "DOM 是瀏覽器對文件建立的物件模型，JavaScript 可透過它操作網頁內容。"}]}
+{"messages": [{"role": "user", "content": "什麼是event？"}, {"role": "assistant", "content": "event 表示瀏覽器或程式發生的事件，例如 click。"}]}
+{"messages": [{"role": "user", "content": "什麼是addEventListener？"}, {"role": "assistant", "content": "addEventListener 用來註冊事件監聽器。"}]}
+{"messages": [{"role": "user", "content": "什麼是Promise？"}, {"role": "assistant", "content": "Promise 表示非同步工作的最終結果或失敗。"}]}
+{"messages": [{"role": "user", "content": "什麼是async/await？"}, {"role": "assistant", "content": "async/await 提供較接近同步程式閱讀方式的非同步語法。"}]}
+{"messages": [{"role": "user", "content": "什麼是fetch？"}, {"role": "assistant", "content": "fetch 用來發送網路請求並取得 Response。"}]}
+{"messages": [{"role": "user", "content": "什麼是list？"}, {"role": "assistant", "content": "list 是可變序列，適合保存可以新增、刪除或修改的多個元素。"}]}
+{"messages": [{"role": "user", "content": "什麼是tuple？"}, {"role": "assistant", "content": "tuple 是不可變序列，常用於不希望在建立後被修改的資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是dict？"}, {"role": "assistant", "content": "dict 以鍵和值建立對應關係，適合依名稱或識別鍵快速取得資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是set？"}, {"role": "assistant", "content": "set 是不保證重複元素的集合，常用於去重與集合運算。"}]}
+{"messages": [{"role": "user", "content": "什麼是for 迴圈？"}, {"role": "assistant", "content": "for 迴圈可以依序處理可迭代物件中的元素。"}]}
+{"messages": [{"role": "user", "content": "什麼是while 迴圈？"}, {"role": "assistant", "content": "while 會在條件成立時重複執行區塊。"}]}
+{"messages": [{"role": "user", "content": "什麼是if？"}, {"role": "assistant", "content": "if 用來依條件決定是否執行某段程式。"}]}
+{"messages": [{"role": "user", "content": "什麼是function？"}, {"role": "assistant", "content": "function 把可重複使用的程式邏輯包裝成一個可呼叫單位。"}]}
+{"messages": [{"role": "user", "content": "什麼是return？"}, {"role": "assistant", "content": "return 會結束函式並把結果交回呼叫端。"}]}
+{"messages": [{"role": "user", "content": "什麼是None？"}, {"role": "assistant", "content": "None 通常表示沒有值或目前沒有可用的物件。"}]}
+{"messages": [{"role": "user", "content": "什麼是例外處理？"}, {"role": "assistant", "content": "try/except 可以攔截指定例外，讓程式對預期錯誤做出適當處理。"}]}
+{"messages": [{"role": "user", "content": "什麼是with？"}, {"role": "assistant", "content": "with 常用於需要開始與結束管理的資源，例如檔案，能自動執行清理流程。"}]}
+{"messages": [{"role": "user", "content": "什麼是list comprehension？"}, {"role": "assistant", "content": "list comprehension 可以用簡潔語法根據可迭代物件建立新 list。"}]}
+{"messages": [{"role": "user", "content": "什麼是generator？"}, {"role": "assistant", "content": "generator 會以逐步產生值的方式處理資料，不必一次把所有結果放進記憶體。"}]}
+{"messages": [{"role": "user", "content": "什麼是iterator？"}, {"role": "assistant", "content": "iterator 提供逐項取得資料的方式，通常透過 next 取得下一個元素。"}]}
+{"messages": [{"role": "user", "content": "什麼是變數？"}, {"role": "assistant", "content": "變數是程式中用來引用資料的名稱。"}]}
+{"messages": [{"role": "user", "content": "什麼是函式？"}, {"role": "assistant", "content": "函式把可重複使用的處理邏輯包裝起來。"}]}
+{"messages": [{"role": "user", "content": "什麼是演算法？"}, {"role": "assistant", "content": "演算法是一套為了解決問題而定義的步驟或規則。"}]}
+{"messages": [{"role": "user", "content": "什麼是資料結構？"}, {"role": "assistant", "content": "資料結構是組織與存取資料的方法。"}]}
+{"messages": [{"role": "user", "content": "什麼是迴圈？"}, {"role": "assistant", "content": "迴圈用來重複執行某段程式。"}]}
+{"messages": [{"role": "user", "content": "什麼是條件判斷？"}, {"role": "assistant", "content": "條件判斷讓程式依不同條件採取不同分支。"}]}
+{"messages": [{"role": "user", "content": "什麼是編譯？"}, {"role": "assistant", "content": "編譯是把程式從一種表示轉換成另一種可執行或可處理形式的過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是直譯？"}, {"role": "assistant", "content": "直譯式執行通常在執行時處理程式碼，而不是先產生完整的原生可執行檔。"}]}
+{"messages": [{"role": "user", "content": "什麼是API？"}, {"role": "assistant", "content": "API 是不同軟體元件溝通的介面。"}]}
+{"messages": [{"role": "user", "content": "什麼是資料庫？"}, {"role": "assistant", "content": "資料庫用來儲存與查詢資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是前端？"}, {"role": "assistant", "content": "前端通常是使用者直接互動的介面層。"}]}
+{"messages": [{"role": "user", "content": "什麼是後端？"}, {"role": "assistant", "content": "後端通常負責伺服器端邏輯、資料與服務。"}]}
+{"messages": [{"role": "user", "content": "什麼是伺服器？"}, {"role": "assistant", "content": "伺服器是提供服務或資源給其他程式或裝置的系統。"}]}
+{"messages": [{"role": "user", "content": "什麼是客戶端？"}, {"role": "assistant", "content": "客戶端是向服務端提出請求並使用服務的一方。"}]}
+{"messages": [{"role": "user", "content": "什麼是雲端運算？"}, {"role": "assistant", "content": "雲端運算透過網路提供運算、儲存或其他 IT 資源。"}]}
+{"messages": [{"role": "user", "content": "什麼是pathlib？"}, {"role": "assistant", "content": "pathlib 提供物件導向的檔案系統路徑操作介面，適合跨平台處理路徑。"}]}
+{"messages": [{"role": "user", "content": "什麼是dataclasses？"}, {"role": "assistant", "content": "dataclasses 可協助建立以資料保存為主的類別，並自動產生部分常見方法。"}]}
+{"messages": [{"role": "user", "content": "什麼是datetime？"}, {"role": "assistant", "content": "datetime 模組提供日期與時間相關型別及操作。"}]}
+{"messages": [{"role": "user", "content": "什麼是sqlite3？"}, {"role": "assistant", "content": "sqlite3 提供 Python 對 SQLite 資料庫的 DB-API 介面。"}]}
+{"messages": [{"role": "user", "content": "什麼是logging？"}, {"role": "assistant", "content": "logging 模組用來建立程式的日誌紀錄系統，比單純 print 更適合正式程式。"}]}
+{"messages": [{"role": "user", "content": "什麼是csv？"}, {"role": "assistant", "content": "csv 模組提供讀寫 CSV 格式資料的功能。"}]}
+{"messages": [{"role": "user", "content": "什麼是json模組？"}, {"role": "assistant", "content": "json 模組可在 Python 物件與 JSON 資料間進行序列化與反序列化。"}]}
+{"messages": [{"role": "user", "content": "什麼是re？"}, {"role": "assistant", "content": "re 模組提供正規表示式操作功能。"}]}
+{"messages": [{"role": "user", "content": "什麼是collections？"}, {"role": "assistant", "content": "collections 提供多種專用容器型別，例如 Counter、deque 與 defaultdict。"}]}
+{"messages": [{"role": "user", "content": "什麼是itertools？"}, {"role": "assistant", "content": "itertools 提供許多高效率的迭代器工具，可組合處理可迭代資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是functools？"}, {"role": "assistant", "content": "functools 提供與高階函式及可呼叫物件相關的工具，例如 partial 與 lru_cache。"}]}
+{"messages": [{"role": "user", "content": "什麼是typing？"}, {"role": "assistant", "content": "typing 提供型別註記與泛型等型別相關工具。"}]}
+{"messages": [{"role": "user", "content": "什麼是context manager？"}, {"role": "assistant", "content": "context manager 可以把資源的建立與清理流程包裝起來，常搭配 with 使用。"}]}
+{"messages": [{"role": "user", "content": "什麼是asyncio task？"}, {"role": "assistant", "content": "asyncio Task 用來排程與追蹤 coroutine 的非同步執行。"}]}
+{"messages": [{"role": "user", "content": "什麼是coroutine？"}, {"role": "assistant", "content": "coroutine 是可被暫停與恢復的非同步程式單位，通常以 async def 定義。"}]}
+{"messages": [{"role": "user", "content": "什麼是event loop？"}, {"role": "assistant", "content": "event loop 負責安排非同步工作與 I/O 等事件的執行。"}]}
+{"messages": [{"role": "user", "content": "什麼是queue？"}, {"role": "assistant", "content": "queue 可用來在工作者或非同步任務之間安全地傳遞工作項目。"}]}
+{"messages": [{"role": "user", "content": "什麼是subprocess？"}, {"role": "assistant", "content": "subprocess 可讓 Python 建立並控制外部程序。"}]}
+{"messages": [{"role": "user", "content": "什麼是tempfile？"}, {"role": "assistant", "content": "tempfile 提供建立暫存檔案與資料夾的工具。"}]}
+{"messages": [{"role": "user", "content": "什麼是shutil？"}, {"role": "assistant", "content": "shutil 提供較高階的檔案與資料夾複製、移動等操作。"}]}
+{"messages": [{"role": "user", "content": "什麼是glob？"}, {"role": "assistant", "content": "glob 可依萬用字元模式尋找符合的檔案路徑。"}]}
+{"messages": [{"role": "user", "content": "什麼是hashlib？"}, {"role": "assistant", "content": "hashlib 提供常見雜湊演算法的介面。"}]}
+{"messages": [{"role": "user", "content": "什麼是secrets？"}, {"role": "assistant", "content": "secrets 適合產生與密碼學相關的安全隨機值，例如 token。"}]}
+{"messages": [{"role": "user", "content": "什麼是argparse？"}, {"role": "assistant", "content": "argparse 可用來建立命令列參數解析介面。"}]}
+{"messages": [{"role": "user", "content": "什麼是unittest？"}, {"role": "assistant", "content": "unittest 是 Python 標準庫提供的單元測試框架。"}]}
+{"messages": [{"role": "user", "content": "什麼是doctest？"}, {"role": "assistant", "content": "doctest 可以利用文件字串中的互動式 Python 範例進行測試。"}]}
+{"messages": [{"role": "user", "content": "什麼是profile？"}, {"role": "assistant", "content": "profile 工具可協助分析程式的執行效能與時間分布。"}]}
+{"messages": [{"role": "user", "content": "什麼是pickle？"}, {"role": "assistant", "content": "pickle 可將部分 Python 物件序列化，但不應把不可信的 pickle 資料直接反序列化。"}]}
+{"messages": [{"role": "user", "content": "什麼是sqlite transaction？"}, {"role": "assistant", "content": "SQLite 交易可把多個資料庫操作視為一組工作，最後提交或回復。"}]}
+{"messages": [{"role": "user", "content": "什麼是free-threaded Python？"}, {"role": "assistant", "content": "Python 3.14 文件包含與 free-threaded Python 相關的說明，適合研究多執行緒執行模型。"}]}
+{"messages": [{"role": "user", "content": "什麼是Fetch API？"}, {"role": "assistant", "content": "Fetch API 提供以 Request、Response 與 fetch() 進行網路資源取得的介面，且回傳 Promise。"}]}
+{"messages": [{"role": "user", "content": "什麼是Response.ok？"}, {"role": "assistant", "content": "Response.ok 可用來判斷 HTTP 回應狀態是否落在成功範圍；fetch 不會因 404 或 500 自動 reject。"}]}
+{"messages": [{"role": "user", "content": "什麼是AbortController？"}, {"role": "assistant", "content": "AbortController 可以用來取消尚未完成的非同步作業，例如 fetch。"}]}
+{"messages": [{"role": "user", "content": "什麼是Web Workers？"}, {"role": "assistant", "content": "Web Workers 可以把較耗時的 JavaScript 工作放到與主要 UI 執行緒分離的 worker 中。"}]}
+{"messages": [{"role": "user", "content": "什麼是Worker DOM 限制？"}, {"role": "assistant", "content": "Web Worker 通常不能直接操作主文件的 DOM，因此常透過訊息與主執行緒溝通。"}]}
+{"messages": [{"role": "user", "content": "什麼是IndexedDB？"}, {"role": "assistant", "content": "IndexedDB 是瀏覽器端的結構化資料儲存 API，適合比 Web Storage 更大量的資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是IndexedDB transaction？"}, {"role": "assistant", "content": "IndexedDB 的資料操作以 transaction 管理，讓一組資料庫操作具有明確的交易範圍。"}]}
+{"messages": [{"role": "user", "content": "什麼是URLPattern？"}, {"role": "assistant", "content": "URLPattern API 提供以模式比對 URL 或 URL 部分內容的方式。"}]}
+{"messages": [{"role": "user", "content": "什麼是URLPattern capture？"}, {"role": "assistant", "content": "URLPattern 可以透過捕獲群組取得符合模式的 URL 部分。"}]}
+{"messages": [{"role": "user", "content": "什麼是CORS？"}, {"role": "assistant", "content": "CORS 是瀏覽器控制跨來源網路資源存取的一套機制。"}]}
+{"messages": [{"role": "user", "content": "什麼是Origin？"}, {"role": "assistant", "content": "Origin 通常由 scheme、host 與 port 組成，是瀏覽器判斷來源的重要概念。"}]}
+{"messages": [{"role": "user", "content": "什麼是Service Worker？"}, {"role": "assistant", "content": "Service Worker 是可在背景處理特定網路與快取工作的 worker 類型，常用於離線能力與 PWA。"}]}
+{"messages": [{"role": "user", "content": "什麼是Cache API？"}, {"role": "assistant", "content": "Cache API 可儲存 Request/Response 對，常與 Service Worker 搭配。"}]}
+{"messages": [{"role": "user", "content": "什麼是Web Storage？"}, {"role": "assistant", "content": "Web Storage 提供 localStorage 與 sessionStorage 等較簡單的字串型瀏覽器儲存方式。"}]}
+{"messages": [{"role": "user", "content": "什麼是BroadcastChannel？"}, {"role": "assistant", "content": "BroadcastChannel 可以讓同源的不同瀏覽環境互相傳送訊息。"}]}
+{"messages": [{"role": "user", "content": "什麼是WebSocket？"}, {"role": "assistant", "content": "WebSocket 提供持續的雙向通訊連線，適合即時資料交換。"}]}
+{"messages": [{"role": "user", "content": "什麼是Server-Sent Events？"}, {"role": "assistant", "content": "Server-Sent Events 可讓伺服器透過 HTTP 持續向瀏覽器推送事件。"}]}
+{"messages": [{"role": "user", "content": "什麼是Streams API？"}, {"role": "assistant", "content": "Streams API 可逐塊處理資料流，而不必一次等待整個內容。"}]}
+{"messages": [{"role": "user", "content": "什麼是ReadableStream？"}, {"role": "assistant", "content": "ReadableStream 表示可以被逐步讀取的資料來源。"}]}
+{"messages": [{"role": "user", "content": "什麼是FormData？"}, {"role": "assistant", "content": "FormData 可用來建立表單資料集合，常與 fetch 一起提交表單。"}]}
+{"messages": [{"role": "user", "content": "什麼是URLSearchParams？"}, {"role": "assistant", "content": "URLSearchParams 用來建立與操作 URL query string 的鍵值資料。"}]}
+{"messages": [{"role": "user", "content": "什麼是TextEncoder？"}, {"role": "assistant", "content": "TextEncoder 可把字串編碼成 UTF-8 位元組。"}]}
+{"messages": [{"role": "user", "content": "什麼是TextDecoder？"}, {"role": "assistant", "content": "TextDecoder 可把位元組資料解碼成文字。"}]}
+{"messages": [{"role": "user", "content": "什麼是IntersectionObserver？"}, {"role": "assistant", "content": "IntersectionObserver 可以非同步觀察元素是否進入指定可視區域。"}]}
+{"messages": [{"role": "user", "content": "什麼是ResizeObserver？"}, {"role": "assistant", "content": "ResizeObserver 可以觀察元素尺寸變化。"}]}
+{"messages": [{"role": "user", "content": "什麼是MutationObserver？"}, {"role": "assistant", "content": "MutationObserver 可以觀察 DOM 樹的變更。"}]}
+{"messages": [{"role": "user", "content": "什麼是Page Visibility API？"}, {"role": "assistant", "content": "Page Visibility API 可以判斷文件目前是否在使用者可見狀態。"}]}
+{"messages": [{"role": "user", "content": "什麼是Geolocation API？"}, {"role": "assistant", "content": "Geolocation API 可在使用者授權下取得裝置位置資訊。"}]}
+{"messages": [{"role": "user", "content": "什麼是Notification API？"}, {"role": "assistant", "content": "Notification API 可在符合權限與瀏覽器條件下建立網頁通知。"}]}
+{"messages": [{"role": "user", "content": "什麼是Web Workers 與 UI？"}, {"role": "assistant", "content": "把耗時計算移到 Worker 可降低主執行緒被阻塞的機會，讓 UI 保持較順暢。"}]}
