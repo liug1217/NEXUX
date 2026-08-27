@@ -386,6 +386,27 @@ if status_msg and model is None:
 if status_msg:
     st.warning(status_msg)
 
+# ---- API 模式：網址列 ?prompt=... 直接推理回傳 ----
+import urllib.parse
+
+query_params = st.query_params
+if "prompt" in query_params:
+    target_prompt = urllib.parse.unquote(query_params["prompt"])
+    reply_chunks = list(generate_response(
+        prompt=target_prompt,
+        history=[],
+        model=model,
+        tokenizer=tokenizer,
+        config=config,
+        temperature=0.8,
+        max_new_tokens=150,
+        top_p=0.9,
+        repetition_penalty=1.1,
+    ))
+    full_reply = "".join(reply_chunks)
+    st.json({"status": "success", "prompt": target_prompt, "reply": full_reply})
+    st.stop()
+
 # ---- 側邊欄：模型資訊 ----
 with st.sidebar:
     st.divider()
