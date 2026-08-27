@@ -5,3 +5,7 @@ openai
 anthropic
 google-genai
 Pillow
+streamlit
+torch
+transformers
+huggingface_hub
