@@ -51,6 +51,7 @@
 
   .streamlit-iframe-wrap {
     display: none;
+    flex-direction: column;
     position: absolute;
     inset: 0;
     z-index: 10;
@@ -59,9 +60,28 @@
   .streamlit-iframe-wrap.active { display: flex; }
   .streamlit-iframe-wrap iframe {
     width: 100%;
-    height: 100%;
+    flex: 1;
     border: none;
-    border-radius: 8px;
+    background: var(--bg);
+  }
+  .streamlit-iframe-back {
+    padding: 8px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .streamlit-iframe-back button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 13px;
   }
 
   /* 左側細窄導覽軌,呼應設計稿裡收合狀態的側欄。跟輸入框/快速按鈕同一套
@@ -1593,6 +1613,10 @@
   <div class="main-row" id="mainRow">
   <div class="app">
     <div class="streamlit-iframe-wrap" id="streamlitWrap">
+      <div class="streamlit-iframe-back">
+        <button id="streamlitBackBtn">← 返回</button>
+        <span>NEXUX 345M 雲端推理（Streamlit Cloud）</span>
+      </div>
       <iframe id="streamlitFrame" src="about:blank" allow="clipboard-write"></iframe>
     </div>
     <div class="messages" id="messages"></div>
@@ -2938,6 +2962,7 @@
 
     const streamlitWrap = document.getElementById("streamlitWrap");
     const streamlitFrame = document.getElementById("streamlitFrame");
+    const streamlitBackBtn = document.getElementById("streamlitBackBtn");
     const STREAMLIT_URL = "https://5ppbvj4beamfp33ebqzjmt.streamlit.app";
 
     function syncRoleSelectorWithProvider() {
@@ -2959,6 +2984,12 @@
       }
     }
     providerSelect.addEventListener("change", syncRoleSelectorWithProvider);
+
+    streamlitBackBtn.addEventListener("click", () => {
+      providerSelect.value = "own";
+      streamlitWrap.classList.remove("active");
+      syncRoleSelectorWithProvider();
+    });
 
     // ---- 初始化:先讀localStorage的我的角色/預設角色覆寫,
     // 再向後端要預設角色的原始清單(給「恢復預設」當還原目標)。 ----
