@@ -2,10 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/generate.py": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "excludeFiles": "{weights_pretrained_*.npz,checkpoint_pretrained.pt,*.pt,sft_*.log,eval_*.txt}"
     },
     "api/bead_pattern.py": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "excludeFiles": "{weights_pretrained_*.npz,checkpoint_pretrained.pt,*.pt,sft_*.log,eval_*.txt}"
     }
   },
   "rewrites": [
