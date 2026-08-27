@@ -1,24 +1,23 @@
 """
 app.py — NEXUX AI 聊天機器人（Streamlit Cloud 部署版）
-純推理模式,從 int8 量化 npz 權重載入,完整保留原創 GPTModel 架構。
-不依賴本機訓練環境的任何模組,完全獨立運行。
+從 Hugging Face Hub 自動下載權重,純 CPU 推理,完整保留原創 GPTModel 架構。
 """
 
 import gc
-import json
-import os
 import re
 from dataclasses import dataclass
 
-import numpy as np
 import streamlit as st
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from huggingface_hub import hf_hub_download
 from transformers import BertTokenizer
 
+HF_REPO_ID = "liug1217/NEXUX"
 
-# ==================== 推理設定 ====================
+
+# ==================== 推理設定（從 checkpoint 自動讀取架構） ====================
 
 @dataclass
 class InferenceConfig:
@@ -27,14 +26,15 @@ class InferenceConfig:
     n_head: int = 16
     n_layer: int = 24
     dropout: float = 0.0
-    max_new_tokens: int = 100
-    temperature: float = 0.5
-    top_k: int = 20
-    top_p: float = 0.8
-    repetition_penalty: float = 2.0
+    max_new_tokens: int = 150
+    temperature: float = 0.8
+    top_k: int = 40
+    top_p: float = 0.9
+    repetition_penalty: float = 1.1
 
 
 # ==================== GPTModel 完整架構（原創自研 decoder-only Transformer） ====================
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, config):
@@ -137,7 +137,7 @@ class GPTModel(nn.Module):
     ):
         self.eval()
         for _ in range(max_new_tokens):
-            idx_cond = idx[:, -self.config.block_size:]
+            idx_cond = idx[:, -self.config.block_size :]
             logits, _ = self(idx_cond)
             logits = logits[:, -1, :] / max(temperature, 1e-5)
 
@@ -180,126 +180,6 @@ class GPTModel(nn.Module):
                 break
 
 
-# ==================== int8 npz 權重反量化載入 ====================
-
-def _dequant_one(npz_files, key, quant_bits):
-    for npz in npz_files:
-        if key not in npz.files:
-            continue
-        qmin_key = f"{key}|qmin"
-        qscale_key = f"{key}|qscale"
-
-        if qmin_key in npz.files and qscale_key in npz.files:
-            qmin = float(npz[qmin_key])
-            qscale = float(npz[qscale_key])
-            packed = np.array(npz[key])
-
-            if quant_bits == 4:
-                numel_key = f"{key}|numel"
-                shape_key = f"{key}|shape"
-                numel = int(npz[numel_key])
-                hi = packed >> 4
-                lo = packed & 0x0F
-                flat = np.empty(len(packed) * 2, dtype=np.uint8)
-                flat[0::2] = hi
-                flat[1::2] = lo
-                del packed, hi, lo
-                arr = flat[:numel].astype(np.float32) * qscale + qmin
-                del flat
-                if shape_key in npz.files:
-                    shape = tuple(int(s) for s in npz[shape_key])
-                    arr = arr.reshape(shape)
-            else:
-                arr = packed.astype(np.float32) * qscale + qmin
-                del packed
-        else:
-            arr = npz[key].astype(np.float32)
-
-        t = torch.from_numpy(arr).half()
-        del arr
-        return t
-    return None
-
-
-def _load_model_from_npz(meta_path):
-    with open(meta_path, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-
-    cfg = meta["config"]
-    base_dir = os.path.dirname(meta_path) or "."
-    num_parts = meta.get("num_parts", 0)
-    npz_prefix = meta.get("npz_prefix", "")
-    quant_bits = meta.get("quant_bits", 8)
-
-    if num_parts > 0 and npz_prefix:
-        npz_files = [
-            np.load(os.path.join(base_dir, f"{npz_prefix}_{i}.npz"))
-            for i in range(num_parts)
-        ]
-    else:
-        npz_files = [np.load(os.path.join(base_dir, "weights.npz"))]
-
-    all_data_keys = set()
-    for npz in npz_files:
-        for k in npz.files:
-            if "|" not in k:
-                all_data_keys.add(k)
-
-    config = InferenceConfig(
-        block_size=cfg["block_size"],
-        n_embd=cfg["n_embd"],
-        n_head=cfg["n_head"],
-        n_layer=cfg["n_layer"],
-    )
-
-    prev_dtype = torch.get_default_dtype()
-    torch.set_default_dtype(torch.float16)
-    model = GPTModel(config, cfg["vocab_size"])
-    torch.set_default_dtype(prev_dtype)
-    model.eval()
-    gc.collect()
-
-    has_head_weight = False
-    with torch.no_grad():
-        for npz_key in all_data_keys:
-            real_key = npz_key.replace("__", ".")
-            if real_key == "head.weight":
-                has_head_weight = True
-            tensor = _dequant_one(npz_files, npz_key, quant_bits)
-            if tensor is None:
-                continue
-
-            parts = real_key.split(".")
-            obj = model
-            for part in parts[:-1]:
-                if part.isdigit():
-                    obj = obj[int(part)]
-                else:
-                    obj = getattr(obj, part)
-
-            attr_name = parts[-1]
-            param = getattr(obj, attr_name, None)
-            if isinstance(param, nn.Parameter):
-                param.data.copy_(tensor)
-            elif isinstance(param, torch.Tensor):
-                param.copy_(tensor)
-            else:
-                setattr(obj, attr_name, tensor)
-            del tensor
-
-        gc.collect()
-
-    if not has_head_weight:
-        model.head.weight.data.copy_(model.token_emb.weight.data)
-
-    for npz in npz_files:
-        npz.close()
-    gc.collect()
-
-    n_params = sum(p.numel() for p in model.parameters())
-    return model, config, n_params
-
-
 # ==================== 文字後處理（截斷模型幻想的下一輪對話） ====================
 
 _TURN_PATTERN = re.compile(r"\nA[:：]|\nB[:：]|\n問[:：]|\n答[:：]")
@@ -332,18 +212,65 @@ def build_context_prompt(history, prompt, tokenizer, block_size, max_new_tokens)
     return "".join(kept) + tail
 
 
-# ==================== 模型載入（Streamlit 快取,整個生命週期只載入一次） ====================
+# ==================== 從 Hugging Face Hub 下載並載入模型 ====================
 
 
 @st.cache_resource
 def load_model():
-    model, config, n_params = _load_model_from_npz("weights_meta_pretrained.json")
+    try:
+        model_path = hf_hub_download(repo_id=HF_REPO_ID, filename="model.pt")
+        vocab_path = hf_hub_download(repo_id=HF_REPO_ID, filename="vocab.txt")
+    except Exception:
+        return None, None, None, 0, (
+            "⏳ 權重孵化中！請等本地 33135 步完成後，"
+            "將模型上傳至 HF 倉庫 liug1217/NEXUX。"
+        )
+
+    checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
+    arch = checkpoint.get("architecture", {})
+    config = InferenceConfig(
+        block_size=arch.get("block_size", 1024),
+        n_embd=arch.get("n_embd", 1024),
+        n_head=arch.get("n_head", 16),
+        n_layer=arch.get("n_layer", 24),
+    )
+    vocab_size = checkpoint["vocab_size"]
+
+    state_dict = checkpoint.pop("model_state_dict")
+    del checkpoint
+    gc.collect()
+
+    prev_dtype = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float16)
+    model = GPTModel(config, vocab_size=vocab_size)
+    torch.set_default_dtype(prev_dtype)
+
+    for key in list(state_dict.keys()):
+        if state_dict[key].is_floating_point():
+            state_dict[key] = state_dict[key].half()
+
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    del state_dict
+    gc.collect()
+
+    real_missing = [k for k in missing if "attn.mask" not in k]
+    real_unexpected = [k for k in unexpected if "attn.mask" not in k]
+    warn_msg = None
+    if real_missing:
+        warn_msg = f"權重缺失: {real_missing}"
+    if real_unexpected:
+        warn_msg = f"多餘權重: {real_unexpected}"
+
+    model.eval()
+
     tokenizer = BertTokenizer(
-        vocab_file="vocab_pretrained.txt",
+        vocab_file=vocab_path,
         do_lower_case=True,
         clean_up_tokenization_spaces=True,
     )
-    return model, tokenizer, config, n_params
+
+    n_params = sum(p.numel() for p in model.parameters())
+    return model, tokenizer, config, n_params, warn_msg
 
 
 # ==================== 串流文字生成器（對接 st.write_stream） ====================
@@ -351,7 +278,7 @@ def load_model():
 
 def generate_response(
     prompt, history, model, tokenizer, config,
-    temperature, max_new_tokens, top_k, top_p, repetition_penalty,
+    temperature, max_new_tokens, top_p, repetition_penalty,
 ):
     wrapped = build_context_prompt(
         history, prompt, tokenizer, config.block_size, max_new_tokens
@@ -370,7 +297,7 @@ def generate_response(
         idx,
         max_new_tokens=max_new_tokens,
         temperature=temperature,
-        top_k=top_k,
+        top_k=config.top_k,
         top_p=top_p,
         repetition_penalty=repetition_penalty,
         eos_id=tokenizer.sep_token_id,
@@ -402,39 +329,71 @@ st.set_page_config(page_title="NEXUX AI", page_icon="🤖", layout="centered")
 st.title("🤖 NEXUX AI")
 st.caption("純手寫自研架構 · 345M 繁體中文大語言模型")
 
-# ---- 側邊欄：生成參數 ----
+# ---- 側邊欄：生成參數控制面板 ----
 with st.sidebar:
     st.header("⚙️ 生成參數")
     temperature = st.slider(
-        "Temperature（溫度）", 0.1, 2.0, 0.5, 0.1, help="越高越隨機,越低越確定"
+        "🌡️ Temperature（創意度）",
+        min_value=0.1, max_value=2.0, value=0.8, step=0.1,
+        help="越高回答越有創意但可能離題,越低越保守精準",
     )
-    max_tokens = st.slider("最大生成長度", 10, 300, 100, 10)
-    top_p = st.slider("Top-P（核採樣）", 0.1, 1.0, 0.8, 0.05)
-    top_k = st.slider("Top-K", 1, 100, 20, 1)
-    rep_penalty = st.slider("重複懲罰", 1.0, 3.0, 2.0, 0.1)
+    top_p = st.slider(
+        "🎯 Top-p（核採樣）",
+        min_value=0.1, max_value=1.0, value=0.9, step=0.05,
+        help="只從累積機率前 p% 的候選字中取樣",
+    )
+    rep_penalty = st.slider(
+        "🔁 Repetition Penalty（重複懲罰）",
+        min_value=1.0, max_value=3.0, value=1.1, step=0.1,
+        help="大於 1.0 時降低重複字詞出現的機率",
+    )
+    max_tokens = st.slider(
+        "📏 最大生成長度",
+        min_value=10, max_value=300, value=150, step=10,
+    )
     st.divider()
     if st.button("🗑️ 清除對話紀錄"):
         st.session_state.messages = []
         st.rerun()
 
-# ---- 檢查權重檔案 ----
-if not os.path.exists("weights_meta_pretrained.json"):
-    st.error("找不到 `weights_meta_pretrained.json`,請確認權重檔案已在專案根目錄。")
-    st.stop()
-if not os.path.exists("vocab_pretrained.txt"):
-    st.error("找不到 `vocab_pretrained.txt`,請確認詞表檔案已在專案根目錄。")
+# ---- 載入模型（首次自動從 HuggingFace 下載） ----
+with st.spinner("🚀 首次啟動：正在從 Hugging Face 下載模型權重..."):
+    model, tokenizer, config, n_params, status_msg = load_model()
+
+if status_msg and model is None:
+    st.warning(status_msg)
+    st.info(
+        "📦 上傳指令：\n\n"
+        "```bash\n"
+        "# 先剝離 optimizer state（2 GB → ~1.3 GB）\n"
+        "python -c \"\n"
+        "import torch\n"
+        "ckpt = torch.load('checkpoint_pretrained.pt', map_location='cpu')\n"
+        "torch.save({\n"
+        "    'model_state_dict': ckpt['model_state_dict'],\n"
+        "    'vocab_size': ckpt['vocab_size'],\n"
+        "    'architecture': ckpt['architecture'],\n"
+        "    'sft_applied': ckpt.get('sft_applied', False),\n"
+        "}, 'model.pt')\n"
+        "\"\n"
+        "# 上傳到 HuggingFace\n"
+        "huggingface-cli upload liug1217/NEXUX model.pt\n"
+        "huggingface-cli upload liug1217/NEXUX vocab_pretrained.txt vocab.txt\n"
+        "```"
+    )
     st.stop()
 
-# ---- 載入模型 ----
-with st.spinner("首次載入模型中,請稍候..."):
-    model, tokenizer, config, n_params = load_model()
+if status_msg:
+    st.warning(status_msg)
 
+# ---- 側邊欄：模型資訊 ----
 with st.sidebar:
     st.divider()
-    st.caption(f"模型參數量：{n_params / 1e6:.0f}M")
-    st.caption(f"架構：{config.n_layer}L / {config.n_head}H / {config.n_embd}D")
-    st.caption(f"上下文長度：{config.block_size} tokens")
-    st.caption("推理精度：float16（記憶體優化）")
+    st.caption(f"📊 模型參數量：{n_params / 1e6:.0f}M")
+    st.caption(f"🏗️ 架構：{config.n_layer}L / {config.n_head}H / {config.n_embd}D")
+    st.caption(f"📐 上下文長度：{config.block_size} tokens")
+    st.caption("⚡ 推理精度：float16（記憶體優化）")
+    st.caption(f"🤗 權重來源：[{HF_REPO_ID}](https://huggingface.co/{HF_REPO_ID})")
 
 # ---- 初始化對話歷史 ----
 if "messages" not in st.session_state:
@@ -461,7 +420,6 @@ if prompt := st.chat_input("輸入你的問題..."):
                 config=config,
                 temperature=temperature,
                 max_new_tokens=max_tokens,
-                top_k=top_k,
                 top_p=top_p,
                 repetition_penalty=rep_penalty,
             )

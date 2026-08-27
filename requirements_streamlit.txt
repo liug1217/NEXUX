@@ -3,3 +3,4 @@ torch
 numpy
 transformers
 streamlit
+huggingface_hub
