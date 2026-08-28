@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "Python 出現 NameError 通常代表什麼？"}, {"role": "assistant", "content": "通常表示程式使用了尚未定義或目前作用域中不存在的名稱，例如變數、函式或模組名稱。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 TypeError 怎麼看？"}, {"role": "assistant", "content": "先看錯誤訊息描述的型別衝突，例如把字串和整數做不支援的運算，再回到出錯行檢查資料型別。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 SyntaxError 要先檢查什麼？"}, {"role": "assistant", "content": "先檢查出錯行及其前一行附近的括號、冒號、引號、縮排與語法是否完整。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 IndentationError 是什麼原因？"}, {"role": "assistant", "content": "通常是縮排結構不合法，例如同一區塊縮排不一致或預期需要縮排的位置沒有縮排。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 KeyError 怎麼處理？"}, {"role": "assistant", "content": "表示程式以不存在的鍵直接索引字典；可以先檢查鍵是否存在，或在適合情況下使用 `get()`。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 IndexError 是什麼原因？"}, {"role": "assistant", "content": "通常表示使用超出序列有效範圍的索引。應檢查序列長度與索引值。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 ValueError 是什麼原因？"}, {"role": "assistant", "content": "表示型別通常可以接受，但提供的值格式或內容不符合要求，例如 `int(\"abc\")`。"}]}
+{"messages": [{"role": "user", "content": "Python 變數明明有值卻顯示沒有定義，可能為什麼？"}, {"role": "assistant", "content": "可能是作用域不同、拼字不一致、變數在條件分支中沒有被執行，或變數定義順序不正確。"}]}
+{"messages": [{"role": "user", "content": "Python 程式沒有報錯但結果錯了怎麼辦？"}, {"role": "assistant", "content": "這屬於邏輯錯誤。應使用測試資料、`print()`、logging、除錯器或斷點逐步檢查中間結果。"}]}
+{"messages": [{"role": "user", "content": "Python 程式卡住不動怎麼查？"}, {"role": "assistant", "content": "先確認是否進入無限迴圈、等待輸入、網路或檔案 I/O，並觀察 CPU、記憶體與程式輸出。"}]}
+{"messages": [{"role": "user", "content": "如何找 Python 無限迴圈？"}, {"role": "assistant", "content": "檢查 while 或遞迴的停止條件是否真的能達成，必要時加入計數器或除錯輸出觀察狀態。"}]}
+{"messages": [{"role": "user", "content": "Python 遞迴太深出現錯誤怎麼辦？"}, {"role": "assistant", "content": "可能超過遞迴深度限制；可重新設計成迴圈、減少遞迴深度，或確認是否存在沒有終止條件的遞迴。"}]}
+{"messages": [{"role": "user", "content": "Python 讀檔出現 UnicodeDecodeError 怎麼辦？"}, {"role": "assistant", "content": "通常表示用錯誤的文字編碼解讀檔案。應確認原始檔案編碼，並在 `open()` 等操作中指定正確 encoding。"}]}
+{"messages": [{"role": "user", "content": "Python 輸出中文亂碼怎麼辦？"}, {"role": "assistant", "content": "應檢查原始檔、終端機、檔案讀寫與資料處理流程的編碼是否一致，常見環境會使用 UTF-8。"}]}
+{"messages": [{"role": "user", "content": "Python 輸出程式碼變成亂碼可能是哪裡有問題？"}, {"role": "assistant", "content": "先檢查 tokenizer、字串編碼、資料序列化，以及 prepare 階段是否修改了符號或特殊字元。"}]}
+{"messages": [{"role": "user", "content": "Python 的 `<` `>` 在資料集中消失了怎麼辦？"}, {"role": "assistant", "content": "檢查資料是否先經過 HTML escape、Markdown 處理或特殊字元清洗，並確認原始 JSONL 與 tokenize 前文字一致。"}]}
+{"messages": [{"role": "user", "content": "Python JSONL 讀取失敗怎麼辦？"}, {"role": "assistant", "content": "檢查每一行是否都是獨立合法 JSON、引號是否正確、特殊字元是否正確轉義，以及是否混入空白或非 JSON 內容。"}]}
+{"messages": [{"role": "user", "content": "Python 出現 ModuleNotFoundError 怎麼辦？"}, {"role": "assistant", "content": "先確認執行程式使用的 Python 環境，以及該套件是否安裝在同一環境；虛擬環境切換錯誤很常見。"}]}
+{"messages": [{"role": "user", "content": "為什麼在一個終端機裝了套件，另一個終端機卻找不到？"}, {"role": "assistant", "content": "兩個終端機可能使用不同的 Python 或虛擬環境。應檢查 `python`、`pip` 的實際路徑與版本。"}]}
+{"messages": [{"role": "user", "content": "Python 程式在 IDE 能跑，終端機卻不能跑，為什麼？"}, {"role": "assistant", "content": "IDE 可能使用不同的工作目錄、Python 解譯器、環境變數或虛擬環境。"}]}
+{"messages": [{"role": "user", "content": "如何確認 Python 使用哪個解譯器？"}, {"role": "assistant", "content": "可檢查 `sys.executable`，也可以檢查終端機中的 Python 路徑。"}]}
+{"messages": [{"role": "user", "content": "為什麼相同 Python 程式在不同電腦結果不同？"}, {"role": "assistant", "content": "可能因 Python 版本、套件版本、作業系統、編碼、環境變數或輸入資料不同。"}]}
+{"messages": [{"role": "user", "content": "Python 記憶體使用量突然升高可以查什麼？"}, {"role": "assistant", "content": "可以檢查是否把大量資料一次載入記憶體、保留不需要的物件，或存在快取與資料結構未釋放的問題。"}]}
+{"messages": [{"role": "user", "content": "如何找 Python 程式中最慢的部分？"}, {"role": "assistant", "content": "可以先用簡單計時，再視需要使用 profiling 工具找出耗時函式或程式區段。"}]}
+{"messages": [{"role": "user", "content": "Python 的 try except 把錯誤吃掉怎麼辦？"}, {"role": "assistant", "content": "避免使用過寬的例外捕捉；應捕捉預期的例外，並記錄必要的錯誤資訊。"}]}
+{"messages": [{"role": "user", "content": "除錯時為什麼要先縮小問題？"}, {"role": "assistant", "content": "把大型問題縮成最小可重現範例，可以更快判斷真正原因，也能避免同時受到多個因素干擾。"}]}
+{"messages": [{"role": "user", "content": "什麼是最小可重現範例？"}, {"role": "assistant", "content": "它是一份保留錯誤所需最少程式碼與資料的範例，讓問題更容易分析與重現。"}]}
+{"messages": [{"role": "user", "content": "Python 測試資料應該包含正常和異常案例嗎？"}, {"role": "assistant", "content": "應該。除了正常輸入，也應測試空值、邊界值、錯誤格式與特殊情況。"}]}
+{"messages": [{"role": "user", "content": "Python 導入循環是什麼？"}, {"role": "assistant", "content": "循環導入是模組互相匯入形成循環依賴，可能導致初始化不完整或匯入錯誤。"}]}
+{"messages": [{"role": "user", "content": "模型訓練資料中的 Python 程式碼被破壞時，先查哪一層？"}, {"role": "assistant", "content": "建議依序比較原始資料、JSONL、prepare 後資料、tokenizer 輸入與模型輸出，找出第一次發生差異的位置。"}]}

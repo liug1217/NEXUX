@@ -1,0 +1,15 @@
+{"messages": [{"role": "user", "content": "世界最高的山是什麼？"}, {"role": "assistant", "content": "世界最高的山是聖母峰，又叫珠穆朗瑪峰，海拔8849公尺，位於尼泊爾和中國的邊界上。"}]}
+{"messages": [{"role": "user", "content": "世界上最大的海洋是什麼？"}, {"role": "assistant", "content": "世界上最大的海洋是太平洋，面積約1.65億平方公里，佔地球表面的三分之一，比所有陸地加起來還大。"}]}
+{"messages": [{"role": "user", "content": "世界上最長的河流是哪條？"}, {"role": "assistant", "content": "世界上最長的河流是尼羅河，全長約6650公里，流經非洲東北部，最終注入地中海。"}]}
+{"messages": [{"role": "user", "content": "地球有多大？"}, {"role": "assistant", "content": "地球的赤道周長約40075公里，直徑約12742公里，表面積約5.1億平方公里，其中約71%被海洋覆蓋。"}]}
+{"messages": [{"role": "user", "content": "世界上最大的國家是哪個？"}, {"role": "assistant", "content": "世界上面積最大的國家是俄羅斯，國土面積約1710萬平方公里，橫跨歐洲和亞洲兩個大洲。"}]}
+{"messages": [{"role": "user", "content": "世界上人口最多的國家是哪個？"}, {"role": "assistant", "content": "目前世界上人口最多的國家是印度，人口超過14億，其次是中國。"}]}
+{"messages": [{"role": "user", "content": "七大洲是哪些？"}, {"role": "assistant", "content": "七大洲分別是亞洲、非洲、北美洲、南美洲、歐洲、大洋洲和南極洲。其中亞洲面積最大，南極洲沒有常住人口。"}]}
+{"messages": [{"role": "user", "content": "日本的首都是哪裡？"}, {"role": "assistant", "content": "日本的首都是東京，位於本州島的關東平原，是全球最大的都市圈之一，人口超過1300萬。"}]}
+{"messages": [{"role": "user", "content": "美國的首都是哪裡？"}, {"role": "assistant", "content": "美國的首都是華盛頓特區，不過美國最大的城市是紐約。很多人會搞混，但首都確實是華盛頓。"}]}
+{"messages": [{"role": "user", "content": "世界上最小的國家是哪個？"}, {"role": "assistant", "content": "世界上最小的國家是梵蒂岡，面積只有0.44平方公里，位於義大利羅馬市內，是天主教的中心。"}]}
+{"messages": [{"role": "user", "content": "撒哈拉沙漠有多大？"}, {"role": "assistant", "content": "撒哈拉沙漠面積約920萬平方公里，是世界上最大的熱帶沙漠，幾乎覆蓋了整個北非地區。"}]}
+{"messages": [{"role": "user", "content": "赤道是什麼？"}, {"role": "assistant", "content": "赤道是地球上緯度為0度的假想線，將地球分成南北兩個半球。赤道附近全年高溫，日夜長度幾乎相等。"}]}
+{"messages": [{"role": "user", "content": "澳洲在哪裡？"}, {"role": "assistant", "content": "澳洲位於南半球的大洋洲，是世界上最小的大陸，也是唯一一個國土覆蓋整個大陸的國家，首都是坎培拉。"}]}
+{"messages": [{"role": "user", "content": "北極和南極有什麼不同？"}, {"role": "assistant", "content": "北極是一片被冰覆蓋的海洋，有北極熊；南極是一塊被冰覆蓋的大陸，有企鵝。南極比北極更冷，曾測到零下89度的極端低溫。"}]}
+{"messages": [{"role": "user", "content": "為什麼會有四季？"}, {"role": "assistant", "content": "四季的變化是因為地球的自轉軸傾斜了約23.5度。當北半球朝向太陽時是夏天，遠離太陽時是冬天，南半球則相反。"}]}

@@ -41,6 +41,7 @@ from numpy_gpt import NumpyGPT  # noqa: E402
 from text_cleanup import find_next_turn_marker  # noqa: E402
 from providers import call_provider, ProviderError, SUPPORTED_PROVIDERS  # noqa: E402
 from conversation import build_context_prompt  # noqa: E402
+from rag_engine import RAGEngine  # noqa: E402
 from smalltalk import match_smalltalk  # noqa: E402
 from question_log import log_question  # noqa: E402
 from qa_lookup import match_qa  # noqa: E402
@@ -60,7 +61,7 @@ TOP_K = 20
 TOP_P = 0.8
 REPETITION_PENALTY = 2.0
 
-_cache = {"model": None, "tokenizer": None}
+_cache = {"model": None, "tokenizer": None, "rag": None}
 
 
 def get_model_and_tokenizer():
@@ -77,7 +78,16 @@ def get_model_and_tokenizer():
         _cache["model"] = NumpyGPT(weights_meta_path)
         _cache["tokenizer"] = BertWordpieceTokenizer.load_from_vocab_txt(vocab_path)
 
+        rag_path = os.path.join(BASE_DIR, "rag_index.json")
+        _cache["rag"] = RAGEngine.load(rag_path)
+        if _cache["rag"]:
+            print(f"[RAG] Vercel: 已載入 {len(_cache['rag'].docs)} 筆 Q&A")
+
     return _cache["model"], _cache["tokenizer"]
+
+
+def get_rag():
+    return _cache.get("rag")
 
 
 def _generate_team_reply_stream(text_prompt, model, tokenizer):
@@ -288,6 +298,12 @@ def api_generate():
     if weather_reply is not None:
         return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
+    rag = get_rag()
+    if rag:
+        rag_answer = rag.direct_answer(prompt, threshold=0.25)
+        if rag_answer:
+            return jsonify({"reply": rag_answer, "type": "rag_lookup"})
+
     try:
         model, tokenizer = get_model_and_tokenizer()
     except FileNotFoundError as e:
@@ -304,11 +320,13 @@ def api_generate():
         return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
 
     try:
-        # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
-        # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
+        rag = get_rag()
+        rag_context = rag.retrieve_context(prompt, top_k=2) if rag else ""
+
         if model.is_sft:
             wrapped_prompt = build_context_prompt(
-                history, prompt, tokenizer, model.block_size, MAX_NEW_TOKENS
+                history, prompt, tokenizer, model.block_size, MAX_NEW_TOKENS,
+                rag_context=rag_context,
             )
         else:
             wrapped_prompt = prompt

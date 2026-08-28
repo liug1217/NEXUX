@@ -1,0 +1,29 @@
+{"messages": [{"role": "user", "content": "赤道是什麼？"}, {"role": "assistant", "content": "赤道是地球表面把南北半球大致分成兩部分的假想大圓，緯度為 0 度。"}]}
+{"messages": [{"role": "user", "content": "本初子午線是什麼？"}, {"role": "assistant", "content": "本初子午線是經度 0 度的基準線，通過英國格林威治等地區。"}]}
+{"messages": [{"role": "user", "content": "緯度是什麼？"}, {"role": "assistant", "content": "緯度表示某地相對赤道南北方向的位置，從 0 度到 90 度。"}]}
+{"messages": [{"role": "user", "content": "經度是什麼？"}, {"role": "assistant", "content": "經度表示某地相對本初子午線東西方向的位置，通常以東經或西經表示。"}]}
+{"messages": [{"role": "user", "content": "時區是什麼？"}, {"role": "assistant", "content": "時區是依地球自轉與地方時間差等概念劃分出的時間區域，方便世界各地使用標準時間。"}]}
+{"messages": [{"role": "user", "content": "為什麼不同國家的時間不同？"}, {"role": "assistant", "content": "地球自轉使不同經度地區面向太陽的時間不同，因此世界各地建立不同標準時間。"}]}
+{"messages": [{"role": "user", "content": "什麼是半島？"}, {"role": "assistant", "content": "半島是三面被水包圍、另一面與較大陸地相連的地形。"}]}
+{"messages": [{"role": "user", "content": "什麼是島嶼？"}, {"role": "assistant", "content": "島嶼是四周被水域包圍的陸地。"}]}
+{"messages": [{"role": "user", "content": "群島是什麼？"}, {"role": "assistant", "content": "群島是由多個島嶼組成的島嶼群。"}]}
+{"messages": [{"role": "user", "content": "峽谷是什麼？"}, {"role": "assistant", "content": "峽谷通常是岩層被河流侵蝕等作用長期切割形成的狹長而較深地形。"}]}
+{"messages": [{"role": "user", "content": "高原是什麼？"}, {"role": "assistant", "content": "高原是海拔較高且相對平坦或起伏較小的廣大地形。"}]}
+{"messages": [{"role": "user", "content": "平原是什麼？"}, {"role": "assistant", "content": "平原通常是地勢較低且相對平坦廣闊的土地。"}]}
+{"messages": [{"role": "user", "content": "盆地是什麼？"}, {"role": "assistant", "content": "盆地是四周地勢較高、中間相對低窪的地形。"}]}
+{"messages": [{"role": "user", "content": "河口是什麼？"}, {"role": "assistant", "content": "河口是河流注入海洋、湖泊或其他水體的地方。"}]}
+{"messages": [{"role": "user", "content": "三角洲怎麼形成？"}, {"role": "assistant", "content": "河流帶來的泥沙在入海或入湖後因流速降低而沉積，長期可能形成三角洲。"}]}
+{"messages": [{"role": "user", "content": "什麼是地下水？"}, {"role": "assistant", "content": "地下水是存在於土壤與岩石孔隙、裂隙中的水。"}]}
+{"messages": [{"role": "user", "content": "什麼是含水層？"}, {"role": "assistant", "content": "含水層是能儲存並讓地下水流動的地質層。"}]}
+{"messages": [{"role": "user", "content": "什麼是自然資源？"}, {"role": "assistant", "content": "自然資源是人類可利用、直接或間接來自自然環境的物質與能量。"}]}
+{"messages": [{"role": "user", "content": "可再生資源是什麼？"}, {"role": "assistant", "content": "可再生資源能在適當時間尺度內透過自然過程補充，例如太陽能與部分水資源。"}]}
+{"messages": [{"role": "user", "content": "不可再生資源是什麼？"}, {"role": "assistant", "content": "不可再生資源形成速度通常遠慢於人類消耗速度，例如煤、石油與天然氣。"}]}
+{"messages": [{"role": "user", "content": "人口密度是什麼？"}, {"role": "assistant", "content": "人口密度通常表示單位面積內的人口數量。"}]}
+{"messages": [{"role": "user", "content": "城市化是什麼？"}, {"role": "assistant", "content": "城市化是人口與經濟活動逐漸向城市集中，以及城市地區擴張與轉型的過程。"}]}
+{"messages": [{"role": "user", "content": "聚落是什麼？"}, {"role": "assistant", "content": "聚落是人類居住、活動與形成社會生活的地方。"}]}
+{"messages": [{"role": "user", "content": "農業為什麼受氣候影響？"}, {"role": "assistant", "content": "溫度、降雨、日照與季節長度等因素會影響作物生長，因此不同地區適合的農業類型不同。"}]}
+{"messages": [{"role": "user", "content": "海洋為什麼能影響氣候？"}, {"role": "assistant", "content": "海水具有很大的熱容量，可以吸收與儲存大量熱量，並透過海氣交換影響沿海與全球氣候。"}]}
+{"messages": [{"role": "user", "content": "洋流是什麼？"}, {"role": "assistant", "content": "洋流是海洋中大規模、較有規律的海水運動，可受到風、密度差與地球自轉等因素影響。"}]}
+{"messages": [{"role": "user", "content": "什麼是沙漠？"}, {"role": "assistant", "content": "沙漠是乾旱程度高、降水通常很少的自然環境，不一定全部都是沙地。"}]}
+{"messages": [{"role": "user", "content": "什麼是熱帶雨林？"}, {"role": "assistant", "content": "熱帶雨林通常位於低緯度地區，全年溫暖且降水豐富，生物多樣性很高。"}]}
+{"messages": [{"role": "user", "content": "為什麼地圖會有比例尺？"}, {"role": "assistant", "content": "比例尺表示地圖上的距離與實際地面距離之間的比例關係。"}]}

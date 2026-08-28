@@ -1,0 +1,20 @@
+{"messages": [{"role": "user", "content": "打八折後是 240 元，原價多少？"}, {"role": "assistant", "content": "八折代表原價的 80%，所以原價是 240 ÷ 0.8 = 300 元。"}]}
+{"messages": [{"role": "user", "content": "商品原價 500 元，打九折後多少？"}, {"role": "assistant", "content": "九折代表付原價的 90%，所以 500 × 0.9 = 450 元。"}]}
+{"messages": [{"role": "user", "content": "750 毫升等於多少公升？"}, {"role": "assistant", "content": "750 毫升 = 0.75 公升，因為 1000 毫升 = 1 公升。"}]}
+{"messages": [{"role": "user", "content": "2.5 公斤等於多少公克？"}, {"role": "assistant", "content": "2.5 公斤 = 2500 公克，因為 1 公斤 = 1000 公克。"}]}
+{"messages": [{"role": "user", "content": "時速 60 公里走 2 小時多遠？"}, {"role": "assistant", "content": "距離 = 速度 × 時間，所以 60 × 2 = 120 公里。"}]}
+{"messages": [{"role": "user", "content": "150 公里走 3 小時平均時速？"}, {"role": "assistant", "content": "平均速度 = 距離 ÷ 時間，所以 150 ÷ 3 = 50 公里／小時。"}]}
+{"messages": [{"role": "user", "content": "800 元漲價 10% 後多少？"}, {"role": "assistant", "content": "800 × 1.1 = 880 元。"}]}
+{"messages": [{"role": "user", "content": "3、7、8、12 的平均數？"}, {"role": "assistant", "content": "總和 30 ÷ 4 = 7.5。"}]}
+{"messages": [{"role": "user", "content": "長方形 8 公分乘 5 公分面積？"}, {"role": "assistant", "content": "面積 = 長 × 寬，所以是 40 平方公分。"}]}
+{"messages": [{"role": "user", "content": "正方形邊長 6 公分周長？"}, {"role": "assistant", "content": "周長 = 6 × 4 = 24 公分。"}]}
+{"messages": [{"role": "user", "content": "30 人中 18 人戴眼鏡，占幾成？"}, {"role": "assistant", "content": "18 ÷ 30 = 0.6，所以占六成，也就是 60%。"}]}
+{"messages": [{"role": "user", "content": "一個數的 25% 是 40，這個數是多少？"}, {"role": "assistant", "content": "40 ÷ 0.25 = 160。"}]}
+{"messages": [{"role": "user", "content": "袋中 3 顆紅球、2 顆藍球，取紅球機率？"}, {"role": "assistant", "content": "紅球機率 = 3 ÷ 5 = 3/5 = 60%。"}]}
+{"messages": [{"role": "user", "content": "下午 2:35 到 4:10 多久？"}, {"role": "assistant", "content": "從 2:35 到 3:35 是 1 小時，再加 35 分鐘，共 1 小時 35 分鐘。"}]}
+{"messages": [{"role": "user", "content": "書 360 頁每天看 45 頁幾天？"}, {"role": "assistant", "content": "360 ÷ 45 = 8，所以 8 天看完。"}]}
+{"messages": [{"role": "user", "content": "780 元三人平分，每人多少？"}, {"role": "assistant", "content": "780 ÷ 3 = 260 元。"}]}
+{"messages": [{"role": "user", "content": "5 公尺等於幾公分？"}, {"role": "assistant", "content": "5 × 100 = 500 公分。"}]}
+{"messages": [{"role": "user", "content": "2 小時 30 分鐘等於幾分鐘？"}, {"role": "assistant", "content": "120 + 30 = 150 分鐘。"}]}
+{"messages": [{"role": "user", "content": "120 元花掉 35 元剩多少？"}, {"role": "assistant", "content": "120 - 35 = 85 元。"}]}
+{"messages": [{"role": "user", "content": "每分鐘流入 4 公升，10 分鐘多少？"}, {"role": "assistant", "content": "4 × 10 = 40 公升。"}]}

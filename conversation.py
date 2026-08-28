@@ -27,11 +27,14 @@ def build_context_prompt(
     tokenizer,
     block_size: int,
     max_new_tokens: int,
+    rag_context: str = "",
 ) -> str:
     """
     history: [{"role": "user" | "assistant", "text": "..."}, ...],由舊到新排序,
              不包含這次的新輸入。
     prompt:  這次使用者輸入的新訊息。
+    rag_context: RAG 檢索到的相關 Q&A（已格式化成「問:/答:」文字），
+                 會插在歷史對話和新問題之間，讓模型看到相關範例。
     回傳:    組好的「問:...\n答:...\n...\n問:{prompt}\n答:」字串,
              總長度會控制在 block_size - max_new_tokens 個 token 以內,
              確保模型還有空間可以生成回覆。
@@ -40,6 +43,12 @@ def build_context_prompt(
 
     tail = f"問:{prompt}\n答:"
     used = len(tokenizer.encode(tail))
+
+    if rag_context:
+        rag_len = len(tokenizer.encode(rag_context))
+        if used + rag_len <= budget:
+            tail = rag_context + tail
+            used += rag_len
 
     kept_pieces = []
     for turn in reversed(history or []):

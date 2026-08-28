@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "細胞是什麼？"}, {"role": "assistant", "content": "細胞是生物體的基本結構與功能單位。"}]}
+{"messages": [{"role": "user", "content": "植物細胞和動物細胞有什麼常見差異？"}, {"role": "assistant", "content": "植物細胞通常具有細胞壁、葉綠體與較明顯的中央液泡；動物細胞通常沒有細胞壁與葉綠體。"}]}
+{"messages": [{"role": "user", "content": "細胞核有什麼作用？"}, {"role": "assistant", "content": "細胞核儲存大部分遺傳物質，並參與細胞活動的調控。"}]}
+{"messages": [{"role": "user", "content": "DNA 是什麼？"}, {"role": "assistant", "content": "DNA 是儲存遺傳資訊的核酸分子。"}]}
+{"messages": [{"role": "user", "content": "基因是什麼？"}, {"role": "assistant", "content": "基因是 DNA 上具有特定遺傳功能的區段。"}]}
+{"messages": [{"role": "user", "content": "染色體是什麼？"}, {"role": "assistant", "content": "染色體是由 DNA 與蛋白質組成、用來組織遺傳物質的結構。"}]}
+{"messages": [{"role": "user", "content": "RNA 和 DNA 有什麼不同？"}, {"role": "assistant", "content": "DNA 與 RNA 都是核酸，但它們的結構、鹼基組成與在細胞中的主要功能有所不同。"}]}
+{"messages": [{"role": "user", "content": "蛋白質是什麼？"}, {"role": "assistant", "content": "蛋白質是由胺基酸組成的大分子，參與結構、運輸、催化與訊息傳遞等多種功能。"}]}
+{"messages": [{"role": "user", "content": "酵素是什麼？"}, {"role": "assistant", "content": "酵素是能降低特定化學反應活化能的生物催化劑，多數酵素是蛋白質。"}]}
+{"messages": [{"role": "user", "content": "什麼是代謝？"}, {"role": "assistant", "content": "代謝是生物體內一系列化學反應的總稱，包括分解與合成等過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是細胞呼吸？"}, {"role": "assistant", "content": "細胞呼吸是一系列把有機物中的能量轉換成細胞可利用能量的反應；有氧呼吸通常以氧氣參與並產生大量 ATP。"}]}
+{"messages": [{"role": "user", "content": "ATP 是什麼？"}, {"role": "assistant", "content": "ATP 是細胞中常用的能量傳遞分子，可在許多細胞反應中提供能量。"}]}
+{"messages": [{"role": "user", "content": "什麼是粒線體？"}, {"role": "assistant", "content": "粒線體是許多真核細胞中的胞器，與有氧呼吸和能量轉換密切相關。"}]}
+{"messages": [{"role": "user", "content": "什麼是葉綠體？"}, {"role": "assistant", "content": "葉綠體是植物與部分藻類細胞中的胞器，主要進行光合作用。"}]}
+{"messages": [{"role": "user", "content": "什麼是細胞膜？"}, {"role": "assistant", "content": "細胞膜是包圍細胞的選擇性屏障，控制部分物質進出並參與細胞訊息傳遞。"}]}
+{"messages": [{"role": "user", "content": "什麼是擴散？"}, {"role": "assistant", "content": "擴散是粒子因隨機運動而由高濃度區域趨向低濃度區域的淨移動。"}]}
+{"messages": [{"role": "user", "content": "什麼是滲透？"}, {"role": "assistant", "content": "滲透是水等溶劑透過選擇性通透膜，由較低溶質有效濃度一側趨向較高一側的移動現象。"}]}
+{"messages": [{"role": "user", "content": "什麼是有絲分裂？"}, {"role": "assistant", "content": "有絲分裂是細胞核分裂的一種方式，通常產生遺傳上相近的子細胞。"}]}
+{"messages": [{"role": "user", "content": "什麼是減數分裂？"}, {"role": "assistant", "content": "減數分裂是形成配子的特殊細胞分裂過程，會使染色體套數減半並增加遺傳變異。"}]}
+{"messages": [{"role": "user", "content": "什麼是受精？"}, {"role": "assistant", "content": "受精是配子融合形成合子的一個過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是遺傳？"}, {"role": "assistant", "content": "遺傳是生物將部分特徵與遺傳資訊由親代傳給後代的過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是突變？"}, {"role": "assistant", "content": "突變是遺傳物質序列或結構發生的改變；其結果可能沒有明顯影響，也可能改變生物特徵。"}]}
+{"messages": [{"role": "user", "content": "什麼是自然選擇？"}, {"role": "assistant", "content": "自然選擇是具有可遺傳差異的族群中，不同特徵影響存活與繁殖成功率，經世代累積後造成族群變化的機制。"}]}
+{"messages": [{"role": "user", "content": "什麼是演化？"}, {"role": "assistant", "content": "演化是族群的遺傳特徵在世代間發生變化的過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是生態系？"}, {"role": "assistant", "content": "生態系包含生物群落與其非生物環境，以及它們之間的互動。"}]}
+{"messages": [{"role": "user", "content": "食物鏈是什麼？"}, {"role": "assistant", "content": "食物鏈描述能量與物質透過生物攝食關係在生物間傳遞的路徑。"}]}
+{"messages": [{"role": "user", "content": "什麼是生產者？"}, {"role": "assistant", "content": "生產者通常能利用光能或化學能製造有機物，例如綠色植物。"}]}
+{"messages": [{"role": "user", "content": "什麼是消費者？"}, {"role": "assistant", "content": "消費者需要攝食其他生物或其產物來獲得能量與物質。"}]}
+{"messages": [{"role": "user", "content": "什麼是分解者？"}, {"role": "assistant", "content": "分解者會分解有機遺體與排泄物等物質，常把其中的物質轉回生態系可利用的形式。"}]}
+{"messages": [{"role": "user", "content": "為什麼生物多樣性重要？"}, {"role": "assistant", "content": "生物多樣性包含基因、物種與生態系的多樣性，能增加生態系功能與對環境變化的韌性。"}]}

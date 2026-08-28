@@ -1,0 +1,20 @@
+{"messages": [{"role": "user", "content": "衣服沾到一般水性污漬先怎麼辦？"}, {"role": "assistant", "content": "可先用清水輕拍或沖洗，再依洗標使用適合的清潔方式；避免一開始大力搓揉。"}]}
+{"messages": [{"role": "user", "content": "手機充電時很燙怎麼辦？"}, {"role": "assistant", "content": "先停止高負載操作並讓裝置降溫，確認充電器與環境是否異常；反覆異常高溫時應停用可疑配件並請專業人員檢查。"}]}
+{"messages": [{"role": "user", "content": "熟食怎麼保存比較好？"}, {"role": "assistant", "content": "熟食應盡快冷藏，使用乾淨密封容器，並留意保存時間與食物狀態。"}]}
+{"messages": [{"role": "user", "content": "木質家具有灰塵怎麼清？"}, {"role": "assistant", "content": "可用柔軟乾布或微濕布輕拭，依材質與製造商建議清潔，避免大量水分長時間停留。"}]}
+{"messages": [{"role": "user", "content": "鍵盤卡灰塵怎麼辦？"}, {"role": "assistant", "content": "先關閉設備或拔除鍵盤，再用適合電子設備的方式清理，不要直接倒大量液體。"}]}
+{"messages": [{"role": "user", "content": "電腦突然變慢可以先做什麼？"}, {"role": "assistant", "content": "可先重新啟動、檢查儲存空間、關閉不需要的背景程式，並觀察 CPU、記憶體與磁碟使用量。"}]}
+{"messages": [{"role": "user", "content": "下載檔案很慢可以檢查什麼？"}, {"role": "assistant", "content": "確認網路連線、其他裝置是否大量使用頻寬，以及下載伺服器是否本身有限速。"}]}
+{"messages": [{"role": "user", "content": "瀏覽器分頁開很多會怎樣？"}, {"role": "assistant", "content": "可能增加記憶體和處理器使用量，導致瀏覽器變慢；可以關閉不需要的分頁。"}]}
+{"messages": [{"role": "user", "content": "忘記網站密碼怎麼辦？"}, {"role": "assistant", "content": "使用該網站官方提供的忘記密碼或帳號復原流程。"}]}
+{"messages": [{"role": "user", "content": "重要檔案怎麼備份？"}, {"role": "assistant", "content": "至少保留額外副本；重要資料可使用不同儲存位置建立多份備份，並定期確認能否正常還原。"}]}
+{"messages": [{"role": "user", "content": "雨天怎麼保護電子設備？"}, {"role": "assistant", "content": "避免設備接觸雨水，可使用防水袋或保護套；設備進水後不要在明顯受潮時繼續通電。"}]}
+{"messages": [{"role": "user", "content": "房間有異味先怎麼辦？"}, {"role": "assistant", "content": "先通風並尋找來源，例如垃圾、潮濕或食物；來源不明且持續存在時再進一步檢查。"}]}
+{"messages": [{"role": "user", "content": "冰箱有異味怎麼處理？"}, {"role": "assistant", "content": "先找出過期或腐敗食物，再清潔可拆部件並保持乾燥。"}]}
+{"messages": [{"role": "user", "content": "鞋子濕掉怎麼處理？"}, {"role": "assistant", "content": "取出鞋墊並放在通風處自然乾燥，避免長時間使用過高溫度直接加熱。"}]}
+{"messages": [{"role": "user", "content": "洗好的衣服有異味可能為什麼？"}, {"role": "assistant", "content": "可能與洗衣機清潔、衣物長時間潮濕或洗滌方式有關，可以先清潔洗衣設備並避免濕衣久放。"}]}
+{"messages": [{"role": "user", "content": "手機容量快滿了怎麼辦？"}, {"role": "assistant", "content": "找出占空間最大的照片、影片、下載檔案與不常用 App，刪除不需要資料或移到可靠的其他儲存位置。"}]}
+{"messages": [{"role": "user", "content": "家裡突然停電先做什麼？"}, {"role": "assistant", "content": "先確認是否只有自家停電，準備安全照明，不要在黑暗中隨意碰觸不熟悉的電氣設備。"}]}
+{"messages": [{"role": "user", "content": "插座或電線有明顯破損怎麼辦？"}, {"role": "assistant", "content": "停止使用並避免接觸裸露部分，必要時請合格專業人員檢查或更換。"}]}
+{"messages": [{"role": "user", "content": "出門前怎麼減少忘東西？"}, {"role": "assistant", "content": "把鑰匙、手機、錢包等固定放在同一位置，出門前依固定順序檢查。"}]}
+{"messages": [{"role": "user", "content": "電腦資料夾怎麼整理比較好？"}, {"role": "assistant", "content": "建立一致的命名和分類規則，例如依專案、年份或用途分資料夾，避免同類檔案散落各處。"}]}

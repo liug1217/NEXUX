@@ -22,6 +22,7 @@ SFT 訓練會直接載入 train.py 產生的 checkpoint.pt,在原本的權重基
 import glob
 import math
 import os
+import time
 import torch
 
 from config import Config
@@ -122,20 +123,39 @@ def train_sft(config: Config | None = None, tokenizer=None):
     # (根據 config 自動生成、不是訓練出來的權重,本來就不需要存/載入),
     # 這裡明確檢查「缺的只能是 attn.mask」,避免真正的權重被漏掉卻沒發現。
     missing, unexpected = model.load_state_dict(checkpoint["model_state_dict"], strict=False)
-    assert not unexpected, f"checkpoint 有架構對不上的多餘權重: {unexpected}"
-    assert all("attn.mask" in k for k in missing), f"checkpoint 缺少非 buffer 的權重: {missing}"
+    real_unexpected = [k for k in unexpected if "attn.mask" not in k]
+    assert not real_unexpected, f"checkpoint 有架構對不上的多餘權重: {real_unexpected}"
+    real_missing = [k for k in missing if "attn.mask" not in k]
+    assert not real_missing, f"checkpoint 缺少非 buffer 的權重: {real_missing}"
     print(f"[train_sft] 已載入預訓練權重,起始 loss 應該會比從零訓練低很多")
 
     if model_config.n_layer >= 24:
         model.gradient_checkpointing = True
         print("[train_sft] 大模型,已啟用 gradient checkpointing 節省 VRAM")
 
+    import sys
+    if hasattr(torch, "compile") and sys.platform != "win32":
+        try:
+            model = torch.compile(model)
+            print("[train_sft] 已啟用 torch.compile 加速訓練")
+        except Exception as e:
+            print(f"[train_sft] torch.compile 不可用,跳過: {e}")
+
     # ---- 4. Optimizer(用比預訓練小很多的學習率,避免破壞已學到的能力) ----
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=config.sft_learning_rate,
-        weight_decay=config.weight_decay,
-    )
+    try:
+        import bitsandbytes as bnb
+        optimizer = bnb.optim.AdamW8bit(
+            model.parameters(),
+            lr=config.sft_learning_rate,
+            weight_decay=config.weight_decay,
+        )
+        print("[train_sft] 已啟用 8-bit AdamW（bitsandbytes），VRAM 大幅節省")
+    except ImportError:
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=config.sft_learning_rate,
+            weight_decay=config.weight_decay,
+        )
 
     # 跟 train.py 一樣開混合精度訓練加速 GPU 運算。
     use_amp = config.use_amp and config.device == "cuda"
@@ -145,9 +165,37 @@ def train_sft(config: Config | None = None, tokenizer=None):
 
     # ---- 5. SFT 訓練迴圈 ----
     accum_steps = 8
+    n_examples = len(dataset.examples)
+    epoch_steps = n_examples if n_examples > 0 else config.sft_max_iters
+
+    def _save_checkpoint(path, tag=""):
+        raw_sd = model.state_dict()
+        cleaned_sd = {k.replace("_orig_mod.", ""): v for k, v in raw_sd.items()}
+        torch.save(
+            {
+                "model_state_dict": cleaned_sd,
+                "optimizer_state_dict": optimizer.state_dict(),
+                "vocab_size": checkpoint["vocab_size"],
+                "step": checkpoint.get("step", 0),
+                "architecture": {
+                    "n_embd": model_config.n_embd,
+                    "n_head": model_config.n_head,
+                    "n_layer": model_config.n_layer,
+                    "block_size": model_config.block_size,
+                },
+                "sft_applied": True,
+            },
+            path,
+        )
+        if tag:
+            print(f"[train_sft] {tag} 已存檔: {path}")
+
+    best_loss = float("inf")
+    best_epoch = 0
     model.train()
     optimizer.zero_grad(set_to_none=True)
     accum_loss = 0.0
+    train_start_time = time.time()
     for step in range(config.sft_max_iters):
         lr = _get_sft_lr(step, config.sft_max_iters, config.sft_learning_rate)
         for param_group in optimizer.param_groups:
@@ -169,32 +217,46 @@ def train_sft(config: Config | None = None, tokenizer=None):
             scaler.update()
             optimizer.zero_grad(set_to_none=True)
 
+        if step > 0 and step % 50 == 0:
+            elapsed = time.time() - train_start_time
+            speed = elapsed / step
+            eta = speed * (config.sft_max_iters - step)
+            eta_h, eta_rem = divmod(int(eta), 3600)
+            eta_m, eta_s = divmod(eta_rem, 60)
+            print(f"[speed] step {step} | {speed:.3f} s/step | ETA {eta_h:02d}:{eta_m:02d}:{eta_s:02d}", flush=True)
+
         if step % config.sft_eval_interval == 0 or step == config.sft_max_iters - 1:
             avg_loss = accum_loss / min(step % accum_steps + 1, accum_steps) if accum_loss > 0 else loss.item()
-            print(f"[SFT step {step:4d}] loss {avg_loss:.4f} lr {lr:.2e}")
+            cur_epoch = (step + 1) / epoch_steps
+            print(f"[SFT step {step:5d}] loss {avg_loss:.4f} lr {lr:.2e} epoch {cur_epoch:.1f}")
             accum_loss = 0.0
         elif (step + 1) % accum_steps == 0:
             accum_loss = 0.0
 
-    # ---- 6. 儲存 SFT 完成後的模型(覆蓋掉原本的 checkpoint.pt) ----
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "vocab_size": checkpoint["vocab_size"],
-            "step": checkpoint.get("step", 0),
-            "architecture": {
-                "n_embd": model_config.n_embd,
-                "n_head": model_config.n_head,
-                "n_layer": model_config.n_layer,
-                "block_size": model_config.block_size,
-            },
-            "sft_applied": True,  # 標記這個 checkpoint 已經經過 SFT 微調
-        },
-        config.checkpoint_path,
-    )
-    print(f"[train_sft] SFT 訓練完成,模型已更新至: {config.checkpoint_path}")
-    print("[train_sft] 接下來執行「python export_weights.py」重新匯出權重即可。")
+        # 每個 epoch 結束時存一份 checkpoint，追蹤最佳 epoch
+        if (step + 1) % epoch_steps == 0:
+            cur_epoch = (step + 1) // epoch_steps
+            # 用最近的平均 loss 當這個 epoch 的代表
+            epoch_loss = loss.item()
+            tag = f"epoch {cur_epoch}"
+            if epoch_loss < best_loss:
+                best_loss = epoch_loss
+                best_epoch = cur_epoch
+                _save_checkpoint(config.checkpoint_path, f"{tag} (目前最佳, loss={epoch_loss:.4f})")
+                tag += " ★ best"
+            else:
+                _save_checkpoint(config.checkpoint_path + f".epoch{cur_epoch}", f"{tag} (loss={epoch_loss:.4f})")
+            print(f"[train_sft] --- epoch {cur_epoch} 結束 --- loss {epoch_loss:.4f} | best so far: epoch {best_epoch}")
+
+    # 最後一步不一定剛好是 epoch 邊界，如果 best checkpoint 不是最後一步的，要還原
+    final_epoch = config.sft_max_iters // epoch_steps
+    if best_epoch > 0 and best_epoch < final_epoch:
+        print(f"[train_sft] 最佳 epoch 是 {best_epoch},最終 checkpoint 已是該版本")
+    elif best_epoch == 0:
+        _save_checkpoint(config.checkpoint_path, "訓練完成(無 epoch 邊界 checkpoint)")
+
+    print(f"[train_sft] SFT 訓練完成,最佳模型: {config.checkpoint_path} (epoch {best_epoch})")
+    print("[train_sft] 接下來執行「python export_pretrained.py」重新匯出權重即可。")
 
 
 if __name__ == "__main__":

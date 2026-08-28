@@ -55,7 +55,8 @@ class Config:
     # 而不是像純接龍一樣不分青紅皂白地接續所有文字。
     sft_data_path: str = "sft_data.jsonl"   # prepare_sft_data.py 產生的結構化資料
     sft_learning_rate: float = 5e-5
-    sft_max_iters: int = 3000                # 2000步知識題弱,3000步+lr scheduler平衡
+    sft_epochs: int = 5                      # SFT 訓練幾個 epoch,步數=epochs×資料筆數,自動算
+    sft_max_iters: int = 33000               # 預設值,會被 run_pretrained_sft.py 用 sft_epochs×資料量覆蓋
     sft_eval_interval: int = 300
 
     # ------- 推理 (inference) 參數 -------

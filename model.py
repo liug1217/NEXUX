@@ -27,33 +27,26 @@ class MultiHeadAttention(nn.Module):
 
         self.qkv_proj = nn.Linear(config.n_embd, 3 * config.n_embd)
         self.out_proj = nn.Linear(config.n_embd, config.n_embd)
-        self.attn_dropout = nn.Dropout(config.dropout)
+        self.dropout_p = config.dropout
         self.resid_dropout = nn.Dropout(config.dropout)
 
-        # 因果遮罩(causal mask):下三角矩陣,確保每個位置只能看到自己與之前的 token
-        mask = torch.tril(torch.ones(config.block_size, config.block_size))
-        self.register_buffer("mask", mask.view(1, 1, config.block_size, config.block_size))
-
     def forward(self, x):
-        B, T, C = x.shape  # batch, time(序列長度), channel(n_embd)
+        B, T, C = x.shape
 
-        qkv = self.qkv_proj(x)  # (B, T, 3*C)
+        qkv = self.qkv_proj(x)
         q, k, v = qkv.split(C, dim=2)
 
-        # 拆成多個 head: (B, T, C) -> (B, n_head, T, head_size)
         q = q.view(B, T, self.n_head, self.head_size).transpose(1, 2)
         k = k.view(B, T, self.n_head, self.head_size).transpose(1, 2)
         v = v.view(B, T, self.n_head, self.head_size).transpose(1, 2)
 
-        # scaled dot-product attention
-        att = (q @ k.transpose(-2, -1)) * (self.head_size ** -0.5)
-        att = att.masked_fill(self.mask[:, :, :T, :T] == 0, float("-inf"))
-        att = F.softmax(att, dim=-1)
-        att = self.attn_dropout(att)
+        out = F.scaled_dot_product_attention(
+            q, k, v,
+            dropout_p=self.dropout_p if self.training else 0.0,
+            is_causal=True,
+        )
 
-        out = att @ v  # (B, n_head, T, head_size)
-        out = out.transpose(1, 2).contiguous().view(B, T, C)  # 合併多頭
-
+        out = out.transpose(1, 2).contiguous().view(B, T, C)
         out = self.resid_dropout(self.out_proj(out))
         return out
 
@@ -63,7 +56,7 @@ class FeedForward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(config.n_embd, 4 * config.n_embd),
-            nn.GELU(),
+            nn.GELU(approximate="tanh"),
             nn.Linear(4 * config.n_embd, config.n_embd),
             nn.Dropout(config.dropout),
         )

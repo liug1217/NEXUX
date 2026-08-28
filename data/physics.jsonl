@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "什麼是牛頓第一運動定律？"}, {"role": "assistant", "content": "如果物體所受合力為零，物體會維持靜止或等速直線運動。"}]}
+{"messages": [{"role": "user", "content": "什麼是牛頓第二運動定律？"}, {"role": "assistant", "content": "合力會造成物體產生加速度，常寫成 F = ma。"}]}
+{"messages": [{"role": "user", "content": "什麼是牛頓第三運動定律？"}, {"role": "assistant", "content": "兩物體互相作用時，會產生大小相等、方向相反的作用力與反作用力。"}]}
+{"messages": [{"role": "user", "content": "什麼是慣性？"}, {"role": "assistant", "content": "慣性是物體維持原本運動狀態的傾向，質量越大通常慣性越大。"}]}
+{"messages": [{"role": "user", "content": "質量和重量一樣嗎？"}, {"role": "assistant", "content": "不一樣。質量是物體所含物質的量；重量是物體受到重力所產生的力。"}]}
+{"messages": [{"role": "user", "content": "什麼是動能？"}, {"role": "assistant", "content": "動能是物體因運動而具有的能量，質量越大或速度越高，動能通常越大。"}]}
+{"messages": [{"role": "user", "content": "什麼是位能？"}, {"role": "assistant", "content": "位能是由物體位置或狀態所具有的能量，例如重力位能。"}]}
+{"messages": [{"role": "user", "content": "什麼是功？"}, {"role": "assistant", "content": "在簡化情況下，力使物體沿力方向產生位移時，力對物體做了功。"}]}
+{"messages": [{"role": "user", "content": "什麼是功率？"}, {"role": "assistant", "content": "功率表示做功或能量轉換的快慢，平均功率可表示為功除以時間。"}]}
+{"messages": [{"role": "user", "content": "摩擦力一定會讓物體減速嗎？"}, {"role": "assistant", "content": "不一定。摩擦力方向與接觸面的相對運動或運動趨勢有關，在某些情況下摩擦力也能幫助物體加速，例如車輪與地面的靜摩擦。"}]}
+{"messages": [{"role": "user", "content": "為什麼安全帶能保護乘客？"}, {"role": "assistant", "content": "車輛突然減速時，乘客因慣性仍傾向維持原本運動狀態；安全帶可提供約束力，降低碰撞風險。"}]}
+{"messages": [{"role": "user", "content": "什麼是自由落體？"}, {"role": "assistant", "content": "自由落體是物體只受重力作用的理想化運動模型。"}]}
+{"messages": [{"role": "user", "content": "真空中的自由落體速度會不同嗎？"}, {"role": "assistant", "content": "在相同位置且忽略其他因素時，不同質量物體的重力加速度相同，因此不會因為質量不同而有不同的自由落體加速度。"}]}
+{"messages": [{"role": "user", "content": "為什麼羽毛和鐵球在真空中可同時落地？"}, {"role": "assistant", "content": "真空中沒有空氣阻力影響，物體都主要受到重力作用，因此具有相同的重力加速度。"}]}
+{"messages": [{"role": "user", "content": "什麼是壓力？"}, {"role": "assistant", "content": "壓力是單位面積上所受到的垂直作用力。"}]}
+{"messages": [{"role": "user", "content": "為什麼尖頭物體比較容易刺入？"}, {"role": "assistant", "content": "在力相近時，接觸面積越小，壓力通常越大，因此尖端更容易產生較高壓力。"}]}
+{"messages": [{"role": "user", "content": "什麼是浮力？"}, {"role": "assistant", "content": "浮力是流體作用在浸入其中物體上的向上作用力。"}]}
+{"messages": [{"role": "user", "content": "為什麼船可以浮在水上？"}, {"role": "assistant", "content": "船的整體平均密度可以低於水，而且船身排開水後會產生足以平衡其重量的浮力。"}]}
+{"messages": [{"role": "user", "content": "什麼是波長？"}, {"role": "assistant", "content": "波長是波形中相鄰同相位點之間的距離，例如相鄰兩個波峰的距離。"}]}
+{"messages": [{"role": "user", "content": "什麼是頻率？"}, {"role": "assistant", "content": "頻率表示週期性事件每秒重複的次數，單位是赫茲。"}]}
+{"messages": [{"role": "user", "content": "頻率和週期有什麼關係？"}, {"role": "assistant", "content": "在週期性運動中，頻率等於週期的倒數，即 f = 1/T。"}]}
+{"messages": [{"role": "user", "content": "什麼是電流？"}, {"role": "assistant", "content": "電流描述電荷通過某個截面的速率。"}]}
+{"messages": [{"role": "user", "content": "什麼是電壓？"}, {"role": "assistant", "content": "電壓表示單位電荷在兩點間的電位能差。"}]}
+{"messages": [{"role": "user", "content": "什麼是電阻？"}, {"role": "assistant", "content": "電阻描述材料或元件對電流通過的阻礙程度。"}]}
+{"messages": [{"role": "user", "content": "歐姆定律是什麼？"}, {"role": "assistant", "content": "對符合歐姆定律的元件，電壓 V、電流 I 和電阻 R 滿足 V = IR。"}]}
+{"messages": [{"role": "user", "content": "串聯電路有什麼特點？"}, {"role": "assistant", "content": "理想串聯電路中，各元件流過的電流相同。"}]}
+{"messages": [{"role": "user", "content": "並聯電路有什麼特點？"}, {"role": "assistant", "content": "理想並聯電路中，各支路兩端的電壓相同。"}]}
+{"messages": [{"role": "user", "content": "磁鐵的兩個磁極叫什麼？"}, {"role": "assistant", "content": "通常稱為北極和南極；同名磁極相斥，異名磁極相吸。"}]}
+{"messages": [{"role": "user", "content": "聲音的音高主要和什麼有關？"}, {"role": "assistant", "content": "在一般情況下，音高主要與聲波頻率有關，頻率越高通常聽起來越高。"}]}
+{"messages": [{"role": "user", "content": "聲音大小和音高是一樣的嗎？"}, {"role": "assistant", "content": "不是。音高主要和頻率有關，而聲音的響度與振幅及環境等因素有關。"}]}

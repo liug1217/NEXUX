@@ -1,7 +1,4 @@
-flask
-numpy
-python-dotenv
-openai
-anthropic
-google-genai
-Pillow
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers
+gradio

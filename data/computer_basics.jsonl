@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "CPU 是做什麼的？"}, {"role": "assistant", "content": "CPU 是中央處理器，負責執行指令並進行大量一般性運算與控制工作。"}]}
+{"messages": [{"role": "user", "content": "RAM 是什麼？"}, {"role": "assistant", "content": "RAM 是電腦用來暫存目前執行中程式與資料的高速工作記憶體，通常屬揮發性記憶體。"}]}
+{"messages": [{"role": "user", "content": "SSD 和 HDD 有什麼不同？"}, {"role": "assistant", "content": "SSD 使用快閃記憶體，通常速度快、沒有傳統機械結構；HDD 以磁碟與機械結構儲存資料，通常每容量成本較低。"}]}
+{"messages": [{"role": "user", "content": "GPU 是做什麼的？"}, {"role": "assistant", "content": "GPU 是圖形處理器，擅長大量平行運算，常用於圖形、影像與部分 AI 運算。"}]}
+{"messages": [{"role": "user", "content": "作業系統的作用是什麼？"}, {"role": "assistant", "content": "作業系統負責管理硬體資源，並為應用程式提供執行與使用硬體的環境。"}]}
+{"messages": [{"role": "user", "content": "驅動程式是什麼？"}, {"role": "assistant", "content": "驅動程式是讓作業系統與特定硬體裝置溝通的軟體。"}]}
+{"messages": [{"role": "user", "content": "檔案系統是什麼？"}, {"role": "assistant", "content": "檔案系統負責在儲存裝置上組織、命名、保存與讀取檔案和資料夾。"}]}
+{"messages": [{"role": "user", "content": "副檔名是什麼？"}, {"role": "assistant", "content": "副檔名通常用來表示檔案類型或提示作業系統及應用程式應如何處理檔案。"}]}
+{"messages": [{"role": "user", "content": "什麼是程序 process？"}, {"role": "assistant", "content": "process 是作業系統管理的一個程式執行實例，通常擁有自己的虛擬位址空間與資源。"}]}
+{"messages": [{"role": "user", "content": "什麼是 thread？"}, {"role": "assistant", "content": "thread 是程序中的執行單位，多個 thread 可以共享同一程序的大部分記憶體資源。"}]}
+{"messages": [{"role": "user", "content": "程序和執行緒一樣嗎？"}, {"role": "assistant", "content": "不一樣。程序通常具有較獨立的資源與位址空間；同一程序內的執行緒則共享許多資源。"}]}
+{"messages": [{"role": "user", "content": "什麼是快取 cache？"}, {"role": "assistant", "content": "cache 是為了降低存取延遲而保存近期或常用資料的儲存區。"}]}
+{"messages": [{"role": "user", "content": "什麼是 bit？"}, {"role": "assistant", "content": "bit 是二進位資訊的基本單位，只能表示 0 或 1。"}]}
+{"messages": [{"role": "user", "content": "什麼是 byte？"}, {"role": "assistant", "content": "byte 通常由 8 個 bit 組成，是常見的資料容量單位。"}]}
+{"messages": [{"role": "user", "content": "1 KB 一定等於 1000 bytes 嗎？"}, {"role": "assistant", "content": "在十進位 SI 表示法中 1 kB = 1000 bytes；在二進位容量表示中常用 1 KiB = 1024 bytes，因此要看單位寫法。"}]}
+{"messages": [{"role": "user", "content": "什麼是二進位？"}, {"role": "assistant", "content": "二進位是以 0 和 1 兩個數字表示資料的數字系統。"}]}
+{"messages": [{"role": "user", "content": "什麼是十六進位？"}, {"role": "assistant", "content": "十六進位使用 0 到 9 與 A 到 F 表示數值，常用於電腦底層資料與色碼等表示。"}]}
+{"messages": [{"role": "user", "content": "什麼是編譯器？"}, {"role": "assistant", "content": "編譯器會把某種程式語言的原始碼轉換成另一種較低階或可執行的形式。"}]}
+{"messages": [{"role": "user", "content": "什麼是直譯器？"}, {"role": "assistant", "content": "直譯器通常在程式執行期間處理程式碼或中間表示，實際實作可能同時包含編譯與執行技術。"}]}
+{"messages": [{"role": "user", "content": "什麼是 IDE？"}, {"role": "assistant", "content": "IDE 是整合開發環境，通常把程式碼編輯、建置、除錯與其他開發工具整合在一起。"}]}
+{"messages": [{"role": "user", "content": "什麼是版本控制？"}, {"role": "assistant", "content": "版本控制用來記錄檔案變更歷史，方便協作、比較版本與回復內容。"}]}
+{"messages": [{"role": "user", "content": "什麼是開源軟體？"}, {"role": "assistant", "content": "開源軟體的原始碼依其授權條款提供使用者查看、修改或再發布的權利範圍。"}]}
+{"messages": [{"role": "user", "content": "什麼是 API？"}, {"role": "assistant", "content": "API 是軟體元件之間依照約定進行資料交換或功能呼叫的介面。"}]}
+{"messages": [{"role": "user", "content": "什麼是資料庫？"}, {"role": "assistant", "content": "資料庫是用來組織、保存與查詢資料的系統。"}]}
+{"messages": [{"role": "user", "content": "什麼是 SQL？"}, {"role": "assistant", "content": "SQL 是常用來查詢與操作關聯式資料庫的語言。"}]}
+{"messages": [{"role": "user", "content": "什麼是 IP 位址？"}, {"role": "assistant", "content": "IP 位址是網路中用來識別裝置或介面的位址之一。"}]}
+{"messages": [{"role": "user", "content": "什麼是 MAC 位址？"}, {"role": "assistant", "content": "MAC 位址是網路介面的鏈路層識別資訊之一，通常與網路介面卡相關。"}]}
+{"messages": [{"role": "user", "content": "什麼是路由器？"}, {"role": "assistant", "content": "路由器負責在不同網路之間轉送封包，並依路由資訊決定轉送路徑。"}]}
+{"messages": [{"role": "user", "content": "什麼是 DNS？"}, {"role": "assistant", "content": "DNS 是將網域名稱解析成 IP 位址等網路資訊的系統。"}]}
+{"messages": [{"role": "user", "content": "什麼是瀏覽器？"}, {"role": "assistant", "content": "瀏覽器是用來取得、解析並顯示 Web 資源的軟體，也提供 JavaScript 與各種 Web API 執行環境。"}]}

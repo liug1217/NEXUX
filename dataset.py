@@ -117,18 +117,33 @@ class SFTDataset:
         if not self.examples:
             raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 data/*.jsonl 內容格式正確。")
 
-        print(f"[dataset] 已讀取 {len(self.examples)} 筆 SFT 訓練樣本")
+        import random
+        self._rng = random
+        self._shuffled_indices: list[int] = []
+        self._cursor = 0
+        self._epoch = 0
+        self._reshuffle()
+
+        print(f"[dataset] 已讀入 {len(self.examples)} 筆 SFT 訓練樣本")
+
+    def _reshuffle(self):
+        self._shuffled_indices = list(range(len(self.examples)))
+        self._rng.shuffle(self._shuffled_indices)
+        self._cursor = 0
+        self._epoch += 1
 
     def get_batch(self, split: str = "train"):
         """
-        隨機取一筆 (input, output) 配對,編碼成 (x, y),
-        y 裡屬於「問題」的位置會被標成 -100,訓練時會被自動忽略。
-
-        split 參數保留是為了跟 TextDataset 介面一致,SFT 階段目前
-        不特別切分驗證集,因為資料量通常較小,拆分意義不大。
+        每個 epoch 完整走過所有資料一次（順序隨機打亂），走完一輪自動
+        重新洗牌開始下一個 epoch。保證每筆資料在每個 epoch 恰好被看到
+        一次，不像 random.choice() 有放回抽樣會漏掉大量資料。
         """
-        import random
-        input_text, output_text = random.choice(self.examples)
+        if self._cursor >= len(self._shuffled_indices):
+            self._reshuffle()
+
+        idx = self._shuffled_indices[self._cursor]
+        self._cursor += 1
+        input_text, output_text = self.examples[idx]
 
         input_ids = self.tokenizer.encode(input_text)
         output_ids = self.tokenizer.encode(output_text)

@@ -46,10 +46,24 @@ from qa_lookup import match_qa
 from weather_lookup import match_weather
 from math_calc import match_math
 from bead_pattern import generate_pattern, DEFAULT_GRID, MIN_GRID, MAX_GRID
+from rag_engine import RAGEngine
 import ai_roles
 import quota_manager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+_rag_engine = None
+
+def get_rag_engine():
+    global _rag_engine
+    if _rag_engine is None:
+        index_path = os.path.join(BASE_DIR, "rag_index.json")
+        _rag_engine = RAGEngine.load(index_path)
+        if _rag_engine:
+            print(f"[RAG] 已載入索引: {len(_rag_engine.docs)} 筆 Q&A")
+        else:
+            print("[RAG] 未找到 rag_index.json，RAG 功能停用")
+    return _rag_engine
 
 app = Flask(__name__, static_folder=None)
 
@@ -353,12 +367,15 @@ def api_generate():
     if math_reply is not None:
         return jsonify({"reply": math_reply, "type": "math_calc"})
 
-    # 問「現在天氣/氣溫/有沒有下雨」這類問題時,直接呼叫中央氣象署
-    # API 拿真實觀測資料回答,不要讓模型自己編數字(見 weather_lookup.py
-    # 的說明:這只回答得了「現在」的觀測狀況,答不了「未來預報」)。
     weather_reply = match_weather(prompt)
     if weather_reply is not None:
         return jsonify({"reply": weather_reply, "type": "weather_lookup"})
+
+    rag = get_rag_engine()
+    if rag:
+        rag_answer = rag.direct_answer(prompt, threshold=0.25)
+        if rag_answer:
+            return jsonify({"reply": rag_answer, "type": "rag_lookup"})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
@@ -369,20 +386,18 @@ def api_generate():
                      "再重新啟動 server.py。"
         }), 400
 
-    # own 模型才做額度限制(見 quota_manager.py)。本機開發預設沒有設定
-    # Upstash 環境變數,quota_manager 會自動回報沒有限制,行為上等於
-    # 跟改動前一樣,不需要另外寫「本機停用」的特殊判斷。
     client_id = quota_manager.get_client_identifier(request, payload)
     if quota_manager.is_over_limit(client_id):
         status = quota_manager.get_status(client_id)
         minutes = (status["reset_in_seconds"] or 0) // 60
         return jsonify({"error": f"額度已用完,約 {minutes} 分鐘後自動恢復。"}), 429
 
-    # 只有模型「真的經過 SFT 訓練」時,才包裝成問答格式,並帶入歷史對話當作 context;
-    # 否則模型從沒見過這種格式,硬套上去只會讓生成效果更差。
+    rag_context = rag.retrieve_context(prompt, top_k=2) if rag else ""
+
     if is_sft:
         wrapped_prompt = build_context_prompt(
-            history, prompt, tokenizer, config.block_size, config.max_new_tokens
+            history, prompt, tokenizer, config.block_size, config.max_new_tokens,
+            rag_context=rag_context,
         )
     else:
         wrapped_prompt = prompt

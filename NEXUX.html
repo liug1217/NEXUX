@@ -1329,7 +1329,25 @@
     color: #FFFFFF;
   }
 
-  /* Mic:16x16,內縮 20.83%(左右)/ 4.17%(上下),1.6px白色線條 */
+  .tts-btn {
+    position: relative;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #FFFFFF;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.45;
+  }
+  .tts-btn.active { opacity: 1; }
+  .tts-btn:hover { opacity: 0.75; }
+
+  /* Mic:16x16，內縮 20.83%(左右)/ 4.17%(上下)，1.6px白色線條 */
   .mic-btn {
     position: relative;
     flex-shrink: 0;
@@ -1698,6 +1716,13 @@
                  用瀏覽器內建的 Web Speech API(SpeechRecognition)做語音
                  輸入,不需要任何後端服務或第三方API,錄到的文字直接填進
                  輸入框(見下面script區塊的語音輸入邏輯)。 -->
+            <button type="button" class="tts-btn" id="ttsBtn" aria-label="語音朗讀" title="開啟/關閉語音朗讀">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M19.07 4.93C20.9447 6.80528 21.9979 9.34836 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07M15.54 8.46C16.4774 9.39764 17.0039 10.6692 17.0039 11.995C17.0039 13.3208 16.4774 14.5924 15.54 15.53" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
             <button type="button" class="mic-btn" id="micBtn" aria-label="語音輸入">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_78_23)">
@@ -2267,6 +2292,37 @@
         micBtn.classList.remove("is-recording");
       }
     });
+
+    // 語音朗讀：AI 回覆完成後用 SpeechSynthesis 念出來
+    const ttsBtn = document.getElementById("ttsBtn");
+    let ttsEnabled = false;
+    try { ttsEnabled = localStorage.getItem("ttsEnabled") === "true"; } catch {}
+    if (ttsEnabled) ttsBtn.classList.add("active");
+
+    ttsBtn.addEventListener("click", () => {
+      ttsEnabled = !ttsEnabled;
+      ttsBtn.classList.toggle("active", ttsEnabled);
+      try { localStorage.setItem("ttsEnabled", ttsEnabled); } catch {}
+      if (!ttsEnabled) window.speechSynthesis.cancel();
+    });
+
+    function speakReply(text) {
+      if (!ttsEnabled || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/```[\s\S]*?```/g, "").replace(/[#*_~`>|]/g, "").trim();
+      if (!clean) return;
+      const toSpeak = clean.length > 200 ? clean.slice(0, 200) + "..." : clean;
+      const utter = new SpeechSynthesisUtterance(toSpeak);
+      utter.lang = "zh-TW";
+      utter.rate = 1;
+      utter.pitch = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const zhVoice = voices.find(v => v.lang.startsWith("zh"));
+      if (zhVoice) utter.voice = zhVoice;
+      window.speechSynthesis.speak(utter);
+    }
+
+    window.speechSynthesis.getVoices();
 
     // NexoraAI「設定AI角色人員」:composer 角色選擇/管理(見 ai_roles.py / plan
     // squishy-coalescing-coral.md)。跟 add-btn 的附件選擇器同樣的手法:
@@ -3584,6 +3640,7 @@
                 const replyText = `${role.icon} ${role.label}\n${data.reply || "(無回覆)"}`;
                 await typeOutText(el, replyText, 12, activeAbortController.signal);
                 conversationHistory.push({ role: "assistant", text: replyText });
+                speakReply(data.reply || "");
               }
             }
           }
@@ -3611,6 +3668,7 @@
           } else {
             const integrationText = await streamTeamReply(res, teamStartTime);
             conversationHistory.push({ role: "assistant", text: integrationText });
+            speakReply(integrationText);
             refreshQuotaDisplay();
           }
           } // end else (非 Colab)
@@ -3651,6 +3709,7 @@
             const replyText = data.reply || "(模型沒有生成任何內容)";
             await typeOutText(el, replyText, 12, activeAbortController.signal);
             conversationHistory.push({ role: "assistant", text: replyText });
+            speakReply(replyText);
             maybeOpenCodeEditorFromReply(replyText);
           }
         }
@@ -3684,6 +3743,7 @@
             const replyText = data.reply || "(模型沒有生成任何內容)";
             await typeOutText(el, replyText, 12, activeAbortController.signal);
             conversationHistory.push({ role: "assistant", text: replyText });
+            speakReply(replyText);
             maybeOpenCodeEditorFromReply(replyText);
 
             if (data.type === "time") {
@@ -3779,6 +3839,7 @@
             tokenCounterEl.remove();
           } else {
             conversationHistory.push({ role: "assistant", text: received.trim() });
+            speakReply(received.trim());
             maybeOpenCodeEditorFromReply(received.trim());
             if (finalTokenCount === null) {
               tokenCounterEl.remove();

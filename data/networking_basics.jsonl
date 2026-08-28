@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "什麼是網路封包？"}, {"role": "assistant", "content": "網路封包是網路傳輸中用來攜帶資料與控制資訊的資料單位。"}]}
+{"messages": [{"role": "user", "content": "什麼是路由？"}, {"role": "assistant", "content": "路由是決定網路封包應該經過哪些網路節點到達目的地的過程。"}]}
+{"messages": [{"role": "user", "content": "什麼是交換器 switch？"}, {"role": "assistant", "content": "交換器通常在區域網路中根據鏈路層資訊將乙太網路訊框轉送到適當的埠。"}]}
+{"messages": [{"role": "user", "content": "路由器和交換器差在哪？"}, {"role": "assistant", "content": "交換器主要連接同一區域網路內的裝置；路由器則負責不同網路之間的封包轉送。"}]}
+{"messages": [{"role": "user", "content": "什麼是 LAN？"}, {"role": "assistant", "content": "LAN 是區域網路，通常涵蓋住宅、學校、辦公室等較小地理範圍。"}]}
+{"messages": [{"role": "user", "content": "什麼是 WAN？"}, {"role": "assistant", "content": "WAN 是廣域網路，連結範圍可跨越城市、國家甚至更大區域。"}]}
+{"messages": [{"role": "user", "content": "什麼是 Wi-Fi？"}, {"role": "assistant", "content": "Wi-Fi 是以 IEEE 802.11 等標準為基礎的無線區域網路技術家族。"}]}
+{"messages": [{"role": "user", "content": "什麼是乙太網路 Ethernet？"}, {"role": "assistant", "content": "Ethernet 是常見的有線區域網路技術，定義了訊框格式與媒體存取等規則。"}]}
+{"messages": [{"role": "user", "content": "什麼是 NAT？"}, {"role": "assistant", "content": "NAT 會在不同網路位址之間進行轉換，常見於讓多台內部裝置共用公網 IP。"}]}
+{"messages": [{"role": "user", "content": "什麼是 DHCP？"}, {"role": "assistant", "content": "DHCP 可自動為網路裝置提供 IP 位址與其他網路設定。"}]}
+{"messages": [{"role": "user", "content": "什麼是 localhost？"}, {"role": "assistant", "content": "localhost 是指向本機電腦的特殊主機名稱，常解析到本機回送位址。"}]}
+{"messages": [{"role": "user", "content": "127.0.0.1 是什麼？"}, {"role": "assistant", "content": "127.0.0.1 是 IPv4 回送位址之一，通常用來指向本機。"}]}
+{"messages": [{"role": "user", "content": "什麼是 port？"}, {"role": "assistant", "content": "port 是傳輸層用來識別不同網路服務或連線端點的編號。"}]}
+{"messages": [{"role": "user", "content": "80 port 通常用於什麼？"}, {"role": "assistant", "content": "TCP 80 通常用於未加密的 HTTP 服務，但實際應用仍可能使用其他連接埠。"}]}
+{"messages": [{"role": "user", "content": "443 port 通常用於什麼？"}, {"role": "assistant", "content": "TCP 443 通常用於 HTTPS 服務。"}]}
+{"messages": [{"role": "user", "content": "什麼是 TCP handshake？"}, {"role": "assistant", "content": "TCP 三向交握是建立 TCP 連線時常見的同步程序，用來協商序號等連線資訊。"}]}
+{"messages": [{"role": "user", "content": "TCP 為什麼可靠？"}, {"role": "assistant", "content": "TCP 提供序列化、確認、重傳與流量控制等機制，使資料可以較可靠地按序交付給應用層。"}]}
+{"messages": [{"role": "user", "content": "UDP 為什麼常用在即時應用？"}, {"role": "assistant", "content": "UDP 的協定開銷較低且不需要像 TCP 那樣建立連線與保證按序重傳，因此部分低延遲應用會選用它。"}]}
+{"messages": [{"role": "user", "content": "什麼是延遲 latency？"}, {"role": "assistant", "content": "latency 是資料或請求從一端到另一端所需的時間。"}]}
+{"messages": [{"role": "user", "content": "什麼是頻寬 bandwidth？"}, {"role": "assistant", "content": "頻寬通常用來描述連線可提供的資料傳輸容量，常以每秒位元數表示。"}]}
+{"messages": [{"role": "user", "content": "頻寬大就一定延遲低嗎？"}, {"role": "assistant", "content": "不一定。頻寬與延遲是不同指標，高頻寬網路仍可能因距離、路由、壅塞或其他因素有較高延遲。"}]}
+{"messages": [{"role": "user", "content": "什麼是封包遺失？"}, {"role": "assistant", "content": "封包遺失是原本應到達的網路封包未成功抵達目的端的情況。"}]}
+{"messages": [{"role": "user", "content": "什麼是網路壅塞？"}, {"role": "assistant", "content": "網路壅塞是網路流量接近或超過可處理能力，使佇列增加、延遲提高甚至發生封包遺失的情況。"}]}
+{"messages": [{"role": "user", "content": "什麼是 ping？"}, {"role": "assistant", "content": "ping 是常見的網路診斷工具，通常利用 ICMP echo 訊息測試可達性與估計往返時間。"}]}
+{"messages": [{"role": "user", "content": "DNS 查詢一定直接回傳 IP 嗎？"}, {"role": "assistant", "content": "不一定。DNS 可回傳多種記錄，例如 A、AAAA、CNAME、MX、TXT 等，取決於查詢類型。"}]}
+{"messages": [{"role": "user", "content": "A 記錄是什麼？"}, {"role": "assistant", "content": "DNS A 記錄把主機名稱對應到 IPv4 位址。"}]}
+{"messages": [{"role": "user", "content": "AAAA 記錄是什麼？"}, {"role": "assistant", "content": "DNS AAAA 記錄把主機名稱對應到 IPv6 位址。"}]}
+{"messages": [{"role": "user", "content": "CNAME 是什麼？"}, {"role": "assistant", "content": "CNAME 記錄把一個名稱指向另一個規範名稱，讓 DNS 可建立名稱別名。"}]}
+{"messages": [{"role": "user", "content": "TLS 是做什麼的？"}, {"role": "assistant", "content": "TLS 提供加密、完整性保護與伺服器等身分驗證機制，是 HTTPS 等安全通訊的重要基礎。"}]}
+{"messages": [{"role": "user", "content": "為什麼 HTTPS 比 HTTP 安全？"}, {"role": "assistant", "content": "HTTPS 透過 TLS 保護 HTTP 通訊內容，降低傳輸途中遭竊聽或竄改的風險，並可驗證伺服器身分。"}]}

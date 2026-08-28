@@ -1,0 +1,30 @@
+{"messages": [{"role": "user", "content": "什麼是強密碼？"}, {"role": "assistant", "content": "強密碼通常具有足夠長度、難以猜測，並避免使用容易取得的個人資訊；不同帳號最好不要重複使用相同密碼。"}]}
+{"messages": [{"role": "user", "content": "為什麼不應該重複使用密碼？"}, {"role": "assistant", "content": "如果某個服務的密碼外洩，攻擊者可能嘗試把相同密碼用在其他服務。"}]}
+{"messages": [{"role": "user", "content": "什麼是密碼管理器？"}, {"role": "assistant", "content": "密碼管理器可以安全保存與產生多組帳號密碼，降低使用者記憶大量不同密碼的負擔。"}]}
+{"messages": [{"role": "user", "content": "什麼是雙因素驗證？"}, {"role": "assistant", "content": "雙因素驗證要求除了密碼之外，再提供另一種驗證因素，以增加帳號安全性。"}]}
+{"messages": [{"role": "user", "content": "什麼是多因素驗證？"}, {"role": "assistant", "content": "多因素驗證使用兩個或更多不同類型的驗證因素，例如知道的資訊、擁有的裝置或生物特徵。"}]}
+{"messages": [{"role": "user", "content": "什麼是釣魚詐騙？"}, {"role": "assistant", "content": "釣魚詐騙通常透過偽裝成可信來源的訊息或網站，誘導使用者提供密碼、驗證碼或其他敏感資訊。"}]}
+{"messages": [{"role": "user", "content": "如何初步辨識可疑電子郵件？"}, {"role": "assistant", "content": "可以檢查寄件者地址、連結網域、語氣是否催促、是否要求敏感資訊，以及內容是否與預期情境相符。"}]}
+{"messages": [{"role": "user", "content": "為什麼不能隨便點陌生連結？"}, {"role": "assistant", "content": "未知連結可能導向釣魚網站、惡意下載或其他詐騙頁面，因此應先確認來源與網址。"}]}
+{"messages": [{"role": "user", "content": "什麼是惡意軟體？"}, {"role": "assistant", "content": "惡意軟體是設計來造成未授權存取、破壞、竊取資料或其他不當行為的軟體。"}]}
+{"messages": [{"role": "user", "content": "什麼是病毒？"}, {"role": "assistant", "content": "在電腦安全領域，電腦病毒通常指能附著或嵌入其他檔案並自我複製、傳播的惡意程式。"}]}
+{"messages": [{"role": "user", "content": "什麼是勒索軟體？"}, {"role": "assistant", "content": "勒索軟體是一類會鎖定或加密資料並要求受害者支付代價的惡意軟體。"}]}
+{"messages": [{"role": "user", "content": "為什麼需要更新作業系統？"}, {"role": "assistant", "content": "更新常包含安全修補、錯誤修正與功能改進，及時更新有助於降低已知漏洞風險。"}]}
+{"messages": [{"role": "user", "content": "為什麼 App 也需要更新？"}, {"role": "assistant", "content": "App 更新可能修補安全漏洞、修正錯誤並改善相容性，因此應從可信來源安裝官方更新。"}]}
+{"messages": [{"role": "user", "content": "公共 Wi-Fi 安全嗎？"}, {"role": "assistant", "content": "公共 Wi-Fi 的可信度與設定各不相同，不應假設所有公共網路都安全；存取敏感服務時應確認使用加密連線並避免可疑網路。"}]}
+{"messages": [{"role": "user", "content": "HTTPS 能防止所有詐騙嗎？"}, {"role": "assistant", "content": "不能。HTTPS 主要保護傳輸通訊與提供網站身分驗證的一部分機制，詐騙網站也可能使用 HTTPS。"}]}
+{"messages": [{"role": "user", "content": "什麼是 VPN？"}, {"role": "assistant", "content": "VPN 會建立加密的網路通道，讓裝置與 VPN 端點之間的流量受到保護；VPN 並不代表所有網路風險都消失。"}]}
+{"messages": [{"role": "user", "content": "什麼是防火牆？"}, {"role": "assistant", "content": "防火牆依規則允許或阻擋特定網路流量，是網路安全防護的一層。"}]}
+{"messages": [{"role": "user", "content": "什麼是零日漏洞？"}, {"role": "assistant", "content": "零日漏洞通常指已存在但供應商尚未有修補方案，或漏洞已被發現且修補時間非常有限的安全弱點。"}]}
+{"messages": [{"role": "user", "content": "備份為什麼和防勒索有關？"}, {"role": "assistant", "content": "可靠的離線或隔離備份可以在資料遭加密或損毀後提供還原來源，降低資料遺失風險。"}]}
+{"messages": [{"role": "user", "content": "什麼是社交工程？"}, {"role": "assistant", "content": "社交工程利用人的信任、心理壓力或資訊不足誘使其完成危險操作，而不一定依賴技術漏洞。"}]}
+{"messages": [{"role": "user", "content": "驗證碼可以告訴別人嗎？"}, {"role": "assistant", "content": "不應把登入驗證碼或一次性密碼提供給他人；正規客服通常不會要求使用者把這類敏感驗證資訊告知第三方。"}]}
+{"messages": [{"role": "user", "content": "為什麼瀏覽器應保持更新？"}, {"role": "assistant", "content": "更新可能修補瀏覽器漏洞並改善安全性，因此應使用官方提供的最新版或受支援版本。"}]}
+{"messages": [{"role": "user", "content": "下載軟體應從哪裡取得？"}, {"role": "assistant", "content": "優先從軟體官方網站、官方商店或可信的發行來源下載，避免來路不明的破解或修改版本。"}]}
+{"messages": [{"role": "user", "content": "什麼是資料加密？"}, {"role": "assistant", "content": "資料加密把原始資訊轉換成非授權者難以理解的形式，只有持有適當金鑰的人才能還原。"}]}
+{"messages": [{"role": "user", "content": "什麼是雜湊？"}, {"role": "assistant", "content": "雜湊函式把輸入資料轉成固定長度的摘要值；安全雜湊通常具備難以從摘要反推出原文等性質。"}]}
+{"messages": [{"role": "user", "content": "加密和雜湊一樣嗎？"}, {"role": "assistant", "content": "不一樣。加密通常設計成可在持有金鑰時解密回原文；雜湊通常是單向摘要，不是為了可逆還原。"}]}
+{"messages": [{"role": "user", "content": "為什麼網站密碼不應該明文儲存？"}, {"role": "assistant", "content": "如果資料庫洩漏，明文密碼會直接暴露；網站通常應使用適當的密碼雜湊方法保存密碼驗證資訊。"}]}
+{"messages": [{"role": "user", "content": "什麼是最小權限原則？"}, {"role": "assistant", "content": "最小權限原則要求帳號、程式或服務只取得完成工作所需的最低權限。"}]}
+{"messages": [{"role": "user", "content": "什麼是軟體供應鏈安全？"}, {"role": "assistant", "content": "軟體供應鏈安全關注套件、依賴、建置流程與發布來源是否受到竄改或污染。"}]}
+{"messages": [{"role": "user", "content": "發現帳號疑似被盜該先做什麼？"}, {"role": "assistant", "content": "可先透過可信的官方管道重設密碼、撤銷陌生工作階段並檢查安全設定，同時確認其他使用相同密碼的帳號。"}]}

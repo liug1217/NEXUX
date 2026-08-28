@@ -133,3 +133,41 @@
 {"messages": [{"role": "user", "content": "什麼是Geolocation API？"}, {"role": "assistant", "content": "Geolocation API 可在使用者授權下取得裝置位置資訊。"}]}
 {"messages": [{"role": "user", "content": "什麼是Notification API？"}, {"role": "assistant", "content": "Notification API 可在符合權限與瀏覽器條件下建立網頁通知。"}]}
 {"messages": [{"role": "user", "content": "什麼是Web Workers 與 UI？"}, {"role": "assistant", "content": "把耗時計算移到 Worker 可降低主執行緒被阻塞的機會，讓 UI 保持較順暢。"}]}
+{"messages": [{"role": "user", "content": "怎麼建立一個 Python list？"}, {"role": "assistant", "content": "可以使用方括號，例如 `numbers = [1, 2, 3]`。"}]}
+{"messages": [{"role": "user", "content": "怎麼新增 list 元素？"}, {"role": "assistant", "content": "常見方法是 `append()`，例如 `items.append(\"apple\")` 會把元素加到 list 尾端。"}]}
+{"messages": [{"role": "user", "content": "怎麼移除 list 元素？"}, {"role": "assistant", "content": "可以依需求使用 `remove()`、`pop()` 或切片等方式；`remove()` 會依值移除第一個符合項目。"}]}
+{"messages": [{"role": "user", "content": "怎麼取得字典的值？"}, {"role": "assistant", "content": "可以使用 `data[\"name\"]`；若鍵可能不存在，可使用 `data.get(\"name\")`。"}]}
+{"messages": [{"role": "user", "content": "怎麼判斷字典有沒有某個鍵？"}, {"role": "assistant", "content": "可以使用 `if \"name\" in data:`。"}]}
+{"messages": [{"role": "user", "content": "怎麼寫 Python 函式？"}, {"role": "assistant", "content": "使用 `def` 定義，例如 `def add(a, b): return a + b`。"}]}
+{"messages": [{"role": "user", "content": "函式沒有 return 會怎樣？"}, {"role": "assistant", "content": "如果函式執行到結尾沒有回傳其他值，Python 會回傳 `None`。"}]}
+{"messages": [{"role": "user", "content": "Python 怎麼處理例外？"}, {"role": "assistant", "content": "可以使用 `try` 與 `except`，例如在可能失敗的操作周圍捕捉特定例外。"}]}
+{"messages": [{"role": "user", "content": "為什麼不應該全部用 except:？"}, {"role": "assistant", "content": "裸 `except:` 可能攔截幾乎所有例外，讓真正的程式錯誤更難被發現；通常應捕捉預期的例外型別。"}]}
+{"messages": [{"role": "user", "content": "怎麼讀取文字檔？"}, {"role": "assistant", "content": "可以使用 `with open(\"file.txt\", encoding=\"utf-8\") as f:`，再用 `read()`、`readline()` 或逐行迭代讀取。"}]}
+{"messages": [{"role": "user", "content": "為什麼建議使用 with open？"}, {"role": "assistant", "content": "`with` 會在區塊結束時協助關閉檔案，即使區塊中發生例外也能進行清理。"}]}
+{"messages": [{"role": "user", "content": "怎麼把 Python 物件轉成 JSON？"}, {"role": "assistant", "content": "可以使用 `json.dumps()` 將可序列化的 Python 物件轉成 JSON 字串。"}]}
+{"messages": [{"role": "user", "content": "怎麼從 JSON 字串還原資料？"}, {"role": "assistant", "content": "可以使用 `json.loads()` 解析 JSON 字串。"}]}
+{"messages": [{"role": "user", "content": "list comprehension 是什麼？"}, {"role": "assistant", "content": "它是一種建立 list 的簡潔語法，例如 `[x * 2 for x in numbers]`。"}]}
+{"messages": [{"role": "user", "content": "什麼是生成器？"}, {"role": "assistant", "content": "生成器會逐步產生資料，可以透過 `yield` 定義，適合處理較大的資料流。"}]}
+{"messages": [{"role": "user", "content": "`==` 和 `is` 有什麼不同？"}, {"role": "assistant", "content": "`==` 比較值是否相等；`is` 判斷兩個名稱是否指向同一個物件。"}]}
+{"messages": [{"role": "user", "content": "Python 的 `None` 是什麼？"}, {"role": "assistant", "content": "`None` 是 Python 的特殊單例物件，常用來表示沒有值或沒有結果。"}]}
+{"messages": [{"role": "user", "content": "怎麼排序 list？"}, {"role": "assistant", "content": "`items.sort()` 會原地排序；`sorted(items)` 則回傳新的排序結果。"}]}
+{"messages": [{"role": "user", "content": "怎麼反轉 list？"}, {"role": "assistant", "content": "可以使用 `items.reverse()` 原地反轉，或 `items[::-1]` 建立反轉後的新序列。"}]}
+{"messages": [{"role": "user", "content": "什麼是 tuple？"}, {"role": "assistant", "content": "tuple 是不可變的序列，例如 `(1, 2, 3)`。"}]}
+{"messages": [{"role": "user", "content": "怎麼取得字串長度？"}, {"role": "assistant", "content": "使用 `len(text)`。"}]}
+{"messages": [{"role": "user", "content": "怎麼把字串轉成整數？"}, {"role": "assistant", "content": "可以使用 `int(\"123\")`，但輸入若不是合法整數格式可能拋出 `ValueError`。"}]}
+{"messages": [{"role": "user", "content": "怎麼把整數轉成字串？"}, {"role": "assistant", "content": "使用 `str(number)`。"}]}
+{"messages": [{"role": "user", "content": "Python 怎麼判斷型別？"}, {"role": "assistant", "content": "可以使用 `type(value)` 查看實際型別，也可以使用 `isinstance(value, SomeType)` 做型別判斷。"}]}
+{"messages": [{"role": "user", "content": "為什麼推薦 isinstance 而不是直接比 type？"}, {"role": "assistant", "content": "`isinstance()` 可以正確處理繼承關係，在許多需要接受子類別時更加彈性。"}]}
+{"messages": [{"role": "user", "content": "什麼是模組？"}, {"role": "assistant", "content": "模組是可被匯入的 Python 程式碼檔案，通常用來組織和重用功能。"}]}
+{"messages": [{"role": "user", "content": "怎麼匯入模組？"}, {"role": "assistant", "content": "可以使用 `import module`，或在需要時從模組匯入特定名稱。"}]}
+{"messages": [{"role": "user", "content": "什麼是虛擬環境？"}, {"role": "assistant", "content": "虛擬環境可以隔離專案的 Python 套件與版本，降低專案之間的依賴衝突。"}]}
+{"messages": [{"role": "user", "content": "怎麼建立虛擬環境？"}, {"role": "assistant", "content": "可使用 `python -m venv .venv` 建立一個名為 `.venv` 的虛擬環境。"}]}
+{"messages": [{"role": "user", "content": "什麼是 `__name__ == \"__main__\"`？"}, {"role": "assistant", "content": "它可用來判斷檔案是否是直接執行，而不是被其他模組匯入。"}]}
+{"messages": [{"role": "user", "content": "Python 如何取得命令列參數？"}, {"role": "assistant", "content": "簡單情況可以使用 `sys.argv`；較正式的 CLI 通常使用 `argparse`。"}]}
+{"messages": [{"role": "user", "content": "怎麼記錄程式日誌？"}, {"role": "assistant", "content": "可以使用標準庫 `logging` 建立不同等級的日誌，而不是把所有訊息都用 print 輸出。"}]}
+{"messages": [{"role": "user", "content": "什麼是 type hint？"}, {"role": "assistant", "content": "type hint 是程式碼中的型別註記，可協助閱讀、編輯器檢查與靜態分析。"}]}
+{"messages": [{"role": "user", "content": "什麼是 dataclass？"}, {"role": "assistant", "content": "dataclass 可簡化主要用於保存資料的類別定義，並自動產生部分常見方法。"}]}
+{"messages": [{"role": "user", "content": "怎麼避免硬編碼檔案路徑？"}, {"role": "assistant", "content": "可以使用 `pathlib.Path` 組合路徑，並避免把只適用某台電腦的絕對路徑寫死。"}]}
+{"messages": [{"role": "user", "content": "Python 怎麼處理 CSV？"}, {"role": "assistant", "content": "標準庫 `csv` 提供讀寫 CSV 的工具，可搭配 `csv.reader` 或 `csv.DictReader`。"}]}
+{"messages": [{"role": "user", "content": "如何檢查套件是否安裝？"}, {"role": "assistant", "content": "可以嘗試匯入套件，或使用套件管理工具查詢環境；正式程式仍應處理缺少依賴的情況。"}]}
+{"messages": [{"role": "user", "content": "Python 程式出現亂碼時先檢查什麼？"}, {"role": "assistant", "content": "先檢查檔案與終端機的編碼、資料是否被錯誤解碼，以及 tokenizer 或資料處理流程是否改動了原始字元。"}]}

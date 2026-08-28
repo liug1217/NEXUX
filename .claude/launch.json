@@ -2,8 +2,8 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "chatbot-server",
-      "runtimeExecutable": "C:\\Users\\liug1\\AppData\\Local\\Python\\bin\\python.exe",
+      "name": "nexux-server",
+      "runtimeExecutable": "python",
       "runtimeArgs": ["server.py"],
       "port": 5000
     }
