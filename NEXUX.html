@@ -49,6 +49,41 @@
     body { padding-left: 52px; }
   }
 
+  .streamlit-iframe-wrap {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: var(--bg);
+  }
+  .streamlit-iframe-wrap.active { display: flex; }
+  .streamlit-iframe-wrap iframe {
+    width: 100%;
+    flex: 1;
+    border: none;
+    background: var(--bg);
+  }
+  .streamlit-iframe-back {
+    padding: 8px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .streamlit-iframe-back button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
   /* 左側細窄導覽軌,呼應設計稿裡收合狀態的側欄。跟輸入框/快速按鈕同一套
      液態玻璃數值,但這裡是貼齊畫面左邊的細長條,只留右邊界一條邊框
      (跟主內容區的分界線),不像輸入框/按鈕是四邊都要有玻璃感的完整
@@ -1595,6 +1630,13 @@
   <div class="top-bar"></div>
   <div class="main-row" id="mainRow">
   <div class="app">
+    <div class="streamlit-iframe-wrap" id="streamlitWrap">
+      <div class="streamlit-iframe-back">
+        <button id="streamlitBackBtn">← 返回</button>
+        <span>NEXUX 345M 雲端推理（Streamlit Cloud）</span>
+      </div>
+      <iframe id="streamlitFrame" src="about:blank" allow="clipboard-write"></iframe>
+    </div>
     <div class="messages" id="messages"></div>
 
     <form class="composer" id="composer">
@@ -1636,6 +1678,7 @@
 
             <select class="model-tag" id="providerSelect" aria-label="選擇模型來源">
               <option value="own">模型</option>
+              <option value="streamlit">345M 雲端</option>
               <option value="openai">GPT</option>
               <option value="anthropic">Claude</option>
               <option value="google">Gemini</option>
@@ -2973,16 +3016,36 @@
 
     // ---- provider 切換時的連動 ----
 
+    const streamlitWrap = document.getElementById("streamlitWrap");
+    const streamlitFrame = document.getElementById("streamlitFrame");
+    const streamlitBackBtn = document.getElementById("streamlitBackBtn");
+    const STREAMLIT_URL = "https://5ppbvj4beamfp33ebqzjmt.streamlit.app";
+
     function syncRoleSelectorWithProvider() {
-      const isOwn = providerSelect.value === "own";
-      roleMenuBtn.disabled = !isOwn;
-      if (!isOwn && selectedRoles.size > 0) {
+      const val = providerSelect.value;
+      const isOwn = val === "own";
+      roleMenuBtn.disabled = !isOwn && val !== "streamlit";
+      if (!isOwn && val !== "streamlit" && selectedRoles.size > 0) {
         selectedRoles.clear();
         renderRoleMenu();
         closeRoleMenu();
       }
+      if (val === "streamlit") {
+        if (streamlitFrame.src === "about:blank") {
+          streamlitFrame.src = STREAMLIT_URL + "/?embed=true";
+        }
+        streamlitWrap.classList.add("active");
+      } else {
+        streamlitWrap.classList.remove("active");
+      }
     }
     providerSelect.addEventListener("change", syncRoleSelectorWithProvider);
+
+    streamlitBackBtn.addEventListener("click", () => {
+      providerSelect.value = "own";
+      streamlitWrap.classList.remove("active");
+      syncRoleSelectorWithProvider();
+    });
 
     // ---- 初始化:先讀localStorage的我的角色/預設角色覆寫,
     // 再向後端要預設角色的原始清單(給「恢復預設」當還原目標)。 ----
