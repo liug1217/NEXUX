@@ -372,10 +372,6 @@ def api_generate():
         return jsonify({"reply": weather_reply, "type": "weather_lookup"})
 
     rag = get_rag_engine()
-    if rag:
-        rag_answer = rag.direct_answer(prompt, threshold=0.25)
-        if rag_answer:
-            return jsonify({"reply": rag_answer, "type": "rag_lookup"})
 
     try:
         config, model, tokenizer, is_sft = get_model_and_tokenizer()
