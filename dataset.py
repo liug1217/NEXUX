@@ -32,7 +32,6 @@ def load_corpus_text(data_dir: str) -> str:
     conversations = load_conversations(data_dir)
     texts = [render_messages(messages) for messages in conversations]
     texts = [t for t in texts if t]
-    # 用換行分隔不同對話的內容,避免前一段對話的結尾和下一段的開頭黏在一起
     return "\n".join(texts)
 
 
@@ -54,12 +53,6 @@ class TextDataset:
               f"驗證集: {len(self.val_data)} tokens")
 
     def get_batch(self, split: str = "train"):
-        """
-        隨機取出一個 batch。
-        split: "train" 或 "val"
-        回傳: x, y,兩者形狀皆為 (batch_size, block_size)
-              y 是 x 往右移一位(下一個字元預測任務的標籤)
-        """
         data = self.train_data if split == "train" else self.val_data
         block_size = self.config.block_size
         batch_size = self.config.batch_size
@@ -70,7 +63,6 @@ class TextDataset:
                 "請提供更長的語料或調小 block_size。"
             )
 
-        # 隨機選取 batch_size 個起始點
         ix = torch.randint(0, len(data) - block_size - 1, (batch_size,))
         x = torch.stack([data[i: i + block_size] for i in ix])
         y = torch.stack([data[i + 1: i + block_size + 1] for i in ix])
@@ -83,22 +75,13 @@ class SFTDataset:
     """
     監督式微調(Supervised Fine-Tuning, SFT)用的資料集。
 
-    跟 TextDataset 最大的不同:
-    - TextDataset 是從一整條長文字裡隨機裁切片段,不分「問題」和「答案」。
-    - SFTDataset 讀取的是 prepare_sft_data.py 產生的 JSONL,每筆資料都
-      清楚分成 input(問題/上下文)和 output(答案),訓練時只會針對
-      output 的部分計算 loss,input 的部分會被標成 -100(不計入 loss)。
-
-    這裡刻意簡化成 batch_size = 1(一次只處理一筆樣本),因為每筆資料的
-    長度都不一樣,要做批次的話還要處理 padding 和額外的遮罩邏輯,
-    對教學用途的專案來說,batch_size = 1 更簡單、更不容易寫錯,
-    缺點是訓練速度會慢一點,但因為 SFT 階段的資料量通常不大,影響有限。
+    所有 tokenize 在 __init__ 一次完成,訓練時直接查表取 token ids,
+    不再每步重新 encode,大幅減少 CPU 瓶頸。
     """
 
     def __init__(self, config: Config, tokenizer: CharTokenizer, jsonl_path: str):
         self.config = config
         self.tokenizer = tokenizer
-        self.examples: list[tuple[str, str]] = []
 
         if not os.path.exists(jsonl_path):
             raise FileNotFoundError(
@@ -106,16 +89,46 @@ class SFTDataset:
             )
 
         import json
+        import time
+        t0 = time.time()
+        raw_examples = []
         with open(jsonl_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 item = json.loads(line)
-                self.examples.append((item["input"], item["output"]))
+                raw_examples.append((item["input"], item["output"]))
 
-        if not self.examples:
+        if not raw_examples:
             raise ValueError(f"{jsonl_path} 裡沒有任何資料,請確認 data/*.jsonl 內容格式正確。")
+
+        eos_id = getattr(tokenizer, "eos_id", None)
+        block_size = config.block_size
+
+        self.tokenized: list[tuple[list[int], list[int]]] = []
+        for input_text, output_text in raw_examples:
+            input_ids = tokenizer.encode(input_text)
+            output_ids = tokenizer.encode(output_text)
+            if eos_id is not None:
+                output_ids = output_ids + [eos_id]
+
+            full_ids = input_ids + output_ids
+            if len(full_ids) > block_size + 1:
+                overflow = len(full_ids) - (block_size + 1)
+                full_ids = full_ids[overflow:]
+                input_len = max(0, len(input_ids) - overflow)
+            else:
+                input_len = len(input_ids)
+
+            x_ids = full_ids[:-1]
+            y_ids = [
+                (-100 if (i + 1) < input_len else token_id)
+                for i, token_id in enumerate(full_ids[1:])
+            ]
+            self.tokenized.append((x_ids, y_ids))
+
+        self.examples = raw_examples
 
         import random
         self._rng = random
@@ -124,73 +137,51 @@ class SFTDataset:
         self._epoch = 0
         self._reshuffle()
 
-        print(f"[dataset] 已讀入 {len(self.examples)} 筆 SFT 訓練樣本")
+        elapsed = time.time() - t0
+        print(f"[dataset] 已讀入並預先 tokenize {len(self.tokenized)} 筆 SFT 訓練樣本 ({elapsed:.1f}s)")
 
     def _reshuffle(self):
-        self._shuffled_indices = list(range(len(self.examples)))
+        self._shuffled_indices = list(range(len(self.tokenized)))
         self._rng.shuffle(self._shuffled_indices)
         self._cursor = 0
         self._epoch += 1
 
-    def get_batch(self, split: str = "train"):
+    def get_batch(self, split: str = "train", batch_size: int = 1):
         """
-        每個 epoch 完整走過所有資料一次（順序隨機打亂），走完一輪自動
-        重新洗牌開始下一個 epoch。保證每筆資料在每個 epoch 恰好被看到
-        一次，不像 random.choice() 有放回抽樣會漏掉大量資料。
+        取出 batch_size 筆資料,右側補 padding 對齊長度。
         """
-        if self._cursor >= len(self._shuffled_indices):
-            self._reshuffle()
+        samples_x = []
+        samples_y = []
+        max_len = 0
 
-        idx = self._shuffled_indices[self._cursor]
-        self._cursor += 1
-        input_text, output_text = self.examples[idx]
+        for _ in range(batch_size):
+            if self._cursor >= len(self._shuffled_indices):
+                self._reshuffle()
+            idx = self._shuffled_indices[self._cursor]
+            self._cursor += 1
 
-        input_ids = self.tokenizer.encode(input_text)
-        output_ids = self.tokenizer.encode(output_text)
+            x_ids, y_ids = self.tokenized[idx]
+            samples_x.append(x_ids)
+            samples_y.append(y_ids)
+            if len(x_ids) > max_len:
+                max_len = len(x_ids)
 
-        # 如果 tokenizer 有定義結束符號(例如 BertWordpieceTokenizer 的
-        # [SEP]),把它接在答案後面一起訓練,讓模型學會「答完了就該輸出
-        # 這個記號」,推論時才能自己判斷該停下來,不用再靠外部的字數上限
-        # 硬性截斷。CharTokenizer 沒有 eos_id 屬性,這裡用 getattr 保持
-        # 向下相容,不影響現有 char-level 模型的訓練行為。
-        eos_id = getattr(self.tokenizer, "eos_id", None)
-        if eos_id is not None:
-            output_ids = output_ids + [eos_id]
+        for i in range(len(samples_x)):
+            pad_len = max_len - len(samples_x[i])
+            if pad_len > 0:
+                samples_x[i] = samples_x[i] + [0] * pad_len
+                samples_y[i] = samples_y[i] + [-100] * pad_len
 
-        full_ids = input_ids + output_ids
-
-        block_size = self.config.block_size
-
-        # 如果整段(問題+答案)超過 block_size,從左邊截斷,優先保留答案部分
-        if len(full_ids) > block_size + 1:
-            overflow = len(full_ids) - (block_size + 1)
-            full_ids = full_ids[overflow:]
-            input_len = max(0, len(input_ids) - overflow)
-        else:
-            input_len = len(input_ids)
-
-        x_ids = full_ids[:-1]
-        y_ids = full_ids[1:]
-
-        # y_ids 的索引 i,對應原始序列位置 i+1;
-        # 只要這個位置還落在「問題」範圍內(< input_len),就標成 -100,不計入 loss。
-        y_ids = [
-            (-100 if (i + 1) < input_len else token_id)
-            for i, token_id in enumerate(y_ids)
-        ]
-
-        x = torch.tensor([x_ids], dtype=torch.long, device=self.config.device)
-        y = torch.tensor([y_ids], dtype=torch.long, device=self.config.device)
+        x = torch.tensor(samples_x, dtype=torch.long, device=self.config.device)
+        y = torch.tensor(samples_y, dtype=torch.long, device=self.config.device)
         return x, y
 
 
 if __name__ == "__main__":
-    # 簡單自我測試:需要先有一個 data/ 資料夾,裡面至少一個 .jsonl 語料檔
     cfg = Config()
     os.makedirs(cfg.data_dir, exist_ok=True)
     sample_path = os.path.join(cfg.data_dir, "_sample.jsonl")
     if not any(glob.glob(os.path.join(cfg.data_dir, "*.jsonl"))):
-        # 若資料夾是空的,先建立一份小範例方便測試
         import json
         sample = {"messages": [
             {"role": "user", "content": "你好"},
