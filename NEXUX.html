@@ -951,6 +951,46 @@
     display: block;
   }
 
+  .modal-invite-link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .modal-invite-link-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: default;
+  }
+
+  .invite-toast {
+    position: fixed;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(35, 35, 35, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    font-family: 'Inter', var(--sans);
+    font-size: 13px;
+    padding: 9px 18px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    z-index: 2000;
+  }
+
+  .invite-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* 角色名稱撐滿剩餘空間,把鉛筆/移除按鈕推到最右邊。 */
   .role-menu-item-label {
     flex: 1;
@@ -1872,25 +1912,13 @@
   <div class="modal-overlay" id="inviteMemberModalOverlay" hidden>
     <div class="modal-box">
       <p class="modal-title">邀請成員</p>
-      <label class="modal-field-label">顯示名稱</label>
-      <input type="text" class="modal-input" id="inviteNameInput" maxlength="20" placeholder="輸入成員名稱">
-      <label class="modal-field-label">頭像顏色</label>
-      <div class="modal-avatar-picker">
-        <button type="button" class="modal-avatar-color selected" data-color="#5a6e8a" style="background:#5a6e8a;" aria-label="藍色"></button>
-        <button type="button" class="modal-avatar-color" data-color="#5a8a5a" style="background:#5a8a5a;" aria-label="綠色"></button>
-        <button type="button" class="modal-avatar-color" data-color="#8a5a5a" style="background:#8a5a5a;" aria-label="紅色"></button>
-        <button type="button" class="modal-avatar-color" data-color="#7a5a8a" style="background:#7a5a8a;" aria-label="紫色"></button>
-        <button type="button" class="modal-avatar-color" data-color="#8a7a5a" style="background:#8a7a5a;" aria-label="橘色"></button>
-        <button type="button" class="modal-avatar-color" data-color="#5a8a80" style="background:#5a8a80;" aria-label="青色"></button>
-      </div>
-      <div class="modal-upload-row">
-        <input type="file" id="inviteImageInput" accept="image/*" style="display:none">
-        <button type="button" class="modal-upload-btn" id="inviteImageBtn">上傳圖片</button>
-        <img class="modal-upload-preview" id="inviteImagePreview" alt="頭像預覽">
+      <label class="modal-field-label">把以下連結傳給想邀請的人</label>
+      <div class="modal-invite-link-row">
+        <input type="text" class="modal-input modal-invite-link-input" id="inviteLinkInput" readonly>
+        <button type="button" class="modal-btn-secondary" id="inviteCopyBtn" style="white-space:nowrap;flex-shrink:0;">複製</button>
       </div>
       <div class="modal-actions">
-        <button type="button" class="modal-btn-secondary" id="inviteModalCancel">取消</button>
-        <button type="button" class="modal-btn-primary" id="inviteModalSave">邀請</button>
+        <button type="button" class="modal-btn-primary" id="inviteModalCancel">關閉</button>
       </div>
     </div>
   </div>
@@ -2500,7 +2528,7 @@
     // ---- 成員系統：個人資料 + 邀請成員 ----
 
     const STORAGE_KEY_PROFILE = "nexux_profile";
-    const STORAGE_KEY_INVITE_MEMBERS = "nexux_invite_members";
+    const STORAGE_KEY_GROUP_ID = "nexux_group_id";
 
     function loadProfile() {
       try { return JSON.parse(localStorage.getItem(STORAGE_KEY_PROFILE) || "null"); } catch { return null; }
@@ -2509,12 +2537,27 @@
       try { localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(p)); } catch {}
     }
 
-    let inviteMembers = [];
-    function loadInviteMembers() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_INVITE_MEMBERS) || "[]"); } catch { return []; }
+    function getGroupId() {
+      let id = localStorage.getItem(STORAGE_KEY_GROUP_ID);
+      if (!id) { id = crypto.randomUUID(); localStorage.setItem(STORAGE_KEY_GROUP_ID, id); }
+      return id;
     }
-    function saveInviteMembers() {
-      try { localStorage.setItem(STORAGE_KEY_INVITE_MEMBERS, JSON.stringify(inviteMembers)); } catch {}
+    function getInviteUrl() {
+      return `${window.location.origin}${window.location.pathname}?g=${getGroupId()}`;
+    }
+
+    function showInviteToast(msg) {
+      let toast = document.getElementById("inviteToast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "inviteToast";
+        toast.className = "invite-toast";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
     }
 
     // AI 頭像 SVG:上方頭部圓形 + 下方底圓形
@@ -2599,13 +2642,6 @@
         ));
       }
 
-      // 邀請進來的人
-      inviteMembers.forEach((m) => {
-        membersList.appendChild(makeMemberItem(
-          { image: m.image, color: m.color, initial: (m.name || "?").charAt(0) },
-          m.name
-        ));
-      });
     }
 
     // ---- Profile setup modal ----
@@ -2657,31 +2693,22 @@
 
     // ---- Invite member modal ----
 
-    let inviteImageDataUrl = null;
-
     document.getElementById("inviteMemberBtn").addEventListener("click", (e) => {
       e.stopPropagation();
       closeRoleMenu();
-      inviteImageDataUrl = null;
-      document.getElementById("inviteNameInput").value = "";
-      document.getElementById("inviteImageInput").value = "";
-      const prev = document.getElementById("inviteImagePreview");
-      prev.src = ""; prev.classList.remove("visible");
-      inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((b, i) => b.classList.toggle("selected", i === 0));
+      document.getElementById("inviteLinkInput").value = getInviteUrl();
       inviteMemberModalOverlay.removeAttribute("hidden");
-      document.getElementById("inviteNameInput").focus();
     });
 
-    document.getElementById("inviteImageBtn").addEventListener("click", () => {
-      document.getElementById("inviteImageInput").click();
-    });
-    document.getElementById("inviteImageInput").addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      resizeImageToDataUrl(file, 64, (dataUrl) => {
-        inviteImageDataUrl = dataUrl;
-        const prev = document.getElementById("inviteImagePreview");
-        prev.src = dataUrl; prev.classList.add("visible");
+    document.getElementById("inviteCopyBtn").addEventListener("click", () => {
+      const url = document.getElementById("inviteLinkInput").value;
+      navigator.clipboard.writeText(url).then(() => {
+        showInviteToast("邀請連結已複製");
+      }).catch(() => {
+        const input = document.getElementById("inviteLinkInput");
+        input.select();
+        document.execCommand("copy");
+        showInviteToast("邀請連結已複製");
       });
     });
 
@@ -2689,26 +2716,15 @@
       inviteMemberModalOverlay.setAttribute("hidden", "");
     });
 
-    document.getElementById("inviteModalSave").addEventListener("click", () => {
-      const name = document.getElementById("inviteNameInput").value.trim();
-      if (!name) { document.getElementById("inviteNameInput").focus(); return; }
-      const sel = inviteMemberModalOverlay.querySelector(".modal-avatar-color.selected");
-      const color = sel ? sel.dataset.color : "#5a6e8a";
-      inviteMembers.push({ name, color, image: inviteImageDataUrl || null });
-      saveInviteMembers();
-      inviteMemberModalOverlay.setAttribute("hidden", "");
-      renderMembersList();
-    });
-
-    inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        inviteMemberModalOverlay.querySelectorAll(".modal-avatar-color").forEach((b) => b.classList.remove("selected"));
-        btn.classList.add("selected");
-      });
-    });
+    // 被邀請者開啟連結時，個人資料設定標題改成「你收到邀請」
+    (function detectInviteJoin() {
+      if (new URLSearchParams(window.location.search).has("g")) {
+        const titleEl = profileSetupModalOverlay.querySelector(".modal-title");
+        if (titleEl) titleEl.textContent = "你收到群組邀請，請設定你的資料";
+      }
+    })();
 
     // init
-    inviteMembers = loadInviteMembers();
     renderMembersList();
     if (!loadProfile()) openProfileSetupModal();
 
