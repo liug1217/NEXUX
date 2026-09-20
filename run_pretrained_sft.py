@@ -1,159 +1,92 @@
 """
-run_pretrained_sft.py  (Unsloth 版)
--------------------------------------
-用 Unsloth + Qwen2.5-1.5B-Instruct + LoRA + SFTTrainer 對 data/*.jsonl 做微調,
-訓練完自動量化匯出為 GGUF(q4_k_m)。
+run_pretrained_sft.py
+-----------------------
+第二階段:接上現有語料(data/*.jsonl -> sft_data.jsonl),對轉換好的
+預訓練 checkpoint(checkpoint_pretrained.pt)做微調。
+
+步數自動計算:config.sft_epochs × 資料筆數,不用手動算。
+資料增減時步數自動跟著變,不再會出現「3000步只看了46%資料」的問題。
 
 用法:
-    python run_pretrained_sft.py               # 預設 100 步
-    python run_pretrained_sft.py --steps 500   # 指定步數
-    python run_pretrained_sft.py --smoke       # 20 步快速確認
+    python run_pretrained_sft.py                # 自動算步數(sft_epochs × 資料筆數)
+    python run_pretrained_sft.py --smoke         # 只跑 20 步,快速確認不會出錯
+    python run_pretrained_sft.py --steps 10000   # 手動指定步數(覆蓋自動計算)
+    python run_pretrained_sft.py --epochs 3      # 手動指定 epoch 數
+    python run_pretrained_sft.py --seed 42       # 自訂隨機種子
 """
 
-import glob
 import json
-import os
 import sys
 
-# ======================================================
-# 1. 安裝核心套件(若未安裝)
-# ======================================================
-try:
-    import unsloth  # noqa: F401
-except ImportError:
-    os.system(
-        'pip install --no-deps "unsloth_zoo>=2025.2.5" unsloth bitsandbytes xformers trl peft tensorflow -q'
-    )
+from config import Config
+from bert_wordpiece_tokenizer import BertWordpieceTokenizer
+from train_sft import train_sft
 
-import torch
-from datasets import Dataset
-from transformers import TrainingArguments
-from trl import SFTTrainer
-from unsloth import FastLanguageModel
 
-# ======================================================
-# 2. 自動掃描所有語料檔案
-# ======================================================
-data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-all_files = glob.glob(os.path.join(data_dir, "*.jsonl"))
-if not all_files:
-    raise ValueError(f"❌ 錯誤：在 {data_dir} 找不到任何 .jsonl 語料，請確認已上傳語料檔案！")
-
-raw_rows = []
-for path in all_files:
-    with open(path, encoding="utf-8") as f:
+def _count_sft_data(path: str) -> int:
+    count = 0
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    raw_rows.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
+            if line.strip():
+                count += 1
+    return count
 
-print(f"📂 系統地毯式掃描成功！共強行抓取到 {len(raw_rows)} 個訓練檔案物件！")
 
-dataset = Dataset.from_list(raw_rows)
+def main():
+    smoke = "--smoke" in sys.argv
 
-# ======================================================
-# 3. 設定大模型(Qwen2.5-1.5B-Instruct)
-# ======================================================
-max_seq_length = 2048
-model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="unsloth/Qwen2.5-1.5B-Instruct",
-    max_seq_length=max_seq_length,
-    load_in_4bit=True,
-)
+    custom_steps = None
+    if "--steps" in sys.argv:
+        idx = sys.argv.index("--steps")
+        custom_steps = int(sys.argv[idx + 1])
 
-# ======================================================
-# 4. 讓模型適應雙端雙顯卡，開啟 LoRA 微調模式
-# ======================================================
-model = FastLanguageModel.get_peft_model(
-    model,
-    r=16,
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-    lora_alpha=16,
-    lora_dropout=0,
-    bias="none",
-    use_gradient_checkpointing="unsloth",
-)
+    custom_epochs = None
+    if "--epochs" in sys.argv:
+        idx = sys.argv.index("--epochs")
+        custom_epochs = int(sys.argv[idx + 1])
 
-# ======================================================
-# 5. 格式化函數：萬能格式自動對接器
-# ======================================================
-def formatting_prompts_func(examples):
-    texts = []
-    messages_batch = examples.get("messages", [None] * len(next(iter(examples.values()))))
-    for i, msgs in enumerate(messages_batch):
-        # 情況 A：標準 chat/messages 格式
-        if isinstance(msgs, list):
-            conv = ""
-            for msg in msgs:
-                role = "使用者" if msg.get("role") == "user" else "助手"
-                conv += f"### {role}:\n{msg.get('content', '')}\n\n"
-            texts.append(conv)
-        # 情況 B：instruction/output 格式
-        elif "instruction" in {k: v[i] for k, v in examples.items() if hasattr(v, '__getitem__')}:
-            row = {k: v[i] for k, v in examples.items()}
-            inst = row.get("instruction", "")
-            inp  = row.get("input", "")
-            out  = row.get("output", "")
-            texts.append(f"### 指令:\n{inst}\n\n### 輸入:\n{inp}\n\n### 回答:\n{out}")
-        # 情況 C：兜底方案
-        else:
-            row = {k: v[i] for k, v in examples.items()}
-            texts.append(str(row))
-    return texts  # 直接回傳符合 Unsloth 標準的純陣列
+    custom_seed = None
+    if "--seed" in sys.argv:
+        idx = sys.argv.index("--seed")
+        custom_seed = int(sys.argv[idx + 1])
 
-# ======================================================
-# 6. 步數設定
-# ======================================================
-smoke = "--smoke" in sys.argv
-custom_steps = None
-if "--steps" in sys.argv:
-    idx = sys.argv.index("--steps")
-    custom_steps = int(sys.argv[idx + 1])
+    tokenizer = BertWordpieceTokenizer.load_from_vocab_txt("vocab_pretrained.txt")
+    print(f"[run_pretrained_sft] 已載入 BertWordpieceTokenizer,詞表大小: {tokenizer.vocab_size}")
 
-if smoke:
-    max_steps = 20
-elif custom_steps:
-    max_steps = custom_steps
-else:
-    max_steps = 100
+    base = Config()
 
-# ======================================================
-# 7. 執行雲端高速訓練！
-# ======================================================
-print(f"🚀 正在啟動 GPU 進行高速雲端後台微調...（{max_steps} 步）")
+    if smoke:
+        sft_max_iters = 20
+    elif custom_steps:
+        sft_max_iters = custom_steps
+    else:
+        from train_sft import _ensure_sft_data_up_to_date
+        _ensure_sft_data_up_to_date(base)
+        n_examples = _count_sft_data(base.sft_data_path)
+        epochs = custom_epochs or base.sft_epochs
+        sft_max_iters = epochs * n_examples
+        print(f"[run_pretrained_sft] {n_examples} 筆資料 × {epochs} epochs = {sft_max_iters} 步(自動計算)")
 
-trainer = SFTTrainer(
-    model=model,
-    tokenizer=tokenizer,
-    train_dataset=dataset,
-    formatting_func=formatting_prompts_func,
-    max_seq_length=max_seq_length,
-    dataset_num_proc=1,
-    packing=False,
-    args=TrainingArguments(
-        per_device_train_batch_size=2,
-        gradient_accumulation_steps=4,
-        warmup_steps=5,
-        max_steps=max_steps,
-        learning_rate=2e-4,
-        fp16=not torch.cuda.is_bf16_supported(),
-        bf16=torch.cuda.is_bf16_supported(),
-        logging_steps=1,
-        output_dir="outputs",
-    ),
-)
+    config = Config(
+        **{
+            **base.__dict__,
+            "checkpoint_path": "checkpoint_pretrained.pt",
+            "block_size": 1024,
+            "n_embd": 768,
+            "n_head": 12,
+            "n_layer": 12,
+            "dropout": 0.1,
+            "sft_max_iters": sft_max_iters,
+            "sft_eval_interval": 5 if smoke else max(300, sft_max_iters // 10),
+            "seed": custom_seed if custom_seed is not None else base.seed,
+        }
+    )
+    if custom_seed is not None:
+        print(f"[run_pretrained_sft] 使用自訂 seed: {custom_seed}(預設固定是 {base.seed})")
 
-trainer_stats = trainer.train()
+    print(f"[run_pretrained_sft] {'smoke test(20步)' if smoke else f'完整微調({config.sft_max_iters}步)'}")
+    train_sft(config=config, tokenizer=tokenizer)
 
-# ======================================================
-# 8. 訓練完成後，自動將模型壓縮（量化）成 GGUF 格式！
-# ======================================================
-if not smoke:
-    print("📦 訓練完成！正在進行 4-bit 量化壓縮，打包為 GGUF 格式...")
-    model.save_pretrained_gguf("nexux_qwen25_model", tokenizer, quantization_method="q4_k_m")
-    print("🎉 恭喜！模型訓練並成功壓縮完畢！GGUF 檔案：nexux_qwen25_model-Q4_K_M.gguf")
-else:
-    print("✅ Smoke test 完成（未匯出 GGUF）")
+
+if __name__ == "__main__":
+    main()
