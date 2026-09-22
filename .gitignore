@@ -32,6 +32,9 @@ pretrained_test/
 # 已經改用 weights_meta.json + weights.npz(見上面說明),不要再 commit 這個。
 weights.json
 
+# Nexora Native v1 checkpoint（只有本機訓練時才需要，不 commit）
+nexora/checkpoints/*.pt
+
 # sft_data.jsonl 是 prepare_sft_data.py 自動產生的中間檔案,
 # 隨時可以用 qa.txt / chat.txt 重新產生,不需要 commit。
 sft_data.jsonl
