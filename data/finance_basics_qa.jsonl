@@ -1,0 +1,15 @@
+{"messages": [{"role": "user", "content": "什麼是利率"}, {"role": "assistant", "content": "利率是借貸資金的費用比率，也就是借款人需要額外支付給貸款方的金額比例。"}]}
+{"messages": [{"role": "user", "content": "什麼是通貨膨脹"}, {"role": "assistant", "content": "通貨膨脹是指商品和服務的整體物價水準持續上漲的現象，使貨幣的購買力下降。"}]}
+{"messages": [{"role": "user", "content": "什麼是股票"}, {"role": "assistant", "content": "股票代表公司的所有權份額，購買股票就是成為公司的小股東，可以享有股息和資本利得。"}]}
+{"messages": [{"role": "user", "content": "什麼是基金"}, {"role": "assistant", "content": "基金是集合多位投資人的資金，由專業經理人統一投資管理，分散在多種資產上。"}]}
+{"messages": [{"role": "user", "content": "什麼是ETF"}, {"role": "assistant", "content": "ETF是指數股票型基金，追蹤特定指數表現，可以像股票一樣在交易所買賣，費用通常較主動型基金低。"}]}
+{"messages": [{"role": "user", "content": "什麼是複利"}, {"role": "assistant", "content": "複利是利息再產生利息的效果，也就是把賺到的利息加回本金繼續投資，長期下來成長幅度遠超過單利。"}]}
+{"messages": [{"role": "user", "content": "什麼是保險"}, {"role": "assistant", "content": "保險是透過繳納保費，把無法預期的風險轉嫁給保險公司的一種風險管理工具。"}]}
+{"messages": [{"role": "user", "content": "什麼是退休金"}, {"role": "assistant", "content": "退休金是為退休後的生活所準備的資金，台灣常見的有勞退新制（個人帳戶）和勞保年金等。"}]}
+{"messages": [{"role": "user", "content": "月薪多少才夠存錢"}, {"role": "assistant", "content": "沒有絕對標準，但一般建議收入的10-20%存起來。重要的是先存後花，而不是花剩才存。"}]}
+{"messages": [{"role": "user", "content": "如何開始投資"}, {"role": "assistant", "content": "先建立3-6個月的緊急備用金，再從低風險的定期存款或ETF開始學習，不要一開始就投入高風險工具。"}]}
+{"messages": [{"role": "user", "content": "什麼是緊急備用金"}, {"role": "assistant", "content": "緊急備用金是準備在突發情況（失業、生病、緊急維修）時使用的儲蓄，一般建議存3到6個月的生活費。"}]}
+{"messages": [{"role": "user", "content": "台灣有哪些常見的理財方式"}, {"role": "assistant", "content": "常見的有銀行定存、股票、ETF、債券、房地產和保險理財型商品，各有不同的風險與報酬特性。"}]}
+{"messages": [{"role": "user", "content": "我應該先還貸款還是先投資"}, {"role": "assistant", "content": "一般建議先把高利率的貸款（如信用卡債）還清，因為貸款利率通常高於投資報酬，還清後再開始投資更有效率。"}]}
+{"messages": [{"role": "user", "content": "定期定額是什麼"}, {"role": "assistant", "content": "定期定額是每隔固定時間投入固定金額買進投資工具，可以分散進場時點的風險，適合長期投資。"}]}
+{"messages": [{"role": "user", "content": "什麼是風險分散"}, {"role": "assistant", "content": "風險分散是把資金投入不同類型的資產，當某種資產下跌時，其他資產的表現可能緩解整體損失。"}]}
