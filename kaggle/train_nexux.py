@@ -35,11 +35,11 @@ import time
 # ======================================================================
 class CFG:
     # --- 底模型 ---
-    # 預設 0.5B:Kaggle 單張 T4(16GB)可做「全參數微調」,外部套件最少。
-    # 想要更強 → 改成 "Qwen/Qwen2.5-1.5B-Instruct" 並把 use_lora 設 True
-    # (1.5B 全參數微調塞不下 T4,要用 LoRA)。
-    model_name = "Qwen/Qwen2.5-0.5B-Instruct"
-    use_lora = False          # True 需要另外 pip install peft
+    # 正式預設:Qwen2.5-1.5B-Instruct + LoRA(品質明顯優於 0.5B,
+    # 單張 Kaggle T4 16GB 用 LoRA 塞得下)。要更省資源可用
+    # --model Qwen/Qwen2.5-0.5B-Instruct --full-finetune 走 0.5B 全參數微調。
+    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    use_lora = True           # 需要 pip install peft
 
     # --- 資料 ---
     data_dir = "data"
@@ -50,24 +50,28 @@ class CFG:
     )
     max_len = 1024            # 超過就截斷(我們的語料大多很短,很少觸發)
 
-    # --- 訓練超參數 ---
-    epochs = 3
-    lr = 2e-5                 # 全參數微調用 2e-5;LoRA 可調高到 1e-4 ~ 2e-4
+    # --- 訓練超參數(依業界 SFT 共識設定)---
+    epochs = 3                # SFT 最常見的 epoch 數
+    # LoRA 的學習率要比全參數微調高約一個數量級;2e-4 是最常被引用的中間值。
+    # 走 --full-finetune 時會自動改用 2e-5(見 main())。
+    lr = 2e-4
     weight_decay = 0.01
     warmup_ratio = 0.03       # 前 3% 步數做 learning rate warmup
-    batch_size = 2            # 單張卡一次幾段對話
-    grad_accum = 8            # 梯度累積 → 有效 batch = batch_size * grad_accum = 16
-    max_grad_norm = 1.0
+    batch_size = 4            # 單張卡一次幾段對話
+    grad_accum = 4            # 梯度累積 → 有效 batch = 4 * 4 = 16(業界常見 16~48)
+    max_grad_norm = 1.0       # 梯度裁剪
+    adam_betas = (0.9, 0.999)
     seed = 1337
+    grad_checkpoint = True    # 1.5B 在 T4 上要開著才夠記憶體;0.5B 可用 --no-grad-ckpt 關掉加速
 
     # --- 存檔 / 輸出 ---
     output_dir = "nexux_sft_out"
     log_every = 10            # 每幾個 optimizer step 印一次 loss
     save_each_epoch = True
 
-    # --- LoRA(只有 use_lora=True 時才用到)---
-    lora_r = 16
-    lora_alpha = 32
+    # --- LoRA 參數(依業界共識:rank 32 / alpha≈2×rank / 全線性層 / dropout 0.05)---
+    lora_r = 32
+    lora_alpha = 64
     lora_dropout = 0.05
     lora_target = ["q_proj", "k_proj", "v_proj", "o_proj",
                    "gate_proj", "up_proj", "down_proj"]
@@ -250,8 +254,9 @@ def train(cfg):
         trust_remote_code=True,
     )
     model.to(device)
-    model.gradient_checkpointing_enable()
     model.config.use_cache = False
+    if cfg.grad_checkpoint:
+        model.gradient_checkpointing_enable()
 
     if cfg.use_lora:
         from peft import LoraConfig, get_peft_model
@@ -260,6 +265,10 @@ def train(cfg):
             target_modules=cfg.lora_target, bias="none", task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, lora_cfg)
+        # PEFT + gradient checkpointing:底模型被凍結,必須讓輸入 embedding 的
+        # 輸出 requires_grad,梯度才流得回 LoRA 層,否則 loss 會沒有梯度。
+        if cfg.grad_checkpoint:
+            model.enable_input_require_grads()
         model.print_trainable_parameters()
 
     # --- 優化器:bias / LayerNorm 不做 weight decay ---
@@ -274,7 +283,7 @@ def train(cfg):
     optim = torch.optim.AdamW(
         [{"params": decay, "weight_decay": cfg.weight_decay},
          {"params": no_decay, "weight_decay": 0.0}],
-        lr=cfg.lr, betas=(0.9, 0.95), eps=1e-8,
+        lr=cfg.lr, betas=cfg.adam_betas, eps=1e-8,
     )
 
     steps_per_epoch = math.ceil(len(loader) / cfg.grad_accum)
@@ -415,7 +424,12 @@ def main():
     ap.add_argument("--data-dir", default=None)
     ap.add_argument("--model", default=None)
     ap.add_argument("--epochs", type=int, default=None)
-    ap.add_argument("--lora", action="store_true")
+    ap.add_argument("--lr", type=float, default=None)
+    ap.add_argument("--batch-size", type=int, default=None)
+    ap.add_argument("--grad-accum", type=int, default=None)
+    ap.add_argument("--no-grad-ckpt", action="store_true", help="關掉 gradient checkpointing 加速(記憶體要夠)")
+    ap.add_argument("--full-finetune", action="store_true",
+                    help="改走全參數微調(不用 LoRA);會自動把 lr 降成 2e-5")
     ap.add_argument("--output-dir", default=None)
     args = ap.parse_args()
 
@@ -426,8 +440,17 @@ def main():
         cfg.model_name = args.model
     if args.epochs:
         cfg.epochs = args.epochs
-    if args.lora:
-        cfg.use_lora = True
+    if args.full_finetune:
+        cfg.use_lora = False
+        cfg.lr = 2e-5          # 全參數微調用較低的學習率
+    if args.lr is not None:    # 使用者明確指定 lr 時最優先
+        cfg.lr = args.lr
+    if args.batch_size:
+        cfg.batch_size = args.batch_size
+    if args.grad_accum:
+        cfg.grad_accum = args.grad_accum
+    if args.no_grad_ckpt:
+        cfg.grad_checkpoint = False
     if args.output_dir:
         cfg.output_dir = args.output_dir
 

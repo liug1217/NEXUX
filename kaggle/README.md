@@ -25,20 +25,18 @@
 
 **Cell 1 — 裝套件**
 ```python
-!pip install -q -U "transformers>=4.44" "accelerate>=0.33"
-# 只有要用 1.5B + LoRA 才需要:  !pip install -q -U peft
+!pip install -q -U "transformers>=4.44" "accelerate>=0.33" "peft>=0.11"
 ```
 
 **Cell 2 — 拉專案(程式碼 + 語料)**
 ```python
-!git clone --depth 1 https://github.com/liug1217/NEXUX.git
-%cd NEXUX
+!rm -rf NEXUX && git clone --depth 1 https://github.com/liug1217/NEXUX.git
 ```
 
 **Cell 3 — 開始訓練**
 ```python
-# 預設:Qwen2.5-0.5B-Instruct 全參數微調,3 個 epoch
-!python kaggle/train_nexux.py --output-dir /kaggle/working/nexux_sft_out
+# 正式預設:Qwen2.5-1.5B-Instruct + LoRA,3 epoch,依業界 SFT 共識調參
+!cd NEXUX && python kaggle/train_nexux.py --output-dir /kaggle/working/nexux_sft_out
 ```
 
 訓練時終端機會印 loss、learning rate、進度;跑完會自動用幾句測試問題
@@ -48,16 +46,19 @@
 
 ## 三、想調參數 / 換模型
 
-所有設定都在 `train_nexux.py` 最上面的 `CFG`,也可以用指令參數覆蓋:
+所有設定都在 `train_nexux.py` 最上面的 `CFG`(已依業界 SFT 共識設好:
+LoRA lr 2e-4、rank 32 / alpha 64、全線性層、cosine + warmup 0.03、3 epoch、
+有效 batch 16),也可以用指令參數覆蓋:
 
 ```python
-# 想要更強 → 換 1.5B 並開 LoRA(T4 塞不下 1.5B 全參數微調)
-!pip install -q -U peft
-!python kaggle/train_nexux.py --model Qwen/Qwen2.5-1.5B-Instruct --lora \
-        --epochs 3 --output-dir /kaggle/working/nexux_sft_out
+# 想更省資源 → 改用 0.5B 全參數微調(不用 peft、速度快)
+!cd NEXUX && python kaggle/train_nexux.py \
+        --model Qwen/Qwen2.5-0.5B-Instruct --full-finetune --no-grad-ckpt \
+        --output-dir /kaggle/working/nexux_sft_out
 ```
 
-常改的:`epochs`、`lr`、`batch_size`、`grad_accum`、`max_len`、`system_prompt`。
+常用參數:`--model`、`--epochs`、`--lr`、`--batch-size`、`--grad-accum`、
+`--no-grad-ckpt`(關 gradient checkpointing 加速)、`--full-finetune`。
 
 ---
 
