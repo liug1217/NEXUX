@@ -26,6 +26,8 @@
 **Cell 1 — 裝套件**
 ```python
 !pip install -q -U "transformers>=4.44" "accelerate>=0.33" "peft>=0.11"
+# Kaggle 預裝的 torchao 版本太舊,會跟新版 peft 的 LoRA 衝突;用不到,移除即可
+!pip uninstall -y -q torchao
 ```
 
 **Cell 2 — 拉專案(程式碼 + 語料)**

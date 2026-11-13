@@ -227,10 +227,13 @@ def train(cfg):
     torch.manual_seed(cfg.seed)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # T4 不支援 bfloat16,只有 Ampere(A100/3090…)以上才支援;自動偵測。
-    bf16_ok = device == "cuda" and torch.cuda.is_bf16_supported()
+    # bf16 只在 Ampere(compute capability >= 8.0,A100/3090/L4…)以上才「原生」快;
+    # T4(7.5)雖然 is_bf16_supported() 會回 True,但實際是慢速模擬,反而拖垮速度,
+    # 所以 T4 這類舊卡要改用 fp16(有 tensor core 加速)。
+    cc_major = torch.cuda.get_device_capability()[0] if device == "cuda" else 0
+    bf16_ok = device == "cuda" and torch.cuda.is_bf16_supported() and cc_major >= 8
     amp_dtype = torch.bfloat16 if bf16_ok else torch.float16
-    print(f"[env] device={device} | bf16_supported={bf16_ok} | amp_dtype={amp_dtype}")
+    print(f"[env] device={device} | cc={cc_major}.x | bf16_native={bf16_ok} | amp_dtype={amp_dtype}")
 
     # --- tokenizer ---
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_name, trust_remote_code=True)
