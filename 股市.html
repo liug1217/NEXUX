@@ -1,0 +1,475 @@
+<title>NEXUX 股市看板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* 版面概念:頂部超大 NEXUX 品牌區 + 全幅跑馬燈 + 下方即時行情看板(大盤 + 個股網格)。
+     深色優先的「交易大螢幕」風格,台股慣例紅漲綠跌。 */
+  :root {
+    /* 深色(預設)調色盤 */
+    --bg: #07090e;
+    --surface: #0f141d;
+    --surface-2: #161d28;
+    --fg: #eef2f8;
+    --muted: #8a94a6;
+    --line: #1e2735;
+    --accent: #e8b43a;      /* 金色品牌主色 */
+    --accent-soft: rgba(232,180,58,.14);
+    --up: #ff4d4d;          /* 紅 = 漲(台股慣例) */
+    --down: #19c37d;        /* 綠 = 跌 */
+    --flat: #8a94a6;
+    color-scheme: dark;
+
+    --font-display: "Space Grotesk", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-body: "Inter", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #eef1f6;
+      --surface: #ffffff;
+      --surface-2: #f1f4f9;
+      --fg: #121823;
+      --muted: #5a6475;
+      --line: #dce1ea;
+      --accent: #b07d10;
+      --accent-soft: rgba(176,125,16,.12);
+      --up: #d8322a;
+      --down: #0f8a4f;
+      --flat: #5a6475;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f1f4f9;
+    --fg: #121823;
+    --muted: #5a6475;
+    --line: #dce1ea;
+    --accent: #b07d10;
+    --accent-soft: rgba(176,125,16,.12);
+    --up: #d8322a;
+    --down: #0f8a4f;
+    --flat: #5a6475;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .wrap {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* ---------- 頂部工具列 ---------- */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding-block: 14px;
+  }
+  .brandmini { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 700; letter-spacing: .04em; }
+  .brandmini .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .tools { display: flex; align-items: center; gap: 10px; }
+  .clock { font-family: var(--font-display); font-weight: 600; letter-spacing: .05em; color: var(--muted); }
+  .iconbtn {
+    appearance: none; cursor: pointer; border: 1px solid var(--line);
+    background: var(--surface); color: var(--fg); width: 38px; height: 38px;
+    border-radius: 10px; font-size: 16px; display: grid; place-items: center;
+  }
+  .iconbtn:hover { border-color: var(--accent); }
+
+  /* ---------- 超大品牌英雄區 ---------- */
+  .hero { position: relative; padding-block: 18px 30px; overflow: hidden; }
+  .hero canvas#bg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .28; z-index: 0; }
+  .hero-inner { position: relative; z-index: 1; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    padding: 6px 12px; border-radius: 999px; font-weight: 600;
+  }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(1.5)} }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(3.4rem, 19vw, 13rem);
+    line-height: .9;
+    letter-spacing: .02em;
+    margin: 14px 0 6px;
+    text-wrap: balance;
+    background: linear-gradient(180deg, var(--fg) 0%, color-mix(in srgb, var(--fg) 55%, var(--accent)) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .wordmark .ai { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+  .tagline { color: var(--muted); font-size: clamp(1rem, 2.6vw, 1.3rem); max-width: 48ch; margin: 0; }
+
+  /* ---------- 跑馬燈 ---------- */
+  .marquee { position: relative; overflow: hidden; border-block: 1px solid var(--line); background: var(--surface); margin-top: 22px; }
+  .marquee-track { display: inline-flex; gap: 38px; white-space: nowrap; padding-block: 11px; will-change: transform; animation: scroll 42s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes scroll { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+  .mq-item { display: inline-flex; align-items: baseline; gap: 8px; font-size: 14px; }
+  .mq-item .code { color: var(--muted); font-weight: 600; }
+  .mq-item .px { font-variant-numeric: tabular-nums; font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .marquee-track { animation-duration: 120s; } }
+
+  /* ---------- 區塊標題 ---------- */
+  .section { padding-block: 30px 10px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .section-head h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin: 0; letter-spacing: .02em; }
+  .section-head .hint { color: var(--muted); font-size: 13px; }
+  .mkt-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .openbtn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--fg);
+    font-family: var(--font-display); font-weight: 700; font-size: .95rem;
+    padding: 9px 20px; border-radius: 999px; letter-spacing: .05em; transition: border-color .2s, background .2s, color .2s;
+  }
+  .openbtn:hover { border-color: var(--accent); }
+  .openbtn .tri { font-size: .82em; }
+  .openbtn.is-open { color: var(--up); border-color: color-mix(in srgb, var(--up) 50%, transparent); background: color-mix(in srgb, var(--up) 12%, transparent); }
+  .status-pill { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .status-pill .sdot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .status-pill.live .sdot { background: var(--up); animation: pulse 1.5s infinite; }
+
+  /* ---------- 大盤卡 ---------- */
+  .index-card {
+    background: linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--line); border-radius: 18px; padding: 22px;
+    display: grid; grid-template-columns: 1fr minmax(160px, 320px); gap: 20px; align-items: center;
+  }
+  .index-meta .name { font-size: 15px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
+  .index-value { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 8vw, 4rem); line-height: 1; margin: 6px 0 10px; font-variant-numeric: tabular-nums; }
+  .chgline { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.1rem; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: .95rem; }
+  .index-spark { width: 100%; height: 110px; display: block; }
+
+  /* ---------- 個股網格 ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .stock {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 15px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+    transition: border-color .2s;
+  }
+  .stock:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+  .stock .srow { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .stock .nm { font-weight: 700; font-size: 1.02rem; }
+  .stock .cd { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+  .stock .price { font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; font-variant-numeric: tabular-nums; line-height: 1; }
+  .stock .chg { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .95rem; text-align: right; white-space: nowrap; }
+  .stock .arrow { font-size: .9em; }
+  .stock .mini { width: 100%; height: 46px; display: block; }
+  .stock .lim { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; letter-spacing: .02em; }
+
+  .flash-up { animation: flup .6s ease; }
+  .flash-down { animation: fldn .6s ease; }
+  @keyframes flup { from { background: color-mix(in srgb, var(--up) 22%, transparent); } to { background: var(--surface); } }
+  @keyframes fldn { from { background: color-mix(in srgb, var(--down) 22%, transparent); } to { background: var(--surface); } }
+
+  /* ---------- footer ---------- */
+  footer { color: var(--muted); font-size: 12.5px; line-height: 1.7; padding-block: 30px 40px; border-top: 1px solid var(--line); margin-top: 26px; }
+  footer strong { color: var(--fg); }
+
+  @media (max-width: 620px) {
+    .index-card { grid-template-columns: 1fr; }
+    .index-spark { height: 84px; }
+    .clock { display: none; }
+  }
+</style>
+
+<div class="hero">
+  <canvas id="bg"></canvas>
+  <div class="wrap hero-inner">
+    <div class="topbar" style="padding-left:0;padding-right:0">
+      <div class="brandmini"><span class="dot"></span> NEXUX</div>
+      <div class="tools">
+        <span class="clock tnum" id="clock">--:--:--</span>
+        <button class="iconbtn" id="themeBtn" aria-label="切換深淺色">◐</button>
+      </div>
+    </div>
+
+    <span class="badge"><span class="pulse"></span> 模擬即時行情 · 教學展示</span>
+    <h1 class="wordmark">NEX<span class="ai">UX</span></h1>
+    <p class="tagline">即時股市看板 — 大盤、個股、跑馬燈,全部會跳動。<br>資料為模擬即時行情,之後可接上真實報價。</p>
+  </div>
+</div>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="mq"></div>
+</div>
+
+<main class="wrap">
+  <section class="section">
+    <div class="section-head">
+      <h2>大盤指數</h2>
+      <div class="mkt-controls">
+        <span class="status-pill live" id="mktStatus"><span class="sdot"></span>開盤中</span>
+        <button class="openbtn is-open" id="openBtn" aria-pressed="true"><span class="tri" id="openTri">■</span><span id="openLabel">收盤</span></button>
+      </div>
+    </div>
+    <div class="index-card">
+      <div class="index-meta">
+        <div class="name" id="idxName">NEXUX 加權指數</div>
+        <div class="index-value" id="idxVal">—</div>
+        <div class="chgline">
+          <span class="chip" id="idxChip">—</span>
+          <span id="idxExtra" class="tnum" style="color:var(--muted);font-weight:500;font-size:.95rem">昨收 — · 成交 — 億</span>
+        </div>
+      </div>
+      <canvas class="index-spark" id="idxSpark"></canvas>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>個股行情</h2>
+      <span class="hint">點不停更新 · 每秒跳動</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <footer class="wrap" style="padding-left:0;padding-right:0">
+    <strong>⚠ 重要聲明：</strong>本頁所有數字為<strong>電腦模擬的即時行情</strong>,純為展示與教學用途,<strong>不是真實股價,也不構成任何投資建議</strong>。<br>
+    台股慣例:紅色代表上漲、綠色代表下跌;一張 = 1,000 股;單日漲跌幅上限 ±10%。<br>
+    NEXUX · 股市看板 ｜ 之後可將模擬資料來源替換為真實報價 API。
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var running = true;   // 開盤中 / 收盤
+
+  /* ---------- 主題切換(記住選擇) ---------- */
+  try {
+    var saved = localStorage.getItem("nexux-theme");
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+  $("themeBtn").addEventListener("click", function () {
+    var root = document.documentElement;
+    var cur = root.getAttribute("data-theme");
+    var dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = cur ? (cur === "dark" ? "light" : "dark") : (dark ? "light" : "dark");
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("nexux-theme", next); } catch (e) {}
+  });
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  /* ---------- 開盤 / 收盤 按鈕 ---------- */
+  function setOpen(on) {
+    running = on;
+    var b = $("openBtn"), st = $("mktStatus"), tr = $("mq");
+    b.classList.toggle("is-open", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    $("openTri").textContent = on ? "■" : "▶";
+    $("openLabel").textContent = on ? "收盤" : "開盤";
+    st.classList.toggle("live", on);
+    st.innerHTML = '<span class="sdot"></span>' + (on ? "開盤中" : "已收盤");
+    if (tr) tr.style.animationPlayState = on ? "running" : "paused";
+  }
+  $("openBtn").addEventListener("click", function () { setOpen(!running); });
+
+  /* ---------- 模擬行情資料 ---------- */
+  function mk(name, code, price, vol, bias) {
+    var hist = [];
+    for (var i = 0; i < 48; i++) hist.push(price);
+    return { name: name, code: code, price: price, prev: price, open: price,
+             vol: vol, bias: bias, hist: hist, dir: 0 };
+  }
+  var stocks = [
+    mk("聯華半導", "6401", 612.0, 0.011, 0.00018),
+    mk("宏達金控", "2881", 46.85, 0.007, 0.00005),
+    mk("星宇電子", "3008", 158.5, 0.015, -0.00010),
+    mk("長興航運", "2609", 92.3, 0.022, 0.00025),
+    mk("鼎新光電", "3045", 118.0, 0.013, 0.00002),
+    mk("富鋐生技", "4142", 245.5, 0.018, 0.00014),
+    mk("台煜能源", "6505", 88.7, 0.012, -0.00006),
+    mk("凱基網通", "2412", 132.4, 0.009, 0.00008)
+  ];
+  var index = { name: "NEXUX 加權指數", val: 18250, prev: 18250, vol: 0,
+                hist: (function () { var a = []; for (var i = 0; i < 80; i++) a.push(18250); return a; })() };
+
+  function randn() { // 近似常態(亂度更自然)
+    return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  function fmt(n, d) { return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+
+  function tick() {
+    if (!running) return;   // 收盤時不更新行情
+    var idxMove = 0, idxBase = 0;
+    for (var i = 0; i < stocks.length; i++) {
+      var s = stocks[i];
+      var shock = randn() * s.vol + s.bias;
+      var np = s.price * (1 + shock);
+      np = clamp(np, s.open * 0.9, s.open * 1.1); // 台股 ±10% 漲跌停
+      s.dir = np > s.price ? 1 : np < s.price ? -1 : 0;
+      s.price = np;
+      s.hist.push(np); if (s.hist.length > 48) s.hist.shift();
+      idxMove += shock; idxBase += 1;
+    }
+    // 大盤 = 成分股平均變動帶動
+    var im = (idxMove / idxBase) + randn() * 0.0009;
+    index.val = clamp(index.val * (1 + im), index.prev * 0.9, index.prev * 1.1);
+    index.hist.push(index.val); if (index.hist.length > 80) index.hist.shift();
+    index.vol += Math.abs(im) * 900 + Math.random() * 40;
+    render();
+  }
+
+  /* ---------- 繪圖 ---------- */
+  function spark(canvas, data, color, fill) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    var lo = Math.min.apply(null, data), hi = Math.max.apply(null, data);
+    var pad = (hi - lo) * 0.15 || 1; lo -= pad; hi += pad;
+    var x = function (i) { return (i / (data.length - 1)) * w; };
+    var y = function (v) { return h - ((v - lo) / (hi - lo)) * h; };
+    if (fill) {
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, color + "55"); g.addColorStop(1, color + "00");
+      ctx.beginPath(); ctx.moveTo(0, h);
+      for (var i = 0; i < data.length; i++) ctx.lineTo(x(i), y(data[i]));
+      ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+    }
+    ctx.beginPath();
+    for (var j = 0; j < data.length; j++) { var fn = j ? "lineTo" : "moveTo"; ctx[fn](x(j), y(data[j])); }
+    ctx.strokeStyle = color; ctx.lineWidth = fill ? 2 : 1.6; ctx.lineJoin = "round"; ctx.stroke();
+    // 端點
+    ctx.beginPath(); ctx.arc(x(data.length - 1), y(data[data.length - 1]), fill ? 3.5 : 2.6, 0, 7); ctx.fillStyle = color; ctx.fill();
+  }
+
+  function colFor(cur, ref) { return cur > ref ? css("--up") : cur < ref ? css("--down") : css("--flat"); }
+  function arrow(cur, ref) { return cur > ref ? "▲" : cur < ref ? "▼" : "■"; }
+
+  /* ---------- 建立個股卡片 ---------- */
+  var grid = $("grid");
+  stocks.forEach(function (s, i) {
+    var el = document.createElement("div");
+    el.className = "stock"; el.dataset.i = i;
+    el.innerHTML =
+      '<div class="srow"><div><div class="nm">' + s.name + '</div><div class="cd">' + s.code + '</div></div>' +
+      '<div class="chg" data-chg></div></div>' +
+      '<div class="price tnum" data-px></div>' +
+      '<canvas class="mini" data-mini></canvas>' +
+      '<div class="lim"><span data-lo></span><span data-hi></span></div>';
+    grid.appendChild(el);
+    s.el = el;
+    s.pxEl = el.querySelector("[data-px]");
+    s.chgEl = el.querySelector("[data-chg]");
+    s.miniEl = el.querySelector("[data-mini]");
+    s.loEl = el.querySelector("[data-lo]");
+    s.hiEl = el.querySelector("[data-hi]");
+  });
+
+  /* ---------- 跑馬燈 ---------- */
+  var mq = $("mq");
+  function buildMarquee() {
+    var html = "";
+    for (var k = 0; k < 2; k++) { // 兩份接續 → 無縫捲動
+      stocks.forEach(function (s) {
+        var c = colFor(s.price, s.prev);
+        var pct = ((s.price - s.prev) / s.prev) * 100;
+        html += '<span class="mq-item"><span class="code">' + s.code + ' ' + s.name + '</span>' +
+          '<span class="px" style="color:' + c + '">' + fmt(s.price, 2) + '</span>' +
+          '<span style="color:' + c + '">' + arrow(s.price, s.prev) + ' ' + (pct >= 0 ? "+" : "") + pct.toFixed(2) + '%</span></span>';
+      });
+    }
+    mq.innerHTML = html;
+  }
+
+  /* ---------- 每幀渲染 ---------- */
+  function render() {
+    // 大盤
+    var idxC = colFor(index.val, index.prev);
+    $("idxVal").textContent = fmt(index.val, 2);
+    $("idxVal").style.color = idxC;
+    var dChg = index.val - index.prev, dPct = (dChg / index.prev) * 100;
+    var chip = $("idxChip");
+    chip.textContent = arrow(index.val, index.prev) + " " + (dChg >= 0 ? "+" : "") + fmt(dChg, 2) + "  (" + (dPct >= 0 ? "+" : "") + dPct.toFixed(2) + "%)";
+    chip.style.color = idxC;
+    chip.style.background = "color-mix(in srgb, " + idxC + " 16%, transparent)";
+    $("idxExtra").textContent = "昨收 " + fmt(index.prev, 2) + " · 成交 " + fmt(index.vol / 100, 0) + " 億";
+    spark($("idxSpark"), index.hist, idxC, true);
+
+    // 個股
+    stocks.forEach(function (s) {
+      var c = colFor(s.price, s.prev);
+      s.pxEl.textContent = fmt(s.price, 2);
+      s.pxEl.style.color = c;
+      var chg = s.price - s.prev, pct = (chg / s.prev) * 100;
+      s.chgEl.innerHTML = '<span class="arrow">' + arrow(s.price, s.prev) + '</span> ' +
+        (chg >= 0 ? "+" : "") + fmt(chg, 2) + '<br>' + (pct >= 0 ? "+" : "") + pct.toFixed(2) + '%';
+      s.chgEl.style.color = c;
+      s.loEl.textContent = "跌停 " + fmt(s.open * 0.9, 1);
+      s.hiEl.textContent = "漲停 " + fmt(s.open * 1.1, 1);
+      spark(s.miniEl, s.hist, c, true);
+      if (s.dir === 1) { s.el.classList.remove("flash-down"); s.el.classList.add("flash-up"); }
+      else if (s.dir === -1) { s.el.classList.remove("flash-up"); s.el.classList.add("flash-down"); }
+    });
+    buildMarquee();
+  }
+  // 清掉 flash class(動畫結束)
+  grid.addEventListener("animationend", function (e) {
+    e.target.classList.remove("flash-up", "flash-down");
+  });
+
+  /* ---------- 時鐘(台灣時間) ---------- */
+  function clock() {
+    var t = new Date(Date.now() + (new Date().getTimezoneOffset() + 480) * 60000);
+    $("clock").textContent = String(t.getHours()).padStart(2, "0") + ":" +
+      String(t.getMinutes()).padStart(2, "0") + ":" + String(t.getSeconds()).padStart(2, "0");
+  }
+
+  /* ---------- 英雄區背景:飄動的燭線 ---------- */
+  var bg = $("bg"), bctx = bg.getContext("2d"), bars = [], braf;
+  function initBg() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    bg.width = bg.clientWidth * dpr; bg.height = bg.clientHeight * dpr;
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bars = []; var n = Math.ceil(bg.clientWidth / 16);
+    var p = bg.clientHeight / 2;
+    for (var i = 0; i < n; i++) { p += (Math.random() - 0.5) * 22; p = clamp(p, 20, bg.clientHeight - 20); bars.push(p); }
+  }
+  function drawBg() {
+    var w = bg.clientWidth, h = bg.clientHeight;
+    bctx.clearRect(0, 0, w, h);
+    for (var i = 0; i < bars.length; i++) {
+      bars[i] += (Math.random() - 0.5) * 2.2; bars[i] = clamp(bars[i], 18, h - 18);
+      var up = i === 0 || bars[i] <= bars[i - 1];
+      bctx.fillStyle = (up ? css("--up") : css("--down")) + "cc";
+      var x = i * 16, bh = 6 + Math.random() * 3;
+      bctx.fillRect(x, bars[i] - bh / 2, 9, bh);
+      bctx.fillRect(x + 3.5, bars[i] - 11, 2, 22);
+    }
+    braf = setTimeout(function () { requestAnimationFrame(drawBg); }, 420);
+  }
+
+  /* ---------- 啟動 ---------- */
+  function boot() {
+    initBg();
+    render();
+    buildMarquee();
+    clock(); setInterval(clock, 1000);
+    setInterval(tick, reduce ? 1600 : 900);
+    if (!reduce) drawBg(); else { drawBg(); clearTimeout(braf); } // 低動態:畫一次靜態
+  }
+  window.addEventListener("resize", function () { initBg(); render(); });
+  boot();
+})();
+</script>
