@@ -340,19 +340,25 @@ def train(cfg):
             save_model(model, tokenizer, tag, cfg)
             print(f"[save] 已存 epoch {epoch} → {tag}")
 
-    save_model(model, tokenizer, cfg.output_dir, cfg)
+    save_model(model, tokenizer, cfg.output_dir, cfg, final=True)
     print(f"[done] 訓練完成,最終模型 → {cfg.output_dir}(總耗時 {time.time()-t0:.0f}s)")
 
     sample_generate(model, tokenizer, cfg, device)
 
 
-def save_model(model, tokenizer, path, cfg):
+def save_model(model, tokenizer, path, cfg, final=False):
+    """存檔。
+    重要:LoRA 的 merge_and_unload() 會把 adapter 從模型「卸下合併」,之後就
+    不能再繼續訓練(梯度會變空,下一個 epoch 會 scaler.step 報
+    'No inf checks were recorded for this optimizer')。所以只有「最後一次」
+    存檔才 merge 成完整權重;中間每個 epoch 的檢查點只存 LoRA adapter。"""
     os.makedirs(path, exist_ok=True)
-    if cfg.use_lora:
-        # LoRA:存合併後的完整權重,之後推論不用再裝 peft
-        merged = model.merge_and_unload()
-        merged.save_pretrained(path)
+    if cfg.use_lora and final:
+        # 最後一次:合併成完整權重,之後推論不用再裝 peft
+        model.merge_and_unload().save_pretrained(path)
     else:
+        # LoRA 中間檢查點 → 只存 adapter(小、且不破壞訓練狀態)
+        # 全參數微調 → 直接存完整權重
         model.save_pretrained(path)
     tokenizer.save_pretrained(path)
 
