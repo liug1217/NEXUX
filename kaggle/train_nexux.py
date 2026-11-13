@@ -122,23 +122,39 @@ def load_conversations(data_dir):
 #    做法:用 chat template 逐輪累加,算出每一輪新增的 token,
 #    assistant 輪的新增 token 才當作學習目標。
 # ======================================================================
-def build_example(tokenizer, conversation, system_prompt, max_len):
-    running = [{"role": "system", "content": system_prompt}]
-    ids = tokenizer.apply_chat_template(running, tokenize=True, add_generation_prompt=False)
-    input_ids = list(ids)
-    labels = [-100] * len(ids)          # system 不學
+def _encode(tokenizer, text):
+    """把文字轉成 token id 列表(不再額外加特殊 token,因為 chat template
+    自己已經放好 <|im_start|> / <|im_end|> 這些標記)。"""
+    return tokenizer(text, add_special_tokens=False).input_ids
 
-    for turn in conversation:
-        running.append(turn)
-        ids_now = tokenizer.apply_chat_template(running, tokenize=True, add_generation_prompt=False)
-        delta = ids_now[len(input_ids):]
-        if not delta:
+
+def build_example(tokenizer, conversation, system_prompt, max_len):
+    """把一段對話轉成 (input_ids, labels),labels 只蓋在 assistant 的回覆上。
+
+    注意:不能用 apply_chat_template(tokenize=True) 的回傳值直接 len()/切片——
+    那在目前的 transformers 會回傳一個 BatchEncoding 字典(含 input_ids /
+    attention_mask),不是 token 列表,會害每一輪的 delta 都算成 0、整段被遮光。
+    正確做法:先 render 成「文字」,自己 tokenize;遮罩則用「前綴長度」定位
+    每個 assistant 區段(邊界都落在特殊標記上,tokenize 對這些位置是穩定的)。
+    """
+    messages = [{"role": "system", "content": system_prompt}] + conversation
+    full_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    input_ids = _encode(tokenizer, full_text)
+    labels = [-100] * len(input_ids)
+
+    for i, msg in enumerate(messages):
+        if msg["role"] != "assistant":
             continue
-        if turn["role"] == "assistant":
-            labels.extend(delta)        # 這一輪(含收尾標記)就是要學的
-        else:
-            labels.extend([-100] * len(delta))
-        input_ids = list(ids_now)
+        # messages[:i] + 生成提示 → 到「<|im_start|>assistant\n」為止,這段不學
+        prefix_text = tokenizer.apply_chat_template(
+            messages[:i], tokenize=False, add_generation_prompt=True)
+        start = len(_encode(tokenizer, prefix_text))
+        # messages[:i+1] → 多出來的就是這則 assistant 回覆(含 <|im_end|>)
+        upto_text = tokenizer.apply_chat_template(
+            messages[:i + 1], tokenize=False, add_generation_prompt=False)
+        end = len(_encode(tokenizer, upto_text))
+        for j in range(start, min(end, len(input_ids))):
+            labels[j] = input_ids[j]
 
     # 截斷(保留前面,含 system 身分設定)
     if len(input_ids) > max_len:
@@ -355,16 +371,22 @@ def dry_run(cfg):
     convs = load_conversations(cfg.data_dir)
     print(f"[dry-run] 讀到 {len(convs)} 段對話")
     # 統計角色分布、長度,用假 tokenizer(字元切分)驗證 build_example 邏輯
+    class _Enc:
+        def __init__(self, ids):
+            self.input_ids = ids
+
     class FakeTok:
         pad_token_id = 0
-        def apply_chat_template(self, msgs, tokenize=True, add_generation_prompt=False):
-            # 模擬 chat template:每則訊息 = 角色標記 + 內容字元
+        # 模擬現在 build_example 的用法:render 成文字 + 自己 tokenize(字元當 token)
+        def apply_chat_template(self, msgs, tokenize=False, add_generation_prompt=False):
             s = ""
             for m in msgs:
-                s += f"<|{m['role']}|>" + m["content"]
+                s += f"<|im_start|>{m['role']}\n" + m["content"] + "<|im_end|>\n"
             if add_generation_prompt:
-                s += "<|assistant|>"
-            return [ord(c) % 1000 for c in s] if tokenize else s
+                s += "<|im_start|>assistant\n"
+            return s
+        def __call__(self, text, add_special_tokens=False):
+            return _Enc([ord(c) % 1000 for c in text])
     tok = FakeTok()
     ok, none = 0, 0
     total_label_tokens = 0
